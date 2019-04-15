@@ -1,4 +1,9 @@
-# Functions Framework API for Java 8
-Definitions of types used in function signatures in Functions Framework for Java 8.
+# Functions Framework API for Java
 
-* `com.google.cloud.functions.Context` - optional second argument of a background function.
+**This is a placeholder for the Functions Framework for Java. Stay tuned for
+updates.**
+
+For now, it only includes definitions of types used in Java function signatures.
+
+*   `com.google.cloud.functions.Context` - optional second argument of a
+    background function.
