@@ -15,7 +15,7 @@
 -->
 <project>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.google.cloud</groupId>
+  <groupId>com.google.cloud.functions</groupId>
   <artifactId>functions-framework-api</artifactId>
   <version>1.0.0-alpha-1</version>
 
