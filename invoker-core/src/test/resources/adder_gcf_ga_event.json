@@ -1,0 +1,16 @@
+{
+  "data": {
+    "a": 2,
+    "b": 3
+  },
+  "context": {
+    "eventId": "B234-1234-1234",
+    "timestamp": "2018-04-05T17:31:00Z",
+    "eventType": "com.example.someevent.new",
+    "resource": {
+      "service":"test-service",
+      "name":"test-name",
+      "type":"test-type"
+    }
+  }
+}
