@@ -9,6 +9,8 @@ import com.google.cloud.functions.invoker.HttpFunctionExecutor;
 import com.google.cloud.functions.invoker.HttpFunctionSignatureMatcher;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
@@ -67,19 +69,20 @@ public class Invoker {
     CommandLine line = parseCommandLineOptions(args);
 
     int port =
-        Integer.parseInt(
-            firstNonNull(line.getOptionValue("port"), System.getenv("PORT"), "8080"));
+        Arrays.asList(line.getOptionValue("port"), System.getenv("PORT")).stream()
+            .filter(Objects::nonNull)
+            .findFirst()
+            .map(Integer::parseInt)
+            .orElse(8080);
     String functionTarget =
-        firstNonNull(
-            line.getOptionValue("target"),
-            System.getenv("FUNCTION_TARGET"),
-            "TestFunction.function");
+        Arrays.asList(line.getOptionValue("target"), System.getenv("FUNCTION_TARGET")).stream()
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse("TestFunction.function");
     Optional<String> functionJarPath =
-        isLocalRun()
-            ? Optional.of(
-            firstNonNull(line.getOptionValue("jar"), System.getenv("FUNCTION_JAR")))
-            : Optional.empty();
-
+        Arrays.asList(line.getOptionValue("jar"), System.getenv("FUNCTION_JAR")).stream()
+            .filter(Objects::nonNull)
+            .findFirst();
     Invoker invoker =
         new Invoker(
             port,
@@ -109,16 +112,6 @@ public class Invoker {
       HelpFormatter formatter = new HelpFormatter();
       formatter.printHelp("Invoker", options);
       System.exit(1);
-    }
-    return null;
-  }
-
-  @SafeVarargs
-  private static <T> T firstNonNull(T... objects) {
-    for (T t : objects) {
-      if (t != null) {
-        return t;
-      }
     }
     return null;
   }
