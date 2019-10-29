@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.junit.Test;
@@ -31,8 +30,8 @@ public class HttpFunctionTest {
     String fullTarget =
         "com.google.cloud.functions.invoker.HttpFunctionTest$HttpWriter.writeResponse";
     String requestData = "testData";
-    FunctionLoader<HttpCloudFunction> loader =
-        new FunctionLoader<>(fullTarget, Optional.empty(), new HttpFunctionSignatureMatcher());
+    FunctionLoader<HttpCloudFunction> loader = new FunctionLoader<>(
+        fullTarget, getClass().getClassLoader(), new HttpFunctionSignatureMatcher());
     HttpCloudFunction function = loader.loadUserFunction();
     HttpFunctionExecutor executor = new HttpFunctionExecutor(function);
     Mockito.when(req.getParameter("data")).thenReturn(requestData);

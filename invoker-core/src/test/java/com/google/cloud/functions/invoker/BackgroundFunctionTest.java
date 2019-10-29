@@ -8,7 +8,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.junit.Test;
@@ -71,7 +70,7 @@ public class BackgroundFunctionTest {
     HttpServletResponse res = Mockito.mock(HttpServletResponse.class);
     String fullTarget = "com.google.cloud.functions.invoker.BackgroundFunctionTest$" + target;
     FunctionLoader<BackgroundCloudFunction> loader =
-        new FunctionLoader<>(fullTarget, Optional.empty(),
+        new FunctionLoader<>(fullTarget, getClass().getClassLoader(),
             new BackgroundFunctionSignatureMatcher());
     BackgroundCloudFunction function = loader.loadUserFunction();
     BackgroundFunctionExecutor executor = new BackgroundFunctionExecutor(function);

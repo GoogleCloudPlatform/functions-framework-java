@@ -48,9 +48,9 @@ public class IntegrationTest {
    */
   @BeforeClass
   public static void allocateServerPort() throws IOException {
-    ServerSocket serverSocket = new ServerSocket(0);
-    serverPort = serverSocket.getLocalPort();
-    serverSocket.close();
+    try (ServerSocket serverSocket = new ServerSocket(0)) {
+      serverPort = serverSocket.getLocalPort();
+    }
   }
 
   /**
@@ -94,9 +94,22 @@ public class IntegrationTest {
   }
 
   @Test
+  public void newHelloWorld() throws Exception {
+    testHttpFunction("NewHelloWorld",
+        TestCase.builder().setExpectedResponseText("hello\n").build());
+  }
+
+  @Test
   public void echo() throws Exception {
     String testText = "hello\nworld\n";
     testHttpFunction("Echo.echo",
+        TestCase.builder().setRequestText(testText).setExpectedResponseText(testText).build());
+  }
+
+  @Test
+  public void newEcho() throws Exception {
+    String testText = "hello\nworld\n";
+    testHttpFunction("NewEcho",
         TestCase.builder().setRequestText(testText).setExpectedResponseText(testText).build());
   }
 
@@ -107,6 +120,15 @@ public class IntegrationTest {
         .map(url -> TestCase.builder().setUrl(url).setExpectedResponseText(url + "\n").build())
         .toArray(TestCase[]::new);
     testHttpFunction("EchoUrl.echoUrl", testCases);
+  }
+
+  @Test
+  public void newEchoUrl() throws Exception {
+    String[] testUrls = {"/", "/foo/bar", "/?foo=bar&baz=buh", "/foo?bar=baz"};
+    TestCase[] testCases = Arrays.stream(testUrls)
+        .map(url -> TestCase.builder().setUrl(url).setExpectedResponseText(url + "\n").build())
+        .toArray(TestCase[]::new);
+    testHttpFunction("NewEchoUrl", testCases);
   }
 
   @Test
@@ -126,8 +148,25 @@ public class IntegrationTest {
     assertThat(snoopedJson).isEqualTo(json);
   }
 
-  private void testHttpFunction(String classAndMethod, TestCase... testCases) throws Exception {
-    testFunction(SignatureType.HTTP, classAndMethod, testCases);
+  @Test
+  public void newBackground() throws Exception {
+    URL resourceUrl = getClass().getResource("/adder_gcf_ga_event.json");
+    assertThat(resourceUrl).isNotNull();
+    File snoopFile = File.createTempFile("FunctionsIntegrationTest", ".txt");
+    snoopFile.deleteOnExit();
+    String originalJson = Resources.toString(resourceUrl, StandardCharsets.UTF_8);
+    JsonObject json = new JsonParser().parse(originalJson).getAsJsonObject();
+    JsonObject jsonData = json.getAsJsonObject("data");
+    jsonData.addProperty("targetFile", snoopFile.toString());
+    testBackgroundFunction("NewBackgroundSnoop",
+        TestCase.builder().setRequestText(json.toString()).build());
+    String snooped = Files.asCharSource(snoopFile, StandardCharsets.UTF_8).read();
+    JsonObject snoopedJson = new JsonParser().parse(snooped).getAsJsonObject();
+    assertThat(snoopedJson).isEqualTo(json);
+  }
+
+  private void testHttpFunction(String target, TestCase... testCases) throws Exception {
+    testFunction(SignatureType.HTTP, target, testCases);
   }
 
   private void testBackgroundFunction(String classAndMethod, TestCase... testCases)
@@ -135,9 +174,9 @@ public class IntegrationTest {
     testFunction(SignatureType.BACKGROUND, classAndMethod, testCases);
   }
 
-  private void testFunction(SignatureType signatureType, String classAndMethod,
-      TestCase... testCases) throws Exception {
-    Process server = startServer(signatureType, classAndMethod);
+  private void testFunction(
+      SignatureType signatureType, String target, TestCase... testCases) throws Exception {
+    Process server = startServer(signatureType, target);
     try {
       HttpClient httpClient = new HttpClient();
       httpClient.start();
@@ -174,9 +213,9 @@ public class IntegrationTest {
     }
   }
 
-  private Process startServer(SignatureType signatureType, String classAndMethod)
+  private Process startServer(SignatureType signatureType, String target)
       throws IOException, InterruptedException {
-    String fullMethodName = "com.google.cloud.functions.invoker.testfunctions." + classAndMethod;
+    String fullTarget = "com.google.cloud.functions.invoker.testfunctions." + target;
     File javaHome = new File(System.getProperty("java.home"));
     assertThat(javaHome.exists()).isTrue();
     File javaBin = new File(javaHome, "bin");
@@ -190,11 +229,10 @@ public class IntegrationTest {
     ProcessBuilder processBuilder = new ProcessBuilder()
         .command(command)
         .redirectErrorStream(true);
-    Map<String, String> environment = ImmutableMap.of(
-        "PORT", String.valueOf(serverPort),
+    Map<String, String> environment = ImmutableMap.of("PORT", String.valueOf(serverPort),
         "K_SERVICE", "test-function",
         "FUNCTION_SIGNATURE_TYPE", signatureType.toString(),
-        "FUNCTION_TARGET", fullMethodName);
+        "FUNCTION_TARGET", fullTarget);
     processBuilder.environment().putAll(environment);
     Process serverProcess = processBuilder.start();
     CountDownLatch ready = new CountDownLatch(1);

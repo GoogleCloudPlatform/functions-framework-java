@@ -66,8 +66,13 @@ public class HttpResponseImpl implements HttpResponse {
     return response.getOutputStream();
   }
 
+  private BufferedWriter writer;
+
   @Override
-  public BufferedWriter getWriter() throws IOException {
+  public synchronized BufferedWriter getWriter() throws IOException {
+    if (writer != null) {
+      return writer;
+    }
     // We could just wrap a BufferedWriter around the PrintWriter that the Servlet API gives us,
     // but this slightly clunky alternative potentially avoids two intermediate objects in the
     // writer chain.
@@ -82,8 +87,9 @@ public class HttpResponseImpl implements HttpResponse {
     } catch (ReflectiveOperationException e) {
       throw new IOException("Reflection failed", e);
     }
-    return (wrappedWriter instanceof BufferedWriter)
+    this.writer = (wrappedWriter instanceof BufferedWriter)
         ? (BufferedWriter) wrappedWriter
         : new BufferedWriter(wrappedWriter);
+    return this.writer;
   }
 }

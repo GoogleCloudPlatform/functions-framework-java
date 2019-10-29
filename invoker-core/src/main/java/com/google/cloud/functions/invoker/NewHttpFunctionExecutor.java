@@ -1,0 +1,73 @@
+package com.google.cloud.functions.invoker;
+
+import com.google.cloud.functions.HttpFunction;
+import com.google.cloud.functions.invoker.http.HttpRequestImpl;
+import com.google.cloud.functions.invoker.http.HttpResponseImpl;
+import java.io.IOException;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+/** Executes the user's method. */
+public class NewHttpFunctionExecutor extends HttpServlet {
+  private static final Logger logger = Logger.getLogger("com.google.cloud.functions.invoker");
+
+  private final HttpFunction function;
+
+  private NewHttpFunctionExecutor(HttpFunction function) {
+    this.function = function;
+  }
+
+  /**
+   * Make a {@link NewHttpFunctionExecutor} for the class named by the given {@code target}.
+   * If the class cannot be loaded, we currently assume that this is an old-style function
+   * (specified as package.Class.method instead of package.Class) and return
+   * {@code Optional.empty()}.
+   *
+   * @throws RuntimeException if we succeed in loading the class named by {@code target} but then
+   *    either the class does not implement {@link HttpFunction} or we are unable to construct an
+   *    instance using its no-arg constructor.
+   */
+  public static Optional<NewHttpFunctionExecutor> forTarget(String target) {
+    Class<?> c;
+    try {
+      c = Class.forName(target);
+    } catch (ClassNotFoundException e) {
+      return Optional.empty();
+    }
+    if (!HttpFunction.class.isAssignableFrom(c)) {
+      throw new RuntimeException(
+          "Class " + c.getName() + " does not implement " + HttpFunction.class.getName());
+    }
+    Class<? extends HttpFunction> httpFunctionClass = c.asSubclass(HttpFunction.class);
+    try {
+      HttpFunction httpFunction = httpFunctionClass.getConstructor().newInstance();
+      return Optional.of(new NewHttpFunctionExecutor(httpFunction));
+    } catch (ReflectiveOperationException e) {
+      throw new RuntimeException("Could not construct an instance of " + target + ": " + e, e);
+    }
+  }
+
+  /** Executes the user's method, can handle all HTTP type methods. */
+  @Override
+  public void service(HttpServletRequest req, HttpServletResponse res) {
+    URLRequestWrapper wrapper = new URLRequestWrapper(req);
+    HttpRequestImpl reqImpl = new HttpRequestImpl(wrapper);
+    HttpResponseImpl respImpl = new HttpResponseImpl(res);
+    try {
+      function.service(reqImpl, respImpl);
+    } catch (Throwable t) {
+      res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      logger.log(Level.WARNING, "Failed to execute " + function.getClass().getName(), t);
+    } finally {
+      try {
+        respImpl.getWriter().flush();
+      } catch (IOException e) {
+        // Too bad, can't flush.
+      }
+    }
+  }
+}

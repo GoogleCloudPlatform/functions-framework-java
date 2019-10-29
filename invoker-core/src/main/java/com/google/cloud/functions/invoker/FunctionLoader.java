@@ -1,26 +1,21 @@
 package com.google.cloud.functions.invoker;
 
-import java.io.File;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.Optional;
-
 /**
  * Dynamically loads the user's function class and returns an instance of {@link CloudFunction}.
  */
 public class FunctionLoader<T extends CloudFunction> {
 
   private final String functionTarget;
+  private final ClassLoader classLoader;
   private final FunctionSignatureMatcher<T> matcher;
-  private final Optional<File> userJarFile;
 
   public FunctionLoader(
       String functionTarget,
-      Optional<File> userJarFile,
+      ClassLoader classLoader,
       FunctionSignatureMatcher<T> matcher) {
     this.functionTarget = functionTarget;
+    this.classLoader = classLoader;
     this.matcher = matcher;
-    this.userJarFile = userJarFile;
   }
 
   /**
@@ -31,23 +26,18 @@ public class FunctionLoader<T extends CloudFunction> {
   public T loadUserFunction() throws Exception {
     int lastDotIndex = functionTarget.lastIndexOf(".");
     if (lastDotIndex == -1) {
-      throw new RuntimeException(
-          "Expected target of format <package>.<class>.<method>, but got " + functionTarget);
+      throw new ClassNotFoundException(functionTarget);
     }
     String targetClassName = functionTarget.substring(0, lastDotIndex);
     String targetMethodName = functionTarget.substring(lastDotIndex + 1);
-
-    ClassLoader classLoader;
-
-    if (userJarFile.isPresent()) {
-      classLoader =
-          new URLClassLoader(
-              new URL[]{userJarFile.get().toURI().toURL()},
-              Thread.currentThread().getContextClassLoader());
-    } else {
-      classLoader = Thread.currentThread().getContextClassLoader();
+    Class<?> targetClass;
+    try {
+      targetClass = classLoader.loadClass(targetClassName);
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(
+          "Could not load either " + functionTarget + " (new form) or "
+              + targetClassName + " (old form)");
     }
-    Class<?> targetClass = classLoader.loadClass(targetClassName);
 
     Object targetInstance = targetClass.getDeclaredConstructor().newInstance();
     return matcher.match(targetClass, targetInstance, targetMethodName, functionTarget);

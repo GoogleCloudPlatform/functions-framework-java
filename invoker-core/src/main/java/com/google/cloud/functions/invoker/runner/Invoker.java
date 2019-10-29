@@ -7,14 +7,19 @@ import com.google.cloud.functions.invoker.FunctionLoader;
 import com.google.cloud.functions.invoker.HttpCloudFunction;
 import com.google.cloud.functions.invoker.HttpFunctionExecutor;
 import com.google.cloud.functions.invoker.HttpFunctionSignatureMatcher;
+import com.google.cloud.functions.invoker.NewBackgroundFunctionExecutor;
+import com.google.cloud.functions.invoker.NewHttpFunctionExecutor;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
+import javax.servlet.http.HttpServlet;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -138,17 +143,43 @@ public class Invoker {
               + functionJarFile.get().getAbsolutePath());
     }
 
+    ClassLoader classLoader;
+    if (functionJarFile.isPresent()) {
+      classLoader =
+          new URLClassLoader(
+              new URL[]{functionJarFile.get().toURI().toURL()},
+              Thread.currentThread().getContextClassLoader());
+    } else {
+      classLoader = Thread.currentThread().getContextClassLoader();
+    }
+
     if ("http".equals(functionSignatureType)) {
-      FunctionLoader<HttpCloudFunction> loader =
-          new FunctionLoader<>(functionTarget, functionJarFile, new HttpFunctionSignatureMatcher());
-      HttpCloudFunction function = loader.loadUserFunction();
-      context.addServlet(new ServletHolder(new HttpFunctionExecutor(function)), "/*");
+      HttpServlet servlet;
+      Optional<NewHttpFunctionExecutor> newExecutor =
+          NewHttpFunctionExecutor.forTarget(functionTarget);
+      if (newExecutor.isPresent()) {
+        servlet = newExecutor.get();
+      } else {
+        FunctionLoader<HttpCloudFunction> loader =
+            new FunctionLoader<>(functionTarget, classLoader, new HttpFunctionSignatureMatcher());
+        HttpCloudFunction function = loader.loadUserFunction();
+        servlet = new HttpFunctionExecutor(function);
+      }
+      context.addServlet(new ServletHolder(servlet), "/*");
     } else if ("event".equals(functionSignatureType)) {
-      FunctionLoader<BackgroundCloudFunction> loader =
-          new FunctionLoader<>(
-              functionTarget, functionJarFile, new BackgroundFunctionSignatureMatcher());
-      BackgroundCloudFunction function = loader.loadUserFunction();
-      context.addServlet(new ServletHolder(new BackgroundFunctionExecutor(function)), "/*");
+      HttpServlet servlet;
+      Optional<NewBackgroundFunctionExecutor> newExecutor =
+          NewBackgroundFunctionExecutor.forTarget(functionTarget);
+      if (newExecutor.isPresent()) {
+        servlet = newExecutor.get();
+      } else {
+        FunctionLoader<BackgroundCloudFunction> loader =
+            new FunctionLoader<>(
+                functionTarget, classLoader, new BackgroundFunctionSignatureMatcher());
+        BackgroundCloudFunction function = loader.loadUserFunction();
+        servlet = new BackgroundFunctionExecutor(function);
+      }
+      context.addServlet(new ServletHolder(servlet), "/*");
     } else {
       throw new RuntimeException("Unknown function signature type: " + functionSignatureType);
     }
