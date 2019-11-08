@@ -1,7 +1,7 @@
 package com.google.cloud.functions.invoker.testfunctions;
 
+import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.Context;
-import com.google.cloud.functions.RawBackgroundFunction;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import java.io.FileWriter;
@@ -16,12 +16,18 @@ import java.io.UncheckedIOException;
  * identical to the JSON payload that the Functions Framework received from the client in the test.
  * This will need to be rewritten when we switch to CloudEvents.
  */
-public class NewBackgroundSnoop implements RawBackgroundFunction {
+public class NewTypedBackgroundSnoop
+    implements BackgroundFunction<NewTypedBackgroundSnoop.Payload> {
+  static class Payload {
+    int a;
+    int b;
+    String targetFile;
+  }
+
   @Override
-  public void accept(String json, Context context) {
+  public void accept(Payload payload, Context context) {
     Gson gson = new Gson();
-    JsonObject jsonObject = gson.fromJson(json, JsonObject.class);
-    String targetFile = jsonObject.get("targetFile").getAsString();
+    String targetFile = payload.targetFile;
     if (targetFile == null) {
       throw new IllegalArgumentException("Expected targetFile in JSON payload");
     }
@@ -32,7 +38,7 @@ public class NewBackgroundSnoop implements RawBackgroundFunction {
     contextJson.addProperty("eventType", context.eventType());
     contextJson.add("resource", resourceJson);
     JsonObject contextAndPayloadJson = new JsonObject();
-    contextAndPayloadJson.add("data", jsonObject);
+    contextAndPayloadJson.add("data", gson.toJsonTree(payload));
     contextAndPayloadJson.add("context", contextJson);
     try (FileWriter fileWriter = new FileWriter(targetFile);
         PrintWriter writer = new PrintWriter(fileWriter)) {

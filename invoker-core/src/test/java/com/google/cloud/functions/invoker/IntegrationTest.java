@@ -8,8 +8,8 @@ import com.google.cloud.functions.invoker.runner.Invoker;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -133,35 +133,38 @@ public class IntegrationTest {
 
   @Test
   public void background() throws Exception {
-    URL resourceUrl = getClass().getResource("/adder_gcf_ga_event.json");
-    assertThat(resourceUrl).isNotNull();
-    File snoopFile = File.createTempFile("FunctionsIntegrationTest", ".txt");
-    snoopFile.deleteOnExit();
-    String originalJson = Resources.toString(resourceUrl, StandardCharsets.UTF_8);
-    JsonObject json = new JsonParser().parse(originalJson).getAsJsonObject();
-    JsonObject jsonData = json.getAsJsonObject("data");
-    jsonData.addProperty("targetFile", snoopFile.toString());
-    testBackgroundFunction("BackgroundSnoop.snoop",
-        TestCase.builder().setRequestText(json.toString()).build());
-    String snooped = Files.asCharSource(snoopFile, StandardCharsets.UTF_8).read();
-    JsonObject snoopedJson = new JsonParser().parse(snooped).getAsJsonObject();
-    assertThat(snoopedJson).isEqualTo(json);
+    backgroundTest("BackgroundSnoop.snoop");
   }
 
   @Test
   public void newBackground() throws Exception {
+    backgroundTest("NewBackgroundSnoop");
+  }
+
+  @Test
+  public void newTypedBackground() throws Exception {
+    backgroundTest("NewTypedBackgroundSnoop");
+  }
+
+  // In these tests, we test a number of different functions that express the same functionality
+  // in different ways. Each function is invoked with a complete HTTP body that looks like a real
+  // event. We start with a fixed body and insert into its JSON an extra property that tells the
+  // function where to write what it received. We have to do this since background functions, by
+  // design, don't return a value.
+  private void backgroundTest(String functionTarget) throws Exception {
+    Gson gson = new Gson();
     URL resourceUrl = getClass().getResource("/adder_gcf_ga_event.json");
     assertThat(resourceUrl).isNotNull();
     File snoopFile = File.createTempFile("FunctionsIntegrationTest", ".txt");
     snoopFile.deleteOnExit();
     String originalJson = Resources.toString(resourceUrl, StandardCharsets.UTF_8);
-    JsonObject json = new JsonParser().parse(originalJson).getAsJsonObject();
+    JsonObject json = gson.fromJson(originalJson, JsonObject.class);
     JsonObject jsonData = json.getAsJsonObject("data");
     jsonData.addProperty("targetFile", snoopFile.toString());
-    testBackgroundFunction("NewBackgroundSnoop",
+    testBackgroundFunction(functionTarget,
         TestCase.builder().setRequestText(json.toString()).build());
     String snooped = Files.asCharSource(snoopFile, StandardCharsets.UTF_8).read();
-    JsonObject snoopedJson = new JsonParser().parse(snooped).getAsJsonObject();
+    JsonObject snoopedJson = gson.fromJson(snooped, JsonObject.class);
     assertThat(snoopedJson).isEqualTo(json);
   }
 
