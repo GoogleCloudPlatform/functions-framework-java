@@ -15,21 +15,38 @@
 package com.google.cloud.functions;
 
 /**
- * Represents a Cloud Function that is activated by an event and parsed into a user-supplied class.
- * The payload of the event is a JSON object, which is deserialized into a user-defined class as
- * described for
- * <a href="https://github.com/google/gson/blob/master/UserGuide.md#TOC-Object-Examples">Gson</a>.
+ * Represents a Cloud Function that is activated by an event. The payload of the event is a JSON
+ * object, which can be parsed using a JSON package such as
+ * <a href="https://github.com/google/gson/blob/master/UserGuide.md">GSON</a>.
  *
- * <p>Here is an example of an implementation that accesses the {@code messageId} property from
- * a payload that matches a user-defined {@code PubSubMessage} class:
+ * <p>Here is an example of an implementation that parses the JSON payload using Gson, to access its
+ * {@code messageId} property:
  *
  * <pre>
- * public class Example implements {@code BackgroundFunction<PubSubMessage>} {
+ * public class Example implements RawBackgroundFunction {
  *   private static final Logger logger = Logger.getLogger(Example.class.getName());
  *
  *   {@code @Override}
- *   public void accept(PubSubMessage pubSubMessage, Context context) {
- *     logger.info("Got messageId " + pubSubMessage.messageId);
+ *   public void accept(String json, Context context) {
+ *     JsonObject jsonObject = new Gson().fromJson(json, JsonObject.class);
+ *     JsonElement messageId = jsonObject.get("messageId");
+ *     String messageIdString = messageId.getAsJsonString();
+ *     logger.info("Got messageId " + messageIdString);
+ *   }
+ * }
+ * </pre>
+ *
+ * <p>Here is an example of an implementation that deserializes the JSON payload into a Java
+ * object for simpler access, again using Gson:
+ *
+ * <pre>
+ * public class Example implements RawBackgroundFunction {
+ *   private static final Logger logger = Logger.getLogger(Example.class.getName());
+ *
+ *   {@code @Override}
+ *   public void accept(String json, Context context) {
+ *     PubSubMessage message = new Gson().fromJson(json, PubSubMessage.class);
+ *     logger.info("Got messageId " + message.messageId);
  *   }
  * }
  *
@@ -41,19 +58,17 @@ package com.google.cloud.functions;
  *   String publishTime;
  * }
  * </pre>
- *
- * @param <T> the class of payload objects that this function expects.
  */
 @FunctionalInterface
-public interface BackgroundFunction<T> {
+public interface RawBackgroundFunction {
   /**
    * Called to service an incoming event. This interface is implemented by user code to
    * provide the action for a given background function. If this method throws any exception
    * (including any {@link Error}) then the HTTP response will have a 500 status code.
    *
-   * @param payload the payload of the event, deserialized from the original JSON string.
+   * @param json the payload of the event, as a JSON string.
    * @param context the context of the event. This is a set of values that every event has,
    *     separately from the payload, such as timestamp and event type.
    */
-  void accept(T payload, Context context);
+  void accept(String json, Context context);
 }
