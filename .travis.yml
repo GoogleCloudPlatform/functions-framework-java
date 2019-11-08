@@ -1,6 +1,6 @@
 language: java
 jdk:
-  - oraclejdk8
+  - openjdk11
 # Use a Build Matrix for subdirs (https://lord.io/blog/2014/travis-multiple-subdirs/)
 env:
   - DIR=functions-framework-api/
