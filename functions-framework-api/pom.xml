@@ -24,7 +24,7 @@
 
   <groupId>com.google.cloud.functions</groupId>
   <artifactId>functions-framework-api</artifactId>
-  <version>1.0.0-alpha-2-rc3-SNAPSHOT</version>
+  <version>1.0.0-alpha-2-rc3</version>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -45,7 +45,7 @@
     <connection>scm:git:https://github.com/GoogleCloudPlatform/functions-framework-java.git</connection>
     <developerConnection>scm:git:git@github.com:GoogleCloudPlatform/functions-framework-java.git</developerConnection>
     <url>https://github.com/GoogleCloudPlatform/functions-framework-java</url>
-    <tag>HEAD</tag>
+    <tag>functions-framework-api-1.0.0-alpha-2-rc3</tag>
   </scm>
 
   <build>
