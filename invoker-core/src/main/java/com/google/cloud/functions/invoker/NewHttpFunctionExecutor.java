@@ -33,10 +33,20 @@ public class NewHttpFunctionExecutor extends HttpServlet {
    */
   public static Optional<NewHttpFunctionExecutor> forTarget(String target) {
     Class<?> c;
-    try {
-      c = Class.forName(target);
-    } catch (ClassNotFoundException e) {
-      return Optional.empty();
+    while (true) {
+      try {
+        c = Class.forName(target);
+        break;
+      } catch (ClassNotFoundException e) {
+        // This might be a nested class like com.example.Foo.Bar. That will actually appear as
+        // com.example.Foo$Bar as far as Class.forName is concerned. So we try to replace every dot
+        // from the last to the first with a $ in the hope of finding a class we can load.
+        int lastDot = target.lastIndexOf('.');
+        if (lastDot < 0) {
+          return Optional.empty();
+        }
+        target = target.substring(0, lastDot) + '$' + target.substring(lastDot + 1);
+      }
     }
     if (!HttpFunction.class.isAssignableFrom(c)) {
       throw new RuntimeException(

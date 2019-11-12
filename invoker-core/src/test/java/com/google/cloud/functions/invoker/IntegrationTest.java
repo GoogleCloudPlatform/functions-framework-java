@@ -87,29 +87,33 @@ public class IntegrationTest {
     }
   }
 
+  private static String fullTarget(String nameWithoutPackage) {
+    return "com.google.cloud.functions.invoker.testfunctions." + nameWithoutPackage;
+  }
+
   @Test
   public void helloWorld() throws Exception {
-    testHttpFunction("HelloWorld.helloWorld",
+    testHttpFunction(fullTarget("HelloWorld.helloWorld"),
         TestCase.builder().setExpectedResponseText("hello\n").build());
   }
 
   @Test
   public void newHelloWorld() throws Exception {
-    testHttpFunction("NewHelloWorld",
+    testHttpFunction(fullTarget("NewHelloWorld"),
         TestCase.builder().setExpectedResponseText("hello\n").build());
   }
 
   @Test
   public void echo() throws Exception {
     String testText = "hello\nworld\n";
-    testHttpFunction("Echo.echo",
+    testHttpFunction(fullTarget("Echo.echo"),
         TestCase.builder().setRequestText(testText).setExpectedResponseText(testText).build());
   }
 
   @Test
   public void newEcho() throws Exception {
     String testText = "hello\nworld\n";
-    testHttpFunction("NewEcho",
+    testHttpFunction(fullTarget("NewEcho"),
         TestCase.builder().setRequestText(testText).setExpectedResponseText(testText).build());
   }
 
@@ -119,7 +123,7 @@ public class IntegrationTest {
     TestCase[] testCases = Arrays.stream(testUrls)
         .map(url -> TestCase.builder().setUrl(url).setExpectedResponseText(url + "\n").build())
         .toArray(TestCase[]::new);
-    testHttpFunction("EchoUrl.echoUrl", testCases);
+    testHttpFunction(fullTarget("EchoUrl.echoUrl"), testCases);
   }
 
   @Test
@@ -128,22 +132,35 @@ public class IntegrationTest {
     TestCase[] testCases = Arrays.stream(testUrls)
         .map(url -> TestCase.builder().setUrl(url).setExpectedResponseText(url + "\n").build())
         .toArray(TestCase[]::new);
-    testHttpFunction("NewEchoUrl", testCases);
+    testHttpFunction(fullTarget("NewEchoUrl"), testCases);
   }
 
   @Test
   public void background() throws Exception {
-    backgroundTest("BackgroundSnoop.snoop");
+    backgroundTest(fullTarget("BackgroundSnoop.snoop"));
   }
 
   @Test
   public void newBackground() throws Exception {
-    backgroundTest("NewBackgroundSnoop");
+    backgroundTest(fullTarget("NewBackgroundSnoop"));
   }
 
   @Test
   public void newTypedBackground() throws Exception {
-    backgroundTest("NewTypedBackgroundSnoop");
+    backgroundTest(fullTarget("NewTypedBackgroundSnoop"));
+  }
+
+  @Test
+  public void nested() throws Exception {
+    String testText = "sic transit gloria mundi";
+    testHttpFunction(fullTarget("Nested.Echo"),
+        TestCase.builder().setRequestText(testText).setExpectedResponseText(testText).build());
+  }
+
+  @Test
+  public void packageless() throws Exception {
+    testHttpFunction("PackagelessHelloWorld",
+        TestCase.builder().setExpectedResponseText("hello, world\n").build());
   }
 
   // In these tests, we test a number of different functions that express the same functionality
@@ -218,7 +235,6 @@ public class IntegrationTest {
 
   private Process startServer(SignatureType signatureType, String target)
       throws IOException, InterruptedException {
-    String fullTarget = "com.google.cloud.functions.invoker.testfunctions." + target;
     File javaHome = new File(System.getProperty("java.home"));
     assertThat(javaHome.exists()).isTrue();
     File javaBin = new File(javaHome, "bin");
@@ -235,7 +251,7 @@ public class IntegrationTest {
     Map<String, String> environment = ImmutableMap.of("PORT", String.valueOf(serverPort),
         "K_SERVICE", "test-function",
         "FUNCTION_SIGNATURE_TYPE", signatureType.toString(),
-        "FUNCTION_TARGET", fullTarget);
+        "FUNCTION_TARGET", target);
     processBuilder.environment().putAll(environment);
     Process serverProcess = processBuilder.start();
     CountDownLatch ready = new CountDownLatch(1);
