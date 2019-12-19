@@ -70,8 +70,12 @@ public class NewHttpFunctionExecutor extends HttpServlet {
     try {
       function.service(reqImpl, respImpl);
     } catch (Throwable t) {
+      // TODO(b/146510646): this should be logged properly as an exception, but that currently
+      //   causes integration tests to fail.
+      // logger.log(Level.WARNING, "Failed to execute " + function.getClass().getName(), t);
+      logger.log(Level.WARNING, "Failed to execute {0}", function.getClass().getName());
+      t.printStackTrace();
       res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-      logger.log(Level.WARNING, "Failed to execute " + function.getClass().getName(), t);
     } finally {
       try {
         respImpl.getWriter().flush();
