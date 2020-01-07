@@ -175,7 +175,8 @@ public class IntegrationTest {
 
   private String functionJarString() throws IOException {
     Path functionJarTargetDir = Paths.get("../functionjar/target");
-    Pattern functionJarPattern = Pattern.compile("java-function-invoker-core-functionjar-.*\\.jar");
+    Pattern functionJarPattern =
+        Pattern.compile("java-function-invoker-core-functionjar-.*-tests\\.jar");
     List<Path> functionJars = Files.list(functionJarTargetDir)
         .map(path -> path.getFileName().toString())
         .filter(s -> functionJarPattern.matcher(s).matches())
