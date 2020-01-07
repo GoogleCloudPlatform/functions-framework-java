@@ -31,11 +31,11 @@ public class NewHttpFunctionExecutor extends HttpServlet {
    *    either the class does not implement {@link HttpFunction} or we are unable to construct an
    *    instance using its no-arg constructor.
    */
-  public static Optional<NewHttpFunctionExecutor> forTarget(String target) {
+  public static Optional<NewHttpFunctionExecutor> forTarget(String target, ClassLoader loader) {
     Class<?> c;
     while (true) {
       try {
-        c = Class.forName(target);
+        c = loader.loadClass(target);
         break;
       } catch (ClassNotFoundException e) {
         // This might be a nested class like com.example.Foo.Bar. That will actually appear as

@@ -1,0 +1,84 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.google.cloud.functions.invoker</groupId>
+    <artifactId>java-function-invoker-core-parent</artifactId>
+    <version>1.0.0-alpha-1</version>
+  </parent>
+
+  <groupId>com.google.cloud.functions.invoker</groupId>
+  <artifactId>java-function-invoker-core-functionjar</artifactId>
+  <version>1.0.0-alpha-1</version>
+  <name>Example GCF Function Jar</name>
+  <description>
+    An example of a GCF function packaged into a jar. We use this in tests.
+  </description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.google.cloud.functions</groupId>
+      <artifactId>functions-framework-api</artifactId>
+    </dependency>
+    <dependency>
+      <!-- We don't actually use this; we just check that its classes can be
+           loaded from the function. -->
+      <groupId>com.google.escapevelocity</groupId>
+      <artifactId>escapevelocity</artifactId>
+      <version>0.9.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>28.1-jre</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.8.6</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.1.2</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>dependency</classpathPrefix>
+            </manifest>
+          </archive>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+            <phase>test-compile</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+      We need to make sure that the jar is available to the test that uses it,
+      and that it includes its dependencies in its classpath. The test-jar
+      business above accomplishes the former, and the test-compile business
+      below accomplishes the latter.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -2,11 +2,13 @@ package com.google.cloud.functions.invoker;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+import static java.util.stream.Collectors.toList;
 
 import com.google.auto.value.AutoValue;
 import com.google.cloud.functions.invoker.runner.Invoker;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.Files;
+import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -19,10 +21,15 @@ import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -163,6 +170,53 @@ public class IntegrationTest {
         TestCase.builder().setExpectedResponseText("hello, world\n").build());
   }
 
+  /** Any runtime class that user code shouldn't be able to see. */
+  private static final Class<?> INTERNAL_CLASS = CloudFunction.class;
+
+  private String functionJarString() throws IOException {
+    Path functionJarTargetDir = Paths.get("../functionjar/target");
+    Pattern functionJarPattern = Pattern.compile("java-function-invoker-core-functionjar-.*\\.jar");
+    List<Path> functionJars = Files.list(functionJarTargetDir)
+        .map(path -> path.getFileName().toString())
+        .filter(s -> functionJarPattern.matcher(s).matches())
+        .map(s -> functionJarTargetDir.resolve(s))
+        .collect(toList());
+    assertWithMessage("Number of jars in %s matching %s", functionJarTargetDir, functionJarPattern)
+        .that(functionJars).hasSize(1);
+    return Iterables.getOnlyElement(functionJars).toString();
+  }
+
+  /**
+   * Tests that if we launch an HTTP function with {@code -jar}, then the function code cannot
+   * see the classes from the runtime. This is allows us to avoid conflicts between versions of
+   * libraries that we use in the runtime and different versions of the same libraries that the
+   * function might use.
+   */
+  @Test
+  public void jarOptionHttp() throws Exception {
+    testHttpFunction("com.example.functionjar.Foreground",
+        ImmutableList.of("-jar", functionJarString()),
+        TestCase.builder()
+            .setUrl("/?class=" + INTERNAL_CLASS.getName())
+            .setExpectedResponseText("OK")
+            .build());
+  }
+
+  /** Like {@link #jarOptionHttp} but for background functions. */
+  @Test
+  public void jarOptionBackground() throws Exception {
+    Gson gson = new Gson();
+    URL resourceUrl = getClass().getResource("/adder_gcf_ga_event.json");
+    assertThat(resourceUrl).isNotNull();
+    String originalJson = Resources.toString(resourceUrl, StandardCharsets.UTF_8);
+    JsonObject json = gson.fromJson(originalJson, JsonObject.class);
+    JsonObject jsonData = json.getAsJsonObject("data");
+    jsonData.addProperty("class", INTERNAL_CLASS.getName());
+    testBackgroundFunction("com.example.functionjar.Background",
+        ImmutableList.of("-jar", functionJarString()),
+        TestCase.builder().setRequestText(json.toString()).build());
+  }
+
   // In these tests, we test a number of different functions that express the same functionality
   // in different ways. Each function is invoked with a complete HTTP body that looks like a real
   // event. We start with a fixed body and insert into its JSON an extra property that tells the
@@ -180,23 +234,36 @@ public class IntegrationTest {
     jsonData.addProperty("targetFile", snoopFile.toString());
     testBackgroundFunction(functionTarget,
         TestCase.builder().setRequestText(json.toString()).build());
-    String snooped = Files.asCharSource(snoopFile, StandardCharsets.UTF_8).read();
+    String snooped = new String(Files.readAllBytes(snoopFile.toPath()), StandardCharsets.UTF_8);
     JsonObject snoopedJson = gson.fromJson(snooped, JsonObject.class);
     assertThat(snoopedJson).isEqualTo(json);
   }
 
   private void testHttpFunction(String target, TestCase... testCases) throws Exception {
-    testFunction(SignatureType.HTTP, target, testCases);
+    testHttpFunction(target, ImmutableList.of(), testCases);
+  }
+
+  private void testHttpFunction(
+      String target, ImmutableList<String> extraArgs, TestCase... testCases) throws Exception {
+    testFunction(SignatureType.HTTP, target, extraArgs, testCases);
   }
 
   private void testBackgroundFunction(String classAndMethod, TestCase... testCases)
       throws Exception {
-    testFunction(SignatureType.BACKGROUND, classAndMethod, testCases);
+    testBackgroundFunction(classAndMethod, ImmutableList.of(), testCases);
+  }
+  private void testBackgroundFunction(
+      String classAndMethod, ImmutableList<String> extraArgs, TestCase... testCases)
+      throws Exception {
+    testFunction(SignatureType.BACKGROUND, classAndMethod, extraArgs, testCases);
   }
 
   private void testFunction(
-      SignatureType signatureType, String target, TestCase... testCases) throws Exception {
-    Process server = startServer(signatureType, target);
+      SignatureType signatureType,
+      String target,
+      ImmutableList<String> extraArgs,
+      TestCase... testCases) throws Exception {
+    Process server = startServer(signatureType, target, extraArgs);
     try {
       HttpClient httpClient = new HttpClient();
       httpClient.start();
@@ -233,7 +300,8 @@ public class IntegrationTest {
     }
   }
 
-  private Process startServer(SignatureType signatureType, String target)
+  private Process startServer(
+      SignatureType signatureType, String target, ImmutableList<String> extraArgs)
       throws IOException, InterruptedException {
     File javaHome = new File(System.getProperty("java.home"));
     assertThat(javaHome.exists()).isTrue();
@@ -242,9 +310,10 @@ public class IntegrationTest {
     assertThat(javaCommand.exists()).isTrue();
     String myClassPath = System.getProperty("java.class.path");
     assertThat(myClassPath).isNotNull();
-    String[] command = {
-        javaCommand.toString(), "-classpath", myClassPath, Invoker.class.getName(),
-    };
+    ImmutableList<String> command = ImmutableList.<String>builder()
+        .add(javaCommand.toString(), "-classpath", myClassPath, Invoker.class.getName())
+        .addAll(extraArgs)
+        .build();
     ProcessBuilder processBuilder = new ProcessBuilder()
         .command(command)
         .redirectErrorStream(true);
@@ -256,7 +325,8 @@ public class IntegrationTest {
     Process serverProcess = processBuilder.start();
     CountDownLatch ready = new CountDownLatch(1);
     new Thread(() -> monitorOutput(serverProcess.getInputStream(), ready)).start();
-    ready.await(5, TimeUnit.SECONDS);
+    boolean serverReady = ready.await(5, TimeUnit.SECONDS);
+    assertWithMessage("Waiting for server to be ready").that(serverReady).isTrue();
     return serverProcess;
   }
 

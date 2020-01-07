@@ -38,10 +38,11 @@ public class NewBackgroundFunctionExecutor extends HttpServlet {
    *    either the class does not implement {@link RawBackgroundFunction} or we are unable to
    *    construct an instance using its no-arg constructor.
    */
-  public static Optional<NewBackgroundFunctionExecutor> forTarget(String target) {
+  public static Optional<NewBackgroundFunctionExecutor> forTarget(
+      String target, ClassLoader loader) {
     Class<?> c;
     try {
-      c = Class.forName(target);
+      c = loader.loadClass(target);
     } catch (ClassNotFoundException e) {
       return Optional.empty();
     }

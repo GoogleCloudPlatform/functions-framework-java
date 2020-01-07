@@ -11,6 +11,7 @@ import com.google.cloud.functions.invoker.NewBackgroundFunctionExecutor;
 import com.google.cloud.functions.invoker.NewHttpFunctionExecutor;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Arrays;
@@ -139,24 +140,23 @@ public class Invoker {
             : Optional.empty();
     if (functionJarFile.isPresent() && !functionJarFile.get().exists()) {
       throw new IllegalArgumentException(
-          "functionJarPath points to an non-existing file: "
+          "functionJarPath points to an non-existent file: "
               + functionJarFile.get().getAbsolutePath());
     }
 
+    ClassLoader runtimeLoader = getClass().getClassLoader();
     ClassLoader classLoader;
     if (functionJarFile.isPresent()) {
-      classLoader =
-          new URLClassLoader(
-              new URL[]{functionJarFile.get().toURI().toURL()},
-              Thread.currentThread().getContextClassLoader());
+      ClassLoader parent = new OnlyApiClassLoader(runtimeLoader);
+      classLoader = new URLClassLoader(new URL[]{functionJarFile.get().toURI().toURL()}, parent);
     } else {
-      classLoader = Thread.currentThread().getContextClassLoader();
+      classLoader = runtimeLoader;
     }
 
     if ("http".equals(functionSignatureType)) {
       HttpServlet servlet;
       Optional<NewHttpFunctionExecutor> newExecutor =
-          NewHttpFunctionExecutor.forTarget(functionTarget);
+          NewHttpFunctionExecutor.forTarget(functionTarget, classLoader);
       if (newExecutor.isPresent()) {
         servlet = newExecutor.get();
       } else {
@@ -169,7 +169,7 @@ public class Invoker {
     } else if ("event".equals(functionSignatureType)) {
       HttpServlet servlet;
       Optional<NewBackgroundFunctionExecutor> newExecutor =
-          NewBackgroundFunctionExecutor.forTarget(functionTarget);
+          NewBackgroundFunctionExecutor.forTarget(functionTarget, classLoader);
       if (newExecutor.isPresent()) {
         servlet = newExecutor.get();
       } else {
@@ -194,6 +194,47 @@ public class Invoker {
       logger.log(Level.INFO, "Serving function...");
       logger.log(Level.INFO, "Function: {0}", functionTarget);
       logger.log(Level.INFO, "URL: http://localhost:{0,number,#}/", port);
+    }
+  }
+
+  /**
+   * A loader that only loads GCF API classes. Those are classes whose package is exactly
+   * {@code com.google.cloud.functions}. The package can't be a subpackage, such as
+   * {@code com.google.cloud.functions.invoker}.
+   *
+   * <p>This loader allows us to load the classes from a user function, without making the
+   * runtime classes visible to them.  We will make this loader the parent of the
+   * {@link URLClassLoader} that loads the user code in order to filter out those runtime classes.
+   *
+   * <p>The reason we do need to share the API classes between the runtime and the user function is
+   * so that the runtime can instantiate the function class and cast it to
+   * {@link com.google.cloud.functions.HttpFunction} or whatever.
+   */
+  private static class OnlyApiClassLoader extends ClassLoader {
+    private final ClassLoader runtimeClassLoader;
+
+    OnlyApiClassLoader(ClassLoader runtimeClassLoader) {
+      super(getSystemOrBootstrapClassLoader());
+      this.runtimeClassLoader = runtimeClassLoader;
+    }
+
+    @Override
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+      String prefix = "com.google.cloud.functions.";
+      if (name.startsWith(prefix) && Character.isUpperCase(name.charAt(prefix.length()))) {
+        return runtimeClassLoader.loadClass(name);
+      }
+      return super.findClass(name); // should throw ClassNotFoundException
+    }
+
+    private static ClassLoader getSystemOrBootstrapClassLoader() {
+      try {
+        // We're still building against the Java 8 API, so we have to use reflection for now.
+        Method getPlatformClassLoader = ClassLoader.class.getMethod("getPlatformClassLoader");
+        return (ClassLoader) getPlatformClassLoader.invoke(null);
+      } catch (ReflectiveOperationException e) {
+        return null;
+      }
     }
   }
 }
