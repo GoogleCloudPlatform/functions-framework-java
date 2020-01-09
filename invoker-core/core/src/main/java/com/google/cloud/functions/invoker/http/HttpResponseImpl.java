@@ -6,9 +6,6 @@ import com.google.cloud.functions.HttpResponse;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.Writer;
-import java.lang.reflect.Field;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -70,26 +67,14 @@ public class HttpResponseImpl implements HttpResponse {
 
   @Override
   public synchronized BufferedWriter getWriter() throws IOException {
-    if (writer != null) {
-      return writer;
+    if (writer == null) {
+      // Unfortunately this means that we get two intermediate objects between the object we return
+      // and the underlying Writer that response.getWriter() wraps. We could try accessing the
+      // PrintWriter.out field via reflection, but that sort of access to non-public fields of
+      // platform classes is now frowned on and may draw warnings or even fail in subsequent
+      // versions.
+      writer = new BufferedWriter(response.getWriter());
     }
-    // We could just wrap a BufferedWriter around the PrintWriter that the Servlet API gives us,
-    // but this slightly clunky alternative potentially avoids two intermediate objects in the
-    // writer chain.
-    PrintWriter printWriter = response.getWriter();
-    Writer wrappedWriter;
-    try {
-      // This is a protected field, so it is part of the documented API and we know it will be
-      // there, but we need to use reflection to get at it.
-      Field outField = PrintWriter.class.getDeclaredField("out");
-      outField.setAccessible(true);
-      wrappedWriter = (Writer) outField.get(printWriter);
-    } catch (ReflectiveOperationException e) {
-      throw new IOException("Reflection failed", e);
-    }
-    this.writer = (wrappedWriter instanceof BufferedWriter)
-        ? (BufferedWriter) wrappedWriter
-        : new BufferedWriter(wrappedWriter);
-    return this.writer;
+    return writer;
   }
 }

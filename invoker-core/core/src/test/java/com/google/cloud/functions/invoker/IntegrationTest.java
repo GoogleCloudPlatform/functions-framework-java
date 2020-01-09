@@ -28,6 +28,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import org.eclipse.jetty.client.HttpClient;
@@ -46,6 +49,8 @@ import org.junit.Test;
 public class IntegrationTest {
 
   private static final String SERVER_READY_STRING = "Started ServerConnector";
+
+  private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
 
   private static int serverPort;
 
@@ -264,7 +269,7 @@ public class IntegrationTest {
       String target,
       ImmutableList<String> extraArgs,
       TestCase... testCases) throws Exception {
-    Process server = startServer(signatureType, target, extraArgs);
+    ServerProcess serverProcess = startServer(signatureType, target, extraArgs);
     try {
       HttpClient httpClient = new HttpClient();
       httpClient.start();
@@ -280,9 +285,11 @@ public class IntegrationTest {
         assertThat(response.getContentAsString()).isEqualTo(testCase.expectedResponseText());
       }
     } finally {
-      server.destroy();
-      server.waitFor();
+      serverProcess.close();
     }
+    // Wait for the output monitor task to terminate. If it threw an exception, we will get an
+    // ExecutionException here.
+    serverProcess.outputMonitorResult().get();
   }
 
   private enum SignatureType {
@@ -301,7 +308,22 @@ public class IntegrationTest {
     }
   }
 
-  private Process startServer(
+  @AutoValue
+  abstract static class ServerProcess implements AutoCloseable {
+    abstract Process process();
+    abstract Future<?> outputMonitorResult();
+
+    static ServerProcess of(Process process, Future<?> outputMonitorResult) {
+      return new AutoValue_IntegrationTest_ServerProcess(process, outputMonitorResult);
+    }
+
+    @Override
+    public void close() {
+      process().destroy();
+    }
+  }
+
+  private ServerProcess startServer(
       SignatureType signatureType, String target, ImmutableList<String> extraArgs)
       throws IOException, InterruptedException {
     File javaHome = new File(System.getProperty("java.home"));
@@ -325,10 +347,11 @@ public class IntegrationTest {
     processBuilder.environment().putAll(environment);
     Process serverProcess = processBuilder.start();
     CountDownLatch ready = new CountDownLatch(1);
-    new Thread(() -> monitorOutput(serverProcess.getInputStream(), ready)).start();
+    Future<?> outputMonitorResult = EXECUTOR.submit(
+        () -> monitorOutput(serverProcess.getInputStream(), ready));
     boolean serverReady = ready.await(5, TimeUnit.SECONDS);
     assertWithMessage("Waiting for server to be ready").that(serverReady).isTrue();
-    return serverProcess;
+    return ServerProcess.of(serverProcess, outputMonitorResult);
   }
 
   private void monitorOutput(InputStream processOutput, CountDownLatch ready) {
@@ -339,6 +362,9 @@ public class IntegrationTest {
           ready.countDown();
         }
         System.out.println(line);
+        if (line.contains("WARNING")) {
+          throw new AssertionError("Found warning in server output:\n" + line);
+        }
       }
     } catch (IOException e) {
       e.printStackTrace();
