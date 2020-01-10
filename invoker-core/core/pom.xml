@@ -130,36 +130,18 @@
 
   <build>
     <plugins>
-      <!-- Rename dependencies used by invoker-core so that they don't interfere with user dependencies -->
       <plugin>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>3.2.1</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <relocations>
-                <relocation>
-                  <pattern>com</pattern>
-                  <shadedPattern>shaded.com.google.cloud.functions</shadedPattern>
-                  <excludes>
-                    <exclude>com.google.cloud.functions.**</exclude>
-                    <exclude>com.google.gson.**</exclude>
-                  </excludes>
-                </relocation>
-              </relocations>
-              <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>com.google.cloud.functions.invoker.runner.Invoker</mainClass>
-                </transformer>
-              </transformers>
-            </configuration>
-          </execution>
-        </executions>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.1.2</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>com.google.cloud.functions.invoker.runner.Invoker</mainClass>
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>lib</classpathPrefix>
+            </manifest>
+          </archive>
+        </configuration>
       </plugin>
     </plugins>
   </build>

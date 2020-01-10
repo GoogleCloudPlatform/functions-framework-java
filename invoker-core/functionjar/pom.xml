@@ -48,7 +48,7 @@
           <archive>
             <manifest>
               <addClasspath>true</addClasspath>
-              <classpathPrefix>dependency</classpathPrefix>
+              <classpathPrefix>lib</classpathPrefix>
             </manifest>
           </archive>
         </configuration>
@@ -76,6 +76,9 @@
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/lib</outputDirectory>
+            </configuration>
           </execution>
         </executions>
       </plugin>

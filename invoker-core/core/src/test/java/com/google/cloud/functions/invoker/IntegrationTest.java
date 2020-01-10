@@ -350,7 +350,10 @@ public class IntegrationTest {
     Future<?> outputMonitorResult = EXECUTOR.submit(
         () -> monitorOutput(serverProcess.getInputStream(), ready));
     boolean serverReady = ready.await(5, TimeUnit.SECONDS);
-    assertWithMessage("Waiting for server to be ready").that(serverReady).isTrue();
+    if (!serverReady) {
+      serverProcess.destroy();
+      throw new AssertionError("Server never became ready");
+    }
     return ServerProcess.of(serverProcess, outputMonitorResult);
   }
 

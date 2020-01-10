@@ -14,6 +14,9 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -85,8 +88,13 @@ public class Invoker {
             .filter(Objects::nonNull)
             .findFirst()
             .orElse("TestFunction.function");
+    Path standardFunctionJarPath = Paths.get("function/function.jar");
     Optional<String> functionJarPath =
-        Arrays.asList(line.getOptionValue("jar"), System.getenv("FUNCTION_JAR")).stream()
+        Arrays.asList(
+                line.getOptionValue("jar"),
+                System.getenv("FUNCTION_JAR"),
+                Files.exists(standardFunctionJarPath) ? standardFunctionJarPath.toString() : null)
+            .stream()
             .filter(Objects::nonNull)
             .findFirst();
     Invoker invoker =
@@ -221,7 +229,8 @@ public class Invoker {
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
       String prefix = "com.google.cloud.functions.";
-      if (name.startsWith(prefix) && Character.isUpperCase(name.charAt(prefix.length()))) {
+      if ((name.startsWith(prefix) && Character.isUpperCase(name.charAt(prefix.length())))
+              || name.startsWith("javax.servlet.")) {
         return runtimeClassLoader.loadClass(name);
       }
       return super.findClass(name); // should throw ClassNotFoundException
