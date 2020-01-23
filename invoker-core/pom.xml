@@ -12,7 +12,7 @@
 
   <modules>
     <module>core</module>
-    <module>functionjar</module>
+    <module>testfunction</module>
   </modules>
 
   <properties>

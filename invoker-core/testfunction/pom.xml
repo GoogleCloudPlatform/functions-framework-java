@@ -8,7 +8,7 @@
   </parent>
 
   <groupId>com.google.cloud.functions.invoker</groupId>
-  <artifactId>java-function-invoker-core-functionjar</artifactId>
+  <artifactId>java-function-invoker-core-testfunction</artifactId>
   <version>1.0.0-alpha-1</version>
   <name>Example GCF Function Jar</name>
   <description>

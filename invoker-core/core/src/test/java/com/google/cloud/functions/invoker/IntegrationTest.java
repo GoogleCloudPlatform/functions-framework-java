@@ -302,9 +302,9 @@ public class IntegrationTest {
   private static final Class<?> INTERNAL_CLASS = CloudFunction.class;
 
   private String functionJarString() throws IOException {
-    Path functionJarTargetDir = Paths.get("../functionjar/target");
+    Path functionJarTargetDir = Paths.get("../testfunction/target");
     Pattern functionJarPattern =
-        Pattern.compile("java-function-invoker-core-functionjar-.*-tests\\.jar");
+        Pattern.compile("java-function-invoker-core-testfunction-.*-tests\\.jar");
     List<Path> functionJars = Files.list(functionJarTargetDir)
         .map(path -> path.getFileName().toString())
         .filter(s -> functionJarPattern.matcher(s).matches())
