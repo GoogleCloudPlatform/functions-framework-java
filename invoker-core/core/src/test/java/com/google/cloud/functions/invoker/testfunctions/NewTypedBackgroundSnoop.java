@@ -18,10 +18,10 @@ import java.io.UncheckedIOException;
  */
 public class NewTypedBackgroundSnoop
     implements BackgroundFunction<NewTypedBackgroundSnoop.Payload> {
-  static class Payload {
-    int a;
-    int b;
-    String targetFile;
+  public static class Payload {
+    public int a;
+    public int b;
+    public String targetFile;
   }
 
   @Override

@@ -10,8 +10,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
+import com.google.common.truth.Expect;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import io.cloudevents.format.Wire;
+import io.cloudevents.json.Json;
+import io.cloudevents.v1.CloudEventBuilder;
+import io.cloudevents.v1.CloudEventImpl;
+import io.cloudevents.v1.http.Marshallers;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -19,14 +25,18 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,17 +50,56 @@ import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.rules.TestName;
 
 /**
  * Integration test that starts up a web server running the Function Framework and sends HTTP
  * requests to it.
  */
 public class IntegrationTest {
+  @Rule public final Expect expect = Expect.create();
+  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Rule public final TestName testName = new TestName();
 
   private static final String SERVER_READY_STRING = "Started ServerConnector";
 
   private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
+
+  private static String sampleLegacyEvent(File snoopFile) {
+    return "{\n"
+        + "  \"data\": {\n"
+        + "    \"a\": 2,\n"
+        + "    \"b\": 3,\n"
+        + "    \"targetFile\": \"" + snoopFile + "\""
+        + "  },\n"
+        + "  \"context\": {\n"
+        + "    \"eventId\": \"B234-1234-1234\",\n"
+        + "    \"timestamp\": \"2018-04-05T17:31:00Z\",\n"
+        + "    \"eventType\": \"com.example.someevent.new\",\n"
+        + "    \"resource\": {\n"
+        + "      \"service\":\"test-service\",\n"
+        + "      \"name\":\"test-name\",\n"
+        + "      \"type\":\"test-type\"\n"
+        + "    }\n"
+        + "  }\n"
+        + "}";
+  }
+
+  private static CloudEventImpl<Map<String, Object>> sampleCloudEvent(File snoopFile) {
+    return CloudEventBuilder.<Map<String, Object>>builder()
+        .withId("B234-1234-1234")
+        .withSource(URI.create("/source"))
+        .withType("com.example.someevent.new")
+        .withDataschema(URI.create("/schema"))
+        .withDataContentType("application/json")
+        .withData(ImmutableMap.of("a", 2, "b", 3, "targetFile", snoopFile.toString()))
+        .withTime(ZonedDateTime.of(2018, 4, 5, 17, 31, 0, 0, ZoneOffset.UTC))
+        .build();
+
+  }
 
   private static int serverPort;
 
@@ -79,11 +128,21 @@ public class IntegrationTest {
 
     abstract String expectedResponseText();
 
+    abstract Optional<String> expectedJsonString();
+
+    abstract String httpContentType();
+
+    abstract ImmutableMap<String, String> httpHeaders();
+
+    abstract Optional<File> snoopFile();
+
     static Builder builder() {
       return new AutoValue_IntegrationTest_TestCase.Builder()
           .setUrl("/")
           .setRequestText("")
-          .setExpectedResponseText("");
+          .setExpectedResponseText("")
+          .setHttpContentType("text/plain")
+          .setHttpHeaders(ImmutableMap.of());
     }
 
     @AutoValue.Builder
@@ -94,6 +153,14 @@ public class IntegrationTest {
       abstract Builder setRequestText(String x);
 
       abstract Builder setExpectedResponseText(String x);
+
+      abstract Builder setExpectedJsonString(String x);
+
+      abstract Builder setHttpContentType(String x);
+
+      abstract Builder setHttpHeaders(ImmutableMap<String, String> x);
+
+      abstract Builder setSnoopFile(File x);
 
       abstract TestCase build();
     }
@@ -149,17 +216,69 @@ public class IntegrationTest {
 
   @Test
   public void background() throws Exception {
-    backgroundTest(fullTarget("BackgroundSnoop.snoop"));
+    File snoopFile = snoopFile();
+    String requestText = sampleLegacyEvent(snoopFile);
+    TestCase testCase = TestCase.builder()
+        .setRequestText(requestText)
+        .setSnoopFile(snoopFile)
+        .setExpectedJsonString(requestText)
+        .build();
+    backgroundTest(fullTarget("BackgroundSnoop.snoop"), testCase);
   }
 
   @Test
   public void newBackground() throws Exception {
-    backgroundTest(fullTarget("NewBackgroundSnoop"));
+    newBackgroundTest("NewBackgroundSnoop");
   }
 
   @Test
   public void newTypedBackground() throws Exception {
-    backgroundTest(fullTarget("NewTypedBackgroundSnoop"));
+    newBackgroundTest("NewTypedBackgroundSnoop");
+  }
+
+  private void newBackgroundTest(String target) throws Exception {
+    File snoopFile = snoopFile();
+    String gcfRequestText = sampleLegacyEvent(snoopFile);
+    TestCase gcfTestCase = TestCase.builder()
+        .setRequestText(gcfRequestText)
+        .setSnoopFile(snoopFile)
+        .setExpectedJsonString(gcfRequestText)
+        .build();
+
+    // A CloudEvent using the "structured content mode", where both the metadata and the payload
+    // are in the body of the HTTP request.
+    String cloudEventRequestText = Json.encode(sampleCloudEvent(snoopFile));
+    // For CloudEvents, we don't currently populate Context#getResource with anything interesting,
+    // so we excise that from the expected text we would have with legacy events.
+    String cloudEventExpectedJsonString =
+        gcfRequestText.replaceAll("\"resource\":\\s*\\{[^}]*\\}", "\"resource\":{}");
+    TestCase cloudEventsStructuredTestCase = TestCase.builder()
+        .setSnoopFile(snoopFile)
+        .setRequestText(cloudEventRequestText)
+        .setHttpContentType("application/cloudevents+json; charset=utf-8")
+        .setExpectedJsonString(cloudEventExpectedJsonString)
+        .build();
+
+    // A CloudEvent using the "binary content mode", where the metadata is in HTTP headers and the
+    // payload is the body of the HTTP request.
+    Wire<String, String, String> wire = Marshallers.<Map<String, Object>>binary()
+        .withEvent(() -> sampleCloudEvent(snoopFile))
+        .marshal();
+    TestCase cloudEventsBinaryTestCase = TestCase.builder()
+        .setSnoopFile(snoopFile)
+        .setRequestText(wire.getPayload().get())
+        .setHttpContentType("application/json")
+        .setHttpHeaders(ImmutableMap.copyOf(wire.getHeaders()))
+        .setExpectedJsonString(cloudEventExpectedJsonString)
+        .build();
+    // TODO(emcmanus): Update the Content-Type to "application/json; charset=utf-8" when
+    // https://github.com/cloudevents/sdk-java/issues/89 has been fixed.
+
+    backgroundTest(
+        fullTarget(target),
+        gcfTestCase,
+        cloudEventsStructuredTestCase,
+        cloudEventsBinaryTestCase);
   }
 
   @Test
@@ -173,6 +292,10 @@ public class IntegrationTest {
   public void packageless() throws Exception {
     testHttpFunction("PackagelessHelloWorld",
         TestCase.builder().setExpectedResponseText("hello, world\n").build());
+  }
+
+  private File snoopFile() throws IOException {
+    return temporaryFolder.newFile(testName.getMethodName() + ".txt");
   }
 
   /** Any runtime class that user code shouldn't be able to see. */
@@ -228,21 +351,27 @@ public class IntegrationTest {
   // event. We start with a fixed body and insert into its JSON an extra property that tells the
   // function where to write what it received. We have to do this since background functions, by
   // design, don't return a value.
-  private void backgroundTest(String functionTarget) throws Exception {
-    Gson gson = new Gson();
-    URL resourceUrl = getClass().getResource("/adder_gcf_ga_event.json");
-    assertThat(resourceUrl).isNotNull();
-    File snoopFile = File.createTempFile("FunctionsIntegrationTest", ".txt");
-    snoopFile.deleteOnExit();
-    String originalJson = Resources.toString(resourceUrl, StandardCharsets.UTF_8);
-    JsonObject json = gson.fromJson(originalJson, JsonObject.class);
-    JsonObject jsonData = json.getAsJsonObject("data");
-    jsonData.addProperty("targetFile", snoopFile.toString());
-    testBackgroundFunction(functionTarget,
-        TestCase.builder().setRequestText(json.toString()).build());
+  private void backgroundTest(String functionTarget, TestCase... testCases) throws Exception {
+    for (TestCase testCase : testCases) {
+      File snoopFile = testCase.snoopFile().get();
+      snoopFile.delete();
+      testBackgroundFunction(functionTarget, testCase);
+      String snooped = new String(Files.readAllBytes(snoopFile.toPath()), StandardCharsets.UTF_8);
+      Gson gson = new Gson();
+      JsonObject snoopedJson = gson.fromJson(snooped, JsonObject.class);
+      String expectedJsonString = testCase.expectedJsonString().get();
+      JsonObject expectedJson = gson.fromJson(expectedJsonString, JsonObject.class);
+      expect.withMessage("Testing %s with %s", functionTarget, testCase)
+          .that(snoopedJson).isEqualTo(expectedJson);
+    }
+  }
+
+  private void checkSnoopFile(File snoopFile, String expectedJsonString) throws IOException {
     String snooped = new String(Files.readAllBytes(snoopFile.toPath()), StandardCharsets.UTF_8);
+    Gson gson = new Gson();
     JsonObject snoopedJson = gson.fromJson(snooped, JsonObject.class);
-    assertThat(snoopedJson).isEqualTo(json);
+    JsonObject expectedJson = gson.fromJson(expectedJsonString, JsonObject.class);
+    expect.that(snoopedJson).isEqualTo(expectedJson);
   }
 
   private void testHttpFunction(String target, TestCase... testCases) throws Exception {
@@ -254,14 +383,14 @@ public class IntegrationTest {
     testFunction(SignatureType.HTTP, target, extraArgs, testCases);
   }
 
-  private void testBackgroundFunction(String classAndMethod, TestCase... testCases)
+  private void testBackgroundFunction(String target, TestCase... testCases)
       throws Exception {
-    testBackgroundFunction(classAndMethod, ImmutableList.of(), testCases);
+    testBackgroundFunction(target, ImmutableList.of(), testCases);
   }
   private void testBackgroundFunction(
-      String classAndMethod, ImmutableList<String> extraArgs, TestCase... testCases)
+      String target, ImmutableList<String> extraArgs, TestCase... testCases)
       throws Exception {
-    testFunction(SignatureType.BACKGROUND, classAndMethod, extraArgs, testCases);
+    testFunction(SignatureType.BACKGROUND, target, extraArgs, testCases);
   }
 
   private void testFunction(
@@ -274,15 +403,20 @@ public class IntegrationTest {
       HttpClient httpClient = new HttpClient();
       httpClient.start();
       for (TestCase testCase : testCases) {
+        testCase.snoopFile().ifPresent(File::delete);
         String uri = "http://localhost:" + serverPort + testCase.url();
         Request request = httpClient.POST(uri);
-        request.header(HttpHeader.CONTENT_TYPE, "text/plain");
+        request.header(HttpHeader.CONTENT_TYPE, testCase.httpContentType());
+        testCase.httpHeaders().forEach((header, value) -> request.header(header, value));
         request.content(new StringContentProvider(testCase.requestText()));
         ContentResponse response = request.send();
-        assertWithMessage("Response to %s is %s %s", uri, response.getStatus(),
-            response.getReason())
+        expect
+            .withMessage("Response to %s is %s %s", uri, response.getStatus(), response.getReason())
             .that(response.getStatus()).isEqualTo(HttpStatus.OK_200);
-        assertThat(response.getContentAsString()).isEqualTo(testCase.expectedResponseText());
+        expect.that(response.getContentAsString()).isEqualTo(testCase.expectedResponseText());
+        if (testCase.snoopFile().isPresent()) {
+          checkSnoopFile(testCase.snoopFile().get(), testCase.expectedJsonString().get());
+        }
       }
     } finally {
       serverProcess.close();

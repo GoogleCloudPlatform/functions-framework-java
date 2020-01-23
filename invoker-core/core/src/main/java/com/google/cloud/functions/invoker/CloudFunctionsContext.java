@@ -24,4 +24,17 @@ abstract class CloudFunctionsContext implements Context {
   public static TypeAdapter<CloudFunctionsContext> typeAdapter(Gson gson) {
     return new AutoValue_CloudFunctionsContext.GsonTypeAdapter(gson);
   }
+
+  static Builder builder() {
+    return new AutoValue_CloudFunctionsContext.Builder();
+  }
+
+  @AutoValue.Builder
+  abstract static class Builder {
+    abstract Builder setEventId(String x);
+    abstract Builder setTimestamp(String x);
+    abstract Builder setEventType(String x);
+    abstract Builder setResource(String x);
+    abstract CloudFunctionsContext build();
+  }
 }
