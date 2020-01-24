@@ -3,12 +3,12 @@
 
   <parent>
     <groupId>com.google.cloud.functions.invoker</groupId>
-    <artifactId>java-function-invoker-core-parent</artifactId>
+    <artifactId>java-function-invoker-parent</artifactId>
     <version>1.0.0-alpha-1</version>
   </parent>
 
   <groupId>com.google.cloud.functions.invoker</groupId>
-  <artifactId>java-function-invoker-core</artifactId>
+  <artifactId>java-function-invoker</artifactId>
   <version>1.0.0-alpha-1</version>
   <name>GCF Java Invoker</name>
   <description>
@@ -90,7 +90,7 @@
     <!-- Test dependencies -->
     <dependency>
       <groupId>com.google.cloud.functions.invoker</groupId>
-      <artifactId>java-function-invoker-core-testfunction</artifactId>
+      <artifactId>java-function-invoker-testfunction</artifactId>
       <version>1.0.0-alpha-1</version>
       <type>test-jar</type>
       <scope>test</scope>

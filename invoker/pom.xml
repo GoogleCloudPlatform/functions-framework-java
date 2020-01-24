@@ -1,7 +1,7 @@
 <project>
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.google.cloud.functions.invoker</groupId>
-  <artifactId>java-function-invoker-core-parent</artifactId>
+  <artifactId>java-function-invoker-parent</artifactId>
   <version>1.0.0-alpha-1</version>
   <packaging>pom</packaging>
   <name>GCF Java Invoker Parent</name>
