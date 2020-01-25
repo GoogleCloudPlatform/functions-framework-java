@@ -45,6 +45,7 @@
     <connection>scm:git:https://github.com/GoogleCloudPlatform/functions-framework-java.git</connection>
     <developerConnection>scm:git:git@github.com:GoogleCloudPlatform/functions-framework-java.git</developerConnection>
     <url>https://github.com/GoogleCloudPlatform/functions-framework-java</url>
+    <tag>HEAD</tag>
   </scm>
 
   <build>
