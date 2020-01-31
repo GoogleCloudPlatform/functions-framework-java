@@ -4,12 +4,12 @@
   <parent>
     <groupId>com.google.cloud.functions.invoker</groupId>
     <artifactId>java-function-invoker-parent</artifactId>
-    <version>1.0.0-alpha-2-rc2-SNAPSHOT</version>
+    <version>1.0.0-alpha-2-rc1-SNAPSHOT</version>
   </parent>
 
   <groupId>com.google.cloud.functions.invoker</groupId>
   <artifactId>java-function-invoker</artifactId>
-  <version>1.0.0-alpha-2-rc2-SNAPSHOT</version>
+  <version>1.0.0-alpha-2-rc1-SNAPSHOT</version>
   <name>GCF Java Invoker</name>
   <description>
     Application that invokes a GCF Java function. This application is a
@@ -106,7 +106,7 @@
     <dependency>
       <groupId>com.google.cloud.functions.invoker</groupId>
       <artifactId>java-function-invoker-testfunction</artifactId>
-      <version>1.0.0-alpha-2-SNAPSHOT</version>
+      <version>1.0.0-alpha-1</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
