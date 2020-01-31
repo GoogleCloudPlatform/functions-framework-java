@@ -1,15 +1,15 @@
-<project>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>com.google.cloud.functions.invoker</groupId>
     <artifactId>java-function-invoker-parent</artifactId>
-    <version>1.0.0-alpha-1</version>
+    <version>1.0.0-alpha-2-rc1-SNAPSHOT</version>
   </parent>
 
   <groupId>com.google.cloud.functions.invoker</groupId>
   <artifactId>java-function-invoker</artifactId>
-  <version>1.0.0-alpha-1</version>
+  <version>1.0.0-alpha-2-rc1-SNAPSHOT</version>
   <name>GCF Java Invoker</name>
   <description>
     Application that invokes a GCF Java function. This application is a
@@ -21,6 +21,21 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <junit.jupiter.version>5.3.2</junit.jupiter.version>
   </properties>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <scm>
+    <connection>scm:git:https://github.com/GoogleCloudPlatform/functions-framework-java.git</connection>
+    <developerConnection>scm:git:git@github.com:GoogleCloudPlatform/functions-framework-java.git</developerConnection>
+    <url>https://github.com/GoogleCloudPlatform/functions-framework-java</url>
+    <tag>HEAD</tag>
+  </scm>
 
   <dependencies>
     <dependency>

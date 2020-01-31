@@ -1,14 +1,28 @@
 <project>
   <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>9</version>
+  </parent>
+
   <groupId>com.google.cloud.functions.invoker</groupId>
   <artifactId>java-function-invoker-parent</artifactId>
-  <version>1.0.0-alpha-1</version>
+  <version>1.0.0-alpha-2-rc1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>GCF Java Invoker Parent</name>
   <description>
     Parent POM for the GCF Java Invoker. The project is structured like this so
     that we can have modules that build jar files for use in tests.
   </description>
+  <url>https://github.com/GoogleCloudPlatform/functions-framework-java/tree/master/invoker</url>
+
+  <scm>
+    <url>http://github.com/GoogleCloudPlatform/functions-framework-java</url>
+    <connection>scm:git:git://github.com/GoogleCloudPlatform/functions-framework-java.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/GoogleCloudPlatform/functions-framework-java.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
 
   <modules>
     <module>core</module>
