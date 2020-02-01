@@ -161,8 +161,8 @@ public class Invoker {
       classLoader = runtimeLoader;
     }
 
+    HttpServlet servlet;
     if ("http".equals(functionSignatureType)) {
-      HttpServlet servlet;
       Optional<NewHttpFunctionExecutor> newExecutor =
           NewHttpFunctionExecutor.forTarget(functionTarget, classLoader);
       if (newExecutor.isPresent()) {
@@ -173,9 +173,7 @@ public class Invoker {
         HttpCloudFunction function = loader.loadUserFunction();
         servlet = new HttpFunctionExecutor(function);
       }
-      context.addServlet(new ServletHolder(servlet), "/*");
     } else if ("event".equals(functionSignatureType)) {
-      HttpServlet servlet;
       Optional<NewBackgroundFunctionExecutor> newExecutor =
           NewBackgroundFunctionExecutor.forTarget(functionTarget, classLoader);
       if (newExecutor.isPresent()) {
@@ -187,10 +185,33 @@ public class Invoker {
         BackgroundCloudFunction function = loader.loadUserFunction();
         servlet = new BackgroundFunctionExecutor(function);
       }
-      context.addServlet(new ServletHolder(servlet), "/*");
+    } else if (functionSignatureType == null) {
+      Optional<NewHttpFunctionExecutor> httpExecutor =
+          NewHttpFunctionExecutor.forTarget(functionTarget, classLoader);
+      if (httpExecutor.isPresent()) {
+        servlet = httpExecutor.get();
+      } else {
+        Optional<NewBackgroundFunctionExecutor> backgroundExecutor =
+            NewBackgroundFunctionExecutor.forTarget(functionTarget, classLoader);
+        if (backgroundExecutor.isPresent()) {
+          servlet = backgroundExecutor.get();
+        } else {
+          String error = String.format(
+              "Could not determine function signature type from target %s. Either this should be"
+              + " a class implementing one of the interfaces in com.google.cloud.functions, or the"
+              + " environment variable FUNCTION_SIGNATURE_TYPE should be set to \"http\" or"
+              + " \"event\".",
+              functionTarget);
+          throw new RuntimeException(error);
+        }
+      }
     } else {
-      throw new RuntimeException("Unknown function signature type: " + functionSignatureType);
+      String error = String.format(
+          "Function signature type %s is unknown; should be \"http\" or \"event\"",
+          functionSignatureType);
+      throw new RuntimeException(error);
     }
+    context.addServlet(new ServletHolder(servlet), "/*");
 
     server.start();
     logServerInfo();

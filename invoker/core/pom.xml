@@ -157,11 +157,22 @@
           <archive>
             <manifest>
               <mainClass>com.google.cloud.functions.invoker.runner.Invoker</mainClass>
-              <addClasspath>true</addClasspath>
-              <classpathPrefix>lib</classpathPrefix>
             </manifest>
           </archive>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.2.1</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
