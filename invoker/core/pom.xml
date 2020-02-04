@@ -43,9 +43,9 @@
       <artifactId>functions-framework-api</artifactId>
     </dependency>
     <dependency>
-        <groupId>javax.servlet</groupId>
-        <artifactId>javax.servlet-api</artifactId>
-        <version>3.1.0</version>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>3.1.0</version>
     </dependency>
     <dependency>
       <groupId>io.cloudevents</groupId>
@@ -53,48 +53,48 @@
       <version>1.2.0</version>
     </dependency>
     <dependency>
-        <groupId>javax.annotation</groupId>
-        <artifactId>javax.annotation-api</artifactId>
-        <version>1.3.2</version>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+      <version>1.3.2</version>
     </dependency>
     <dependency>
-        <groupId>com.google.code.gson</groupId>
-        <artifactId>gson</artifactId>
-        <version>2.8.6</version>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.8.6</version>
     </dependency>
     <dependency>
-        <groupId>com.ryanharter.auto.value</groupId>
-        <artifactId>auto-value-gson</artifactId>
-        <version>0.8.0</version>
-        <scope>provided</scope>
+      <groupId>com.ryanharter.auto.value</groupId>
+      <artifactId>auto-value-gson</artifactId>
+      <version>1.3.0</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
-        <groupId>com.ryanharter.auto.value</groupId>
-        <artifactId>auto-value-gson-annotations</artifactId>
-        <version>0.8.0</version>
-        <scope>provided</scope>
+      <groupId>com.ryanharter.auto.value</groupId>
+      <artifactId>auto-value-gson-annotations</artifactId>
+      <version>0.8.0</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
-        <groupId>com.google.auto.value</groupId>
-        <artifactId>auto-value</artifactId>
-        <version>1.6.2</version>
-        <scope>provided</scope>
+      <groupId>com.google.auto.value</groupId>
+      <artifactId>auto-value</artifactId>
+      <version>1.7</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
-        <groupId>com.google.auto.value</groupId>
-        <artifactId>auto-value-annotations</artifactId>
-        <version>1.6.2</version>
-        <scope>provided</scope>
+      <groupId>com.google.auto.value</groupId>
+      <artifactId>auto-value-annotations</artifactId>
+      <version>1.7</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-servlet</artifactId>
-        <version>9.4.11.v20180605</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+      <version>9.4.26.v20200117</version>
     </dependency>
     <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-server</artifactId>
-        <version>9.4.11.v20180605</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <version>9.4.26.v20200117</version>
     </dependency>
     <dependency>
       <groupId>com.beust</groupId>
@@ -113,37 +113,31 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>2.21.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-junit-jupiter</artifactId>
-      <version>2.23.0</version>
+      <version>3.2.4</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.12</version>
+      <version>4.13</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.truth</groupId>
       <artifactId>truth</artifactId>
-      <version>1.0</version>
+      <version>1.0.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.truth.extensions</groupId>
       <artifactId>truth-java8-extension</artifactId>
-      <version>1.0</version>
+      <version>1.0.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
-      <version>9.4.11.v20180605</version>
+      <version>9.4.26.v20200117</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

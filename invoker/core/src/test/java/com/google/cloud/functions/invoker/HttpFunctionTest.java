@@ -1,6 +1,6 @@
 package com.google.cloud.functions.invoker;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -40,7 +40,7 @@ public class HttpFunctionTest {
 
     executor.service(req, res);
 
-    assertEquals(lastResponse, requestData);
+    assertThat(lastResponse).isEqualTo(requestData);
   }
 
   private class MockPrintWriter extends java.io.PrintWriter {

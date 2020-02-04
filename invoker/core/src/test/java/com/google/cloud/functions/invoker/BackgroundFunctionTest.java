@@ -1,6 +1,6 @@
 package com.google.cloud.functions.invoker;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 
 import com.google.cloud.functions.Context;
 import com.google.gson.JsonElement;
@@ -81,7 +81,7 @@ public class BackgroundFunctionTest {
 
     executor.service(req, res);
 
-    assertEquals(lastSum, 5);
-    assertEquals(lastEventType, "com.example.someevent.new");
+    assertThat(lastSum).isEqualTo(5);
+    assertThat(lastEventType).isEqualTo("com.example.someevent.new");
   }
 }
