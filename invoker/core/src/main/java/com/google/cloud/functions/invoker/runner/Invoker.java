@@ -1,5 +1,8 @@
 package com.google.cloud.functions.invoker.runner;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
 import com.google.cloud.functions.invoker.BackgroundCloudFunction;
 import com.google.cloud.functions.invoker.BackgroundFunctionExecutor;
 import com.google.cloud.functions.invoker.BackgroundFunctionSignatureMatcher;
@@ -24,12 +27,6 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import javax.servlet.http.HttpServlet;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -62,38 +59,69 @@ public class Invoker {
     logger = Logger.getLogger(Invoker.class.getName());
   }
 
-  public Invoker(
-      Integer port,
-      String functionTarget,
-      String functionSignatureType,
-      Optional<String> functionJarPath) {
-    this.port = port;
-    this.functionTarget = functionTarget;
-    this.functionSignatureType = functionSignatureType;
-    this.functionJarPath = functionJarPath;
+  private static class Options {
+    @Parameter(
+        description = "Port on which to listen for HTTP requests.",
+        names = "--port"
+    )
+    private String port = System.getenv().getOrDefault("PORT", "8080");
+
+    // TODO(emcmanus): the default value here no longer makes sense and should be changed to a
+    //    class name once we have finished retiring the java8 runtime.
+    @Parameter(
+        description = "Name of function class to execute when servicing incoming requests.",
+        names = "--target"
+    )
+    private String target =
+        System.getenv().getOrDefault("FUNCTION_TARGET", "TestFunction.function");
+
+    @Parameter(
+        description = "Name of a jar file that contains the function to execute. This must be"
+            + " self-contained: either it must be a \"fat jar\" which bundles the dependencies"
+            + " of all of the function code, or it must use the Class-Path attribute in the jar"
+            + " manifest to point to those dependencies.",
+        names = "--jar"
+    )
+    private String jar = null;
+
+    @Parameter(
+        names = "--help", help = true
+    )
+    private boolean help = false;
   }
 
   public static void main(String[] args) throws Exception {
+    Options options = new Options();
+    JCommander jCommander = JCommander.newBuilder()
+        .addObject(options)
+        .build();
+    try {
+      jCommander.parse(args);
+    } catch (ParameterException e) {
+      jCommander.usage();
+      throw e;
+    }
 
-    CommandLine line = parseCommandLineOptions(args);
+    if (options.help) {
+      jCommander.usage();
+      return;
+    }
 
-    int port =
-        Arrays.asList(line.getOptionValue("port"), System.getenv("PORT")).stream()
-            .filter(Objects::nonNull)
-            .findFirst()
-            .map(Integer::parseInt)
-            .orElse(8080);
-    String functionTarget =
-        Arrays.asList(line.getOptionValue("target"), System.getenv("FUNCTION_TARGET")).stream()
-            .filter(Objects::nonNull)
-            .findFirst()
-            .orElse("TestFunction.function");
+    int port;
+    try {
+      port = Integer.parseInt(options.port);
+    } catch (NumberFormatException e) {
+      System.err.println("--port value should be an integer: " + options.port);
+      jCommander.usage();
+      throw e;
+    }
+    String functionTarget = options.target;
     Path standardFunctionJarPath = Paths.get("function/function.jar");
     Optional<String> functionJarPath =
         Arrays.asList(
-                line.getOptionValue("jar"),
-                System.getenv("FUNCTION_JAR"),
-                Files.exists(standardFunctionJarPath) ? standardFunctionJarPath.toString() : null)
+            options.jar,
+            System.getenv("FUNCTION_JAR"),
+            Files.exists(standardFunctionJarPath) ? standardFunctionJarPath.toString() : null)
             .stream()
             .filter(Objects::nonNull)
             .findFirst();
@@ -111,29 +139,21 @@ public class Invoker {
     return System.getenv("K_SERVICE") == null;
   }
 
-  private static CommandLine parseCommandLineOptions(String[] args) {
-    CommandLineParser parser = new DefaultParser();
-    Options options = new Options();
-    options.addOption("port", true, "the port on which server listens to HTTP requests");
-    options.addOption("target", true, "fully qualified name of the target method to execute");
-    options.addOption("jar", true, "path to function jar");
-
-    try {
-      CommandLine line = parser.parse(options, args);
-      return line;
-    } catch (ParseException e) {
-      logger.log(Level.SEVERE, "Failed to parse command line options", e);
-      HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp("Invoker", options);
-      System.exit(1);
-    }
-    return null;
-  }
-
   private final Integer port;
   private final String functionTarget;
   private final String functionSignatureType;
   private final Optional<String> functionJarPath;
+
+  public Invoker(
+      Integer port,
+      String functionTarget,
+      String functionSignatureType,
+      Optional<String> functionJarPath) {
+    this.port = port;
+    this.functionTarget = functionTarget;
+    this.functionSignatureType = functionSignatureType;
+    this.functionJarPath = functionJarPath;
+  }
 
   public void startServer() throws Exception {
     Server server = new Server(port);

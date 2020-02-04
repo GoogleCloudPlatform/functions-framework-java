@@ -316,7 +316,7 @@ public class IntegrationTest {
   }
 
   /**
-   * Tests that if we launch an HTTP function with {@code -jar}, then the function code cannot
+   * Tests that if we launch an HTTP function with {@code --jar}, then the function code cannot
    * see the classes from the runtime. This is allows us to avoid conflicts between versions of
    * libraries that we use in the runtime and different versions of the same libraries that the
    * function might use.
@@ -324,7 +324,7 @@ public class IntegrationTest {
   @Test
   public void jarOptionHttp() throws Exception {
     testHttpFunction("com.example.functionjar.Foreground",
-        ImmutableList.of("-jar", functionJarString()),
+        ImmutableList.of("--jar", functionJarString()),
         TestCase.builder()
             .setUrl("/?class=" + INTERNAL_CLASS.getName())
             .setExpectedResponseText("OK")
@@ -342,7 +342,7 @@ public class IntegrationTest {
     JsonObject jsonData = json.getAsJsonObject("data");
     jsonData.addProperty("class", INTERNAL_CLASS.getName());
     testBackgroundFunction("com.example.functionjar.Background",
-        ImmutableList.of("-jar", functionJarString()),
+        ImmutableList.of("--jar", functionJarString()),
         TestCase.builder().setRequestText(json.toString()).build());
   }
 
