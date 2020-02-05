@@ -4,11 +4,16 @@ import com.google.auto.value.AutoValue;
 import com.google.cloud.functions.Context;
 import com.google.gson.Gson;
 import com.google.gson.TypeAdapter;
-import javax.annotation.Nullable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
 /** Event context (metadata) for events handled by Cloud Functions. */
 @AutoValue
 abstract class CloudFunctionsContext implements Context {
+  // AutoValue recognizes any annotation called @Nullable, so no need to import this from anywhere.
+  @Retention(RetentionPolicy.SOURCE)
+  @interface Nullable {}
+
   @Nullable
   public abstract String eventId();
 
