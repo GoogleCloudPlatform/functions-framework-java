@@ -35,6 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -105,6 +106,17 @@ public class Invoker {
   }
 
   public static void main(String[] args) throws Exception {
+    Optional<Invoker> invoker = makeInvoker(args);
+    if (invoker.isPresent()) {
+      invoker.get().startServer();
+    }
+  }
+
+  static Optional<Invoker> makeInvoker(String... args) {
+    return makeInvoker(System.getenv(), args);
+  }
+
+  static Optional<Invoker> makeInvoker(Map<String, String> environment, String... args) {
     Options options = new Options();
     JCommander jCommander = JCommander.newBuilder()
         .addObject(options)
@@ -118,7 +130,7 @@ public class Invoker {
 
     if (options.help) {
       jCommander.usage();
-      return;
+      return Optional.empty();
     }
 
     int port;
@@ -134,7 +146,7 @@ public class Invoker {
     Optional<String> functionJarPath =
         Arrays.asList(
             options.jar,
-            System.getenv("FUNCTION_JAR"),
+            environment.get("FUNCTION_JAR"),
             Files.exists(standardFunctionJarPath) ? standardFunctionJarPath.toString() : null)
             .stream()
             .filter(Objects::nonNull)
@@ -143,10 +155,9 @@ public class Invoker {
         new Invoker(
             port,
             functionTarget,
-            // TODO: remove once function signature type is inferred from the method signature.
-            System.getenv("FUNCTION_SIGNATURE_TYPE"),
+            environment.get("FUNCTION_SIGNATURE_TYPE"),
             functionJarPath);
-    invoker.startServer();
+    return Optional.of(invoker);
   }
 
   private static boolean isLocalRun() {
@@ -167,6 +178,22 @@ public class Invoker {
     this.functionTarget = functionTarget;
     this.functionSignatureType = functionSignatureType;
     this.functionJarPath = functionJarPath;
+  }
+
+  Integer getPort() {
+    return port;
+  }
+
+  String getFunctionTarget() {
+    return functionTarget;
+  }
+
+  String getFunctionSignatureType() {
+    return functionSignatureType;
+  }
+
+  Optional<String> getFunctionJarPath() {
+    return functionJarPath;
   }
 
   public void startServer() throws Exception {
