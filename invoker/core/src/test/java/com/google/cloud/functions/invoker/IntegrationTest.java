@@ -330,24 +330,24 @@ public class IntegrationTest {
   }
 
   /**
-   * Tests that if we launch an HTTP function with {@code --jar}, then the function code cannot
-   * see the classes from the runtime. This is allows us to avoid conflicts between versions of
-   * libraries that we use in the runtime and different versions of the same libraries that the
+   * Tests that if we launch an HTTP function with {@code --classpath}, then the function code
+   * cannot see the classes from the runtime. This is allows us to avoid conflicts between versions
+   * of libraries that we use in the runtime and different versions of the same libraries that the
    * function might use.
    */
   @Test
-  public void jarOptionHttp() throws Exception {
+  public void classpathOptionHttp() throws Exception {
     testHttpFunction("com.example.functionjar.Foreground",
-        ImmutableList.of("--jar", functionJarString()),
+        ImmutableList.of("--classpath", functionJarString()),
         TestCase.builder()
             .setUrl("/?class=" + INTERNAL_CLASS.getName())
             .setExpectedResponseText("OK")
             .build());
   }
 
-  /** Like {@link #jarOptionHttp} but for background functions. */
+  /** Like {@link #classpathOptionHttp} but for background functions. */
   @Test
-  public void jarOptionBackground() throws Exception {
+  public void classpathOptionBackground() throws Exception {
     Gson gson = new Gson();
     URL resourceUrl = getClass().getResource("/adder_gcf_ga_event.json");
     assertThat(resourceUrl).isNotNull();
@@ -356,7 +356,7 @@ public class IntegrationTest {
     JsonObject jsonData = json.getAsJsonObject("data");
     jsonData.addProperty("class", INTERNAL_CLASS.getName());
     testBackgroundFunction("com.example.functionjar.Background",
-        ImmutableList.of("--jar", functionJarString()),
+        ImmutableList.of("--classpath", functionJarString()),
         TestCase.builder().setRequestText(json.toString()).build());
   }
 

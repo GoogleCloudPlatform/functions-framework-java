@@ -14,6 +14,8 @@
 
 package com.google.cloud.functions.invoker.runner;
 
+import static java.util.stream.Collectors.toList;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -28,13 +30,18 @@ import com.google.cloud.functions.invoker.NewBackgroundFunctionExecutor;
 import com.google.cloud.functions.invoker.NewHttpFunctionExecutor;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -91,13 +98,18 @@ public class Invoker {
         System.getenv().getOrDefault("FUNCTION_TARGET", "TestFunction.function");
 
     @Parameter(
-        description = "Name of a jar file that contains the function to execute. This must be"
-            + " self-contained: either it must be a \"fat jar\" which bundles the dependencies"
-            + " of all of the function code, or it must use the Class-Path attribute in the jar"
-            + " manifest to point to those dependencies.",
-        names = "--jar"
+        description = "List of files or directories where the compiled Java classes making up"
+            + " the function will be found. This functions like the -classpath option to the"
+            + " java command. It is a list of filenames separated by '${path.separator}'."
+            + " If an entry in the list names a directory then the class foo.bar.Baz will be looked"
+            + " for in foo${file.separator}bar${file.separator}Baz.class under that"
+            + " directory. If an entry in the list names a file and that file is a jar file then"
+            + " class foo.bar.Baz will be looked for in an entry foo/bar/Baz.class in that jar"
+            + " file. If an entry is a directory followed by '${file.separator}*' then every file"
+            + " in the directory whose name ends with '.jar' will be searched for classes.",
+        names = "--classpath"
     )
-    private String jar = null;
+    private String classPath = null;
 
     @Parameter(
         names = "--help", help = true
@@ -124,12 +136,12 @@ public class Invoker {
     try {
       jCommander.parse(args);
     } catch (ParameterException e) {
-      jCommander.usage();
+      usage(jCommander);
       throw e;
     }
 
     if (options.help) {
-      jCommander.usage();
+      usage(jCommander);
       return Optional.empty();
     }
 
@@ -138,15 +150,15 @@ public class Invoker {
       port = Integer.parseInt(options.port);
     } catch (NumberFormatException e) {
       System.err.println("--port value should be an integer: " + options.port);
-      jCommander.usage();
+      usage(jCommander);
       throw e;
     }
     String functionTarget = options.target;
     Path standardFunctionJarPath = Paths.get("function/function.jar");
-    Optional<String> functionJarPath =
+    Optional<String> functionClasspath =
         Arrays.asList(
-            options.jar,
-            environment.get("FUNCTION_JAR"),
+            options.classPath,
+            environment.get("FUNCTION_CLASSPATH"),
             Files.exists(standardFunctionJarPath) ? standardFunctionJarPath.toString() : null)
             .stream()
             .filter(Objects::nonNull)
@@ -156,8 +168,17 @@ public class Invoker {
             port,
             functionTarget,
             environment.get("FUNCTION_SIGNATURE_TYPE"),
-            functionJarPath);
+            functionClasspath);
     return Optional.of(invoker);
+  }
+
+  private static void usage(JCommander jCommander) {
+    StringBuilder usageBuilder = new StringBuilder();
+    jCommander.getUsageFormatter().usage(usageBuilder);
+    String usage = usageBuilder.toString()
+        .replace("${file.separator}", File.separator)
+        .replace("${path.separator}", File.pathSeparator);
+    jCommander.getConsole().println(usage);
   }
 
   private static boolean isLocalRun() {
@@ -167,17 +188,17 @@ public class Invoker {
   private final Integer port;
   private final String functionTarget;
   private final String functionSignatureType;
-  private final Optional<String> functionJarPath;
+  private final Optional<String> functionClasspath;
 
   public Invoker(
       Integer port,
       String functionTarget,
       String functionSignatureType,
-      Optional<String> functionJarPath) {
+      Optional<String> functionClasspath) {
     this.port = port;
     this.functionTarget = functionTarget;
     this.functionSignatureType = functionSignatureType;
-    this.functionJarPath = functionJarPath;
+    this.functionClasspath = functionClasspath;
   }
 
   Integer getPort() {
@@ -192,8 +213,8 @@ public class Invoker {
     return functionSignatureType;
   }
 
-  Optional<String> getFunctionJarPath() {
-    return functionJarPath;
+  Optional<String> getFunctionClasspath() {
+    return functionClasspath;
   }
 
   public void startServer() throws Exception {
@@ -203,21 +224,11 @@ public class Invoker {
     context.setContextPath("/");
     server.setHandler(context);
 
-    Optional<File> functionJarFile =
-        functionJarPath.isPresent()
-            ? Optional.of(new File(functionJarPath.get()))
-            : Optional.empty();
-    if (functionJarFile.isPresent() && !functionJarFile.get().exists()) {
-      throw new IllegalArgumentException(
-          "functionJarPath points to an non-existent file: "
-              + functionJarFile.get().getAbsolutePath());
-    }
-
     ClassLoader runtimeLoader = getClass().getClassLoader();
     ClassLoader classLoader;
-    if (functionJarFile.isPresent()) {
+    if (functionClasspath.isPresent()) {
       ClassLoader parent = new OnlyApiClassLoader(runtimeLoader);
-      classLoader = new URLClassLoader(new URL[]{functionJarFile.get().toURI().toURL()}, parent);
+      classLoader = new URLClassLoader(classpathToUrls(functionClasspath.get()), parent);
     } else {
       classLoader = runtimeLoader;
     }
@@ -277,6 +288,39 @@ public class Invoker {
     server.start();
     logServerInfo();
     server.join();
+  }
+
+  static URL[] classpathToUrls(String classpath) throws IOException {
+    String[] components = classpath.split(File.pathSeparator);
+    List<URL> urls = new ArrayList<>();
+    for (String component : components) {
+      if (component.endsWith(File.separator + "*")) {
+        urls.addAll(jarsIn(component.substring(0, component.length() - 2)));
+      } else {
+        Path path = Paths.get(component);
+        if (Files.exists(path)) {
+          urls.add(path.toUri().toURL());
+        }
+      }
+    }
+    return urls.toArray(new URL[0]);
+  }
+
+  private static List<URL> jarsIn(String dir) throws IOException {
+    Path path = Paths.get(dir);
+    if (!Files.isDirectory(path)) {
+      return Collections.emptyList();
+    }
+    return Files.list(path)
+        .filter(p -> p.getFileName().toString().endsWith(".jar"))
+        .map(p -> {
+          try {
+            return p.toUri().toURL();
+          } catch (MalformedURLException e) {
+            throw new UncheckedIOException(e);
+          }
+        })
+        .collect(toList());
   }
 
   private void logServerInfo() {

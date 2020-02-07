@@ -1,12 +1,16 @@
 package com.google.cloud.functions.invoker.runner;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 import static com.google.common.truth.Truth8.assertThat;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -24,6 +28,7 @@ public class InvokerTest {
     });
     assertThat(help).contains("Usage:");
     assertThat(help).contains("--target");
+    assertThat(help).containsMatch("separated\\s+by\\s+'" + File.pathSeparator + "'");
   }
 
   @Test
@@ -64,22 +69,40 @@ public class InvokerTest {
   }
 
   @Test
-  public void defaultJar() {
+  public void defaultClasspath() {
     Optional<Invoker> invoker = Invoker.makeInvoker();
-    assertThat(invoker.get().getFunctionJarPath()).isEmpty();
+    assertThat(invoker.get().getFunctionClasspath()).isEmpty();
   }
 
+  private static final String FAKE_CLASSPATH =
+      "/foo/bar/baz.jar" + File.pathSeparator + "/some/directory";
+
   @Test
-  public void explicitJarViaEnvironment() {
-    Map<String, String> env = Collections.singletonMap("FUNCTION_JAR", "/foo/bar/baz.jar");
+  public void explicitClasspathViaEnvironment() {
+    Map<String, String> env = Collections.singletonMap("FUNCTION_CLASSPATH", FAKE_CLASSPATH);
     Optional<Invoker> invoker = Invoker.makeInvoker(env);
-    assertThat(invoker.get().getFunctionJarPath()).hasValue("/foo/bar/baz.jar");
+    assertThat(invoker.get().getFunctionClasspath()).hasValue(FAKE_CLASSPATH);
   }
 
   @Test
-  public void explicitJarViaOption() {
-    Optional<Invoker> invoker = Invoker.makeInvoker("--jar", "/foo/bar/baz.jar");
-    assertThat(invoker.get().getFunctionJarPath()).hasValue("/foo/bar/baz.jar");
+  public void explicitClasspathViaOption() {
+    Optional<Invoker> invoker = Invoker.makeInvoker("--classpath", FAKE_CLASSPATH);
+    assertThat(invoker.get().getFunctionClasspath()).hasValue(FAKE_CLASSPATH);
+  }
+
+  @Test
+  public void classpathToUrls() throws Exception {
+    String classpath =
+        "../testfunction/target/test-classes" + File.pathSeparator + "../testfunction/target/lib/*";
+    URL[] urls = Invoker.classpathToUrls(classpath);
+    assertWithMessage(Arrays.toString(urls)).that(urls.length).isGreaterThan(2);
+    File classesDir = new File(urls[0].toURI());
+    assertWithMessage(classesDir.toString()).that(classesDir.isDirectory()).isTrue();
+    for (int i = 1; i < urls.length; i++) {
+      URL url = urls[i];
+      assertThat(url.toString()).endsWith(".jar");
+      assertWithMessage(url.toString()).that(new File(url.toURI()).isFile()).isTrue();
+    }
   }
 
   private static String captureOutput(Runnable operation) throws IOException {
