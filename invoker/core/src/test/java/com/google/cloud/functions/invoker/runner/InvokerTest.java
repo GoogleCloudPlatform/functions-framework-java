@@ -3,17 +3,20 @@ package com.google.cloud.functions.invoker.runner;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static com.google.common.truth.Truth8.assertThat;
+import static java.util.stream.Collectors.joining;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -71,7 +74,8 @@ public class InvokerTest {
   @Test
   public void defaultClasspath() {
     Optional<Invoker> invoker = Invoker.makeInvoker();
-    assertThat(invoker.get().getFunctionClasspath()).isEmpty();
+    assertThat(invoker.get().getClass().getClassLoader())
+        .isSameInstanceAs(Invoker.class.getClassLoader());
   }
 
   private static final String FAKE_CLASSPATH =
@@ -81,13 +85,20 @@ public class InvokerTest {
   public void explicitClasspathViaEnvironment() {
     Map<String, String> env = Collections.singletonMap("FUNCTION_CLASSPATH", FAKE_CLASSPATH);
     Optional<Invoker> invoker = Invoker.makeInvoker(env);
-    assertThat(invoker.get().getFunctionClasspath()).hasValue(FAKE_CLASSPATH);
+    assertThat(invokerClasspath(invoker.get())).isEqualTo(FAKE_CLASSPATH);
   }
 
   @Test
   public void explicitClasspathViaOption() {
     Optional<Invoker> invoker = Invoker.makeInvoker("--classpath", FAKE_CLASSPATH);
-    assertThat(invoker.get().getFunctionClasspath()).hasValue(FAKE_CLASSPATH);
+    assertThat(invokerClasspath(invoker.get())).isEqualTo(FAKE_CLASSPATH);
+  }
+
+  private static String invokerClasspath(Invoker invoker) {
+    URLClassLoader urlClassLoader = (URLClassLoader) invoker.getFunctionClassLoader();
+    return Arrays.stream(urlClassLoader.getURLs())
+        .map(URL::getPath)
+        .collect(joining(File.pathSeparator));
   }
 
   @Test

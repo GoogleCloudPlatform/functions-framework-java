@@ -21,7 +21,7 @@ public class BackgroundSnoop {
     if (targetFile == null) {
       throw new IllegalArgumentException("Expected targetFile in JSON payload");
     }
-    JsonObject resourceJson = new JsonParser().parse(context.resource()).getAsJsonObject();
+    JsonObject resourceJson = JsonParser.parseString(context.resource()).getAsJsonObject();
     JsonObject contextJson = new JsonObject();
     contextJson.addProperty("eventId", context.eventId());
     contextJson.addProperty("timestamp", context.timestamp());

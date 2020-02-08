@@ -53,34 +53,25 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
   }
 
   /**
-   * Make a {@link NewBackgroundFunctionExecutor} for the class named by the given {@code target}.
-   * If the class cannot be loaded, we currently assume that this is an old-style function
-   * (specified as package.Class.method instead of package.Class) and return
-   * {@code Optional.empty()}.
+   * Makes a {@link NewHttpFunctionExecutor} for the given class.
    *
-   * @throws RuntimeException if we succeed in loading the class named by {@code target} but then
-   *    either the class does not implement {@link RawBackgroundFunction} or we are unable to
-   *    construct an instance using its no-arg constructor.
+   * @throws RuntimeException if either the class does not implement one of
+   *    {@link BackgroundFunction} or {@link RawBackgroundFunction},
+   *    or we are unable to construct an instance using its no-arg constructor.
    */
-  public static Optional<NewBackgroundFunctionExecutor> forTarget(
-      String target, ClassLoader loader) {
-    Class<?> c;
-    try {
-      c = loader.loadClass(target);
-    } catch (ClassNotFoundException e) {
-      return Optional.empty();
-    }
-    if (!BackgroundFunction.class.isAssignableFrom(c)
-        && !RawBackgroundFunction.class.isAssignableFrom(c)) {
+  public static NewBackgroundFunctionExecutor forClass(Class<?> functionClass) {
+    if (!BackgroundFunction.class.isAssignableFrom(functionClass)
+        && !RawBackgroundFunction.class.isAssignableFrom(functionClass)) {
       throw new RuntimeException(
-          "Class " + c.getName() + " implements neither " + BackgroundFunction.class
+          "Class " + functionClass.getName() + " implements neither " + BackgroundFunction.class
               .getName() + " nor " + RawBackgroundFunction.class.getName());
     }
     Object instance;
     try {
-      instance = c.getConstructor().newInstance();
+      instance = functionClass.getConstructor().newInstance();
     } catch (ReflectiveOperationException e) {
-      throw new RuntimeException("Could not construct an instance of " + target + ": " + e, e);
+      throw new RuntimeException(
+          "Could not construct an instance of " + functionClass.getName() + ": " + e, e);
     }
     FunctionExecutor<?> executor;
     if (instance instanceof RawBackgroundFunction) {
@@ -99,7 +90,7 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
       }
       executor = new TypedFunctionExecutor<>(maybeTargetType.get(), backgroundFunction);
     }
-    return Optional.of(new NewBackgroundFunctionExecutor(executor));
+    return new NewBackgroundFunctionExecutor(executor);
   }
 
   /**

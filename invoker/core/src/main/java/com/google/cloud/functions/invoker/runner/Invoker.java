@@ -19,6 +19,9 @@ import static java.util.stream.Collectors.toList;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import com.google.cloud.functions.BackgroundFunction;
+import com.google.cloud.functions.HttpFunction;
+import com.google.cloud.functions.RawBackgroundFunction;
 import com.google.cloud.functions.invoker.BackgroundCloudFunction;
 import com.google.cloud.functions.invoker.BackgroundFunctionExecutor;
 import com.google.cloud.functions.invoker.BackgroundFunctionSignatureMatcher;
@@ -48,6 +51,7 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 import javax.servlet.http.HttpServlet;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -163,12 +167,13 @@ public class Invoker {
             .stream()
             .filter(Objects::nonNull)
             .findFirst();
+    ClassLoader functionClassLoader = makeClassLoader(functionClasspath);
     Invoker invoker =
         new Invoker(
             port,
             functionTarget,
             environment.get("FUNCTION_SIGNATURE_TYPE"),
-            functionClasspath);
+            functionClassLoader);
     return Optional.of(invoker);
   }
 
@@ -185,20 +190,29 @@ public class Invoker {
     return System.getenv("K_SERVICE") == null;
   }
 
+  private static ClassLoader makeClassLoader(Optional<String> functionClasspath) {
+    ClassLoader runtimeLoader = Invoker.class.getClassLoader();
+    if (functionClasspath.isPresent()) {
+      ClassLoader parent = new OnlyApiClassLoader(runtimeLoader);
+      return new URLClassLoader(classpathToUrls(functionClasspath.get()), parent);
+    }
+    return runtimeLoader;
+  }
+
   private final Integer port;
   private final String functionTarget;
   private final String functionSignatureType;
-  private final Optional<String> functionClasspath;
+  private final ClassLoader functionClassLoader;
 
   public Invoker(
       Integer port,
       String functionTarget,
       String functionSignatureType,
-      Optional<String> functionClasspath) {
+      ClassLoader functionClassLoader) {
     this.port = port;
     this.functionTarget = functionTarget;
     this.functionSignatureType = functionSignatureType;
-    this.functionClasspath = functionClasspath;
+    this.functionClassLoader = functionClassLoader;
   }
 
   Integer getPort() {
@@ -213,8 +227,8 @@ public class Invoker {
     return functionSignatureType;
   }
 
-  Optional<String> getFunctionClasspath() {
-    return functionClasspath;
+  ClassLoader getFunctionClassLoader() {
+    return functionClassLoader;
   }
 
   public void startServer() throws Exception {
@@ -224,58 +238,34 @@ public class Invoker {
     context.setContextPath("/");
     server.setHandler(context);
 
-    ClassLoader runtimeLoader = getClass().getClassLoader();
-    ClassLoader classLoader;
-    if (functionClasspath.isPresent()) {
-      ClassLoader parent = new OnlyApiClassLoader(runtimeLoader);
-      classLoader = new URLClassLoader(classpathToUrls(functionClasspath.get()), parent);
-    } else {
-      classLoader = runtimeLoader;
-    }
+    Optional<Class<?>> functionClass = loadFunctionClass();
 
     HttpServlet servlet;
     if ("http".equals(functionSignatureType)) {
-      Optional<NewHttpFunctionExecutor> newExecutor =
-          NewHttpFunctionExecutor.forTarget(functionTarget, classLoader);
-      if (newExecutor.isPresent()) {
-        servlet = newExecutor.get();
+      if (functionClass.isPresent()) {
+        servlet = NewHttpFunctionExecutor.forClass(functionClass.get());
       } else {
-        FunctionLoader<HttpCloudFunction> loader =
-            new FunctionLoader<>(functionTarget, classLoader, new HttpFunctionSignatureMatcher());
+        FunctionLoader<HttpCloudFunction> loader = new FunctionLoader<>(
+            functionTarget, functionClassLoader, new HttpFunctionSignatureMatcher());
         HttpCloudFunction function = loader.loadUserFunction();
         servlet = new HttpFunctionExecutor(function);
       }
     } else if ("event".equals(functionSignatureType)) {
-      Optional<NewBackgroundFunctionExecutor> newExecutor =
-          NewBackgroundFunctionExecutor.forTarget(functionTarget, classLoader);
-      if (newExecutor.isPresent()) {
-        servlet = newExecutor.get();
+      if (functionClass.isPresent()) {
+        servlet = NewBackgroundFunctionExecutor.forClass(functionClass.get());
       } else {
         FunctionLoader<BackgroundCloudFunction> loader =
             new FunctionLoader<>(
-                functionTarget, classLoader, new BackgroundFunctionSignatureMatcher());
+                functionTarget, functionClassLoader, new BackgroundFunctionSignatureMatcher());
         BackgroundCloudFunction function = loader.loadUserFunction();
         servlet = new BackgroundFunctionExecutor(function);
       }
     } else if (functionSignatureType == null) {
-      Optional<NewHttpFunctionExecutor> httpExecutor =
-          NewHttpFunctionExecutor.forTarget(functionTarget, classLoader);
-      if (httpExecutor.isPresent()) {
-        servlet = httpExecutor.get();
+      if (functionClass.isPresent()) {
+        servlet = servletForDeducedSignatureType(functionClass.get());
       } else {
-        Optional<NewBackgroundFunctionExecutor> backgroundExecutor =
-            NewBackgroundFunctionExecutor.forTarget(functionTarget, classLoader);
-        if (backgroundExecutor.isPresent()) {
-          servlet = backgroundExecutor.get();
-        } else {
-          String error = String.format(
-              "Could not determine function signature type from target %s. Either this should be"
-              + " a class implementing one of the interfaces in com.google.cloud.functions, or the"
-              + " environment variable FUNCTION_SIGNATURE_TYPE should be set to \"http\" or"
-              + " \"event\".",
-              functionTarget);
-          throw new RuntimeException(error);
-        }
+        throw new RuntimeException(
+            "Class " + functionTarget + " does not exist or could not be loaded");
       }
     } else {
       String error = String.format(
@@ -290,7 +280,42 @@ public class Invoker {
     server.join();
   }
 
-  static URL[] classpathToUrls(String classpath) throws IOException {
+  private Optional<Class<?>> loadFunctionClass() {
+    String target = functionTarget;
+    while (true) {
+      try {
+        return Optional.of(functionClassLoader.loadClass(target));
+      } catch (ClassNotFoundException e) {
+        // This might be a nested class like com.example.Foo.Bar. That will actually appear as
+        // com.example.Foo$Bar as far as Class.forName is concerned. So we try to replace every dot
+        // from the last to the first with a $ in the hope of finding a class we can load.
+        int lastDot = target.lastIndexOf('.');
+        if (lastDot < 0) {
+          return Optional.empty();
+        }
+        target = target.substring(0, lastDot) + '$' + target.substring(lastDot + 1);
+      }
+    }
+  }
+
+  private HttpServlet servletForDeducedSignatureType(Class<?> functionClass) {
+    if (HttpFunction.class.isAssignableFrom(functionClass)) {
+      return NewHttpFunctionExecutor.forClass(functionClass);
+    }
+    if (BackgroundFunction.class.isAssignableFrom(functionClass)
+        || RawBackgroundFunction.class.isAssignableFrom(functionClass)) {
+      return NewBackgroundFunctionExecutor.forClass(functionClass);
+    }
+    String error = String.format(
+        "Could not determine function signature type from target %s. Either this should be"
+            + " a class implementing one of the interfaces in com.google.cloud.functions, or the"
+            + " environment variable FUNCTION_SIGNATURE_TYPE should be set to \"http\" or"
+            + " \"event\".",
+        functionTarget);
+    throw new RuntimeException(error);
+  }
+
+  static URL[] classpathToUrls(String classpath) {
     String[] components = classpath.split(File.pathSeparator);
     List<URL> urls = new ArrayList<>();
     for (String component : components) {
@@ -298,20 +323,28 @@ public class Invoker {
         urls.addAll(jarsIn(component.substring(0, component.length() - 2)));
       } else {
         Path path = Paths.get(component);
-        if (Files.exists(path)) {
+        try {
           urls.add(path.toUri().toURL());
+        } catch (MalformedURLException e) {
+          throw new UncheckedIOException(e);
         }
       }
     }
     return urls.toArray(new URL[0]);
   }
 
-  private static List<URL> jarsIn(String dir) throws IOException {
+  private static List<URL> jarsIn(String dir) {
     Path path = Paths.get(dir);
     if (!Files.isDirectory(path)) {
       return Collections.emptyList();
     }
-    return Files.list(path)
+    Stream<Path> stream;
+    try {
+      stream = Files.list(path);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    return stream
         .filter(p -> p.getFileName().toString().endsWith(".jar"))
         .map(p -> {
           try {

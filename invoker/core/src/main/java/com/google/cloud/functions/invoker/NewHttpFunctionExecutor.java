@@ -18,7 +18,6 @@ import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.invoker.http.HttpRequestImpl;
 import com.google.cloud.functions.invoker.http.HttpResponseImpl;
 import java.io.IOException;
-import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.http.HttpServlet;
@@ -36,42 +35,24 @@ public class NewHttpFunctionExecutor extends HttpServlet {
   }
 
   /**
-   * Make a {@link NewHttpFunctionExecutor} for the class named by the given {@code target}.
-   * If the class cannot be loaded, we currently assume that this is an old-style function
-   * (specified as package.Class.method instead of package.Class) and return
-   * {@code Optional.empty()}.
+   * Makes a {@link NewHttpFunctionExecutor} for the given class.
    *
-   * @throws RuntimeException if we succeed in loading the class named by {@code target} but then
-   *    either the class does not implement {@link HttpFunction} or we are unable to construct an
-   *    instance using its no-arg constructor.
+   * @throws RuntimeException if either the given class does not implement {@link HttpFunction}
+   *    or we are unable to construct an instance using its no-arg constructor.
    */
-  public static Optional<NewHttpFunctionExecutor> forTarget(String target, ClassLoader loader) {
-    Class<?> c;
-    while (true) {
-      try {
-        c = loader.loadClass(target);
-        break;
-      } catch (ClassNotFoundException e) {
-        // This might be a nested class like com.example.Foo.Bar. That will actually appear as
-        // com.example.Foo$Bar as far as Class.forName is concerned. So we try to replace every dot
-        // from the last to the first with a $ in the hope of finding a class we can load.
-        int lastDot = target.lastIndexOf('.');
-        if (lastDot < 0) {
-          return Optional.empty();
-        }
-        target = target.substring(0, lastDot) + '$' + target.substring(lastDot + 1);
-      }
-    }
-    if (!HttpFunction.class.isAssignableFrom(c)) {
+  public static NewHttpFunctionExecutor forClass(Class<?> functionClass) {
+    if (!HttpFunction.class.isAssignableFrom(functionClass)) {
       throw new RuntimeException(
-          "Class " + c.getName() + " does not implement " + HttpFunction.class.getName());
+          "Class " + functionClass.getName() + " does not implement "
+              + HttpFunction.class.getName());
     }
-    Class<? extends HttpFunction> httpFunctionClass = c.asSubclass(HttpFunction.class);
+    Class<? extends HttpFunction> httpFunctionClass = functionClass.asSubclass(HttpFunction.class);
     try {
       HttpFunction httpFunction = httpFunctionClass.getConstructor().newInstance();
-      return Optional.of(new NewHttpFunctionExecutor(httpFunction));
+      return new NewHttpFunctionExecutor(httpFunction);
     } catch (ReflectiveOperationException e) {
-      throw new RuntimeException("Could not construct an instance of " + target + ": " + e, e);
+      throw new RuntimeException(
+          "Could not construct an instance of " + functionClass.getName() + ": " + e, e);
     }
   }
 
