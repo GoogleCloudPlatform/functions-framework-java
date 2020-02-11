@@ -13,6 +13,30 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
+/**
+ * Runs a function using the Java Functions Framework. Typically this plugin is configured in one
+ * of two ways. Either in the pom.xml file, like this...
+ *
+ * <pre>{@code
+ *  <plugin>
+ *    <groupId>com.google.cloud.functions</groupId>
+ *    <artifactId>function-maven-plugin</artifactId>
+ *    <version>1.0.0-alpha-2-rc3</version>
+ *    <configuration>
+ *      <functionTarget>com.example.function.Echo</functionTarget>
+ *    </configuration>
+ *  </plugin>
+ * }</pre>
+ *
+ * ...and then run using {@code mvn function:run}. Or using properties on the command line, like
+ * this...<br>
+ *
+ * <pre>{@code
+ *   mvn com.google.cloud.functions:function:1.0.0-alpha-2-rc3:run \
+ *       -Drun.functionTarget=com.example.function.Echo}
+ * </pre>
+ *
+ */
 @Mojo(name = "run",
     defaultPhase = LifecyclePhase.GENERATE_RESOURCES,
     requiresDependencyResolution = ResolutionScope.COMPILE,
