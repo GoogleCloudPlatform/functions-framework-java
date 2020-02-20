@@ -59,8 +59,7 @@ public class NewHttpFunctionExecutor extends HttpServlet {
   /** Executes the user's method, can handle all HTTP type methods. */
   @Override
   public void service(HttpServletRequest req, HttpServletResponse res) {
-    URLRequestWrapper wrapper = new URLRequestWrapper(req);
-    HttpRequestImpl reqImpl = new HttpRequestImpl(wrapper);
+    HttpRequestImpl reqImpl = new HttpRequestImpl(req);
     HttpResponseImpl respImpl = new HttpResponseImpl(res);
     try {
       function.service(reqImpl, respImpl);

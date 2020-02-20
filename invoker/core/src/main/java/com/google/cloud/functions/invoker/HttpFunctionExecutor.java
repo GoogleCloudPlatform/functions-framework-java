@@ -30,9 +30,8 @@ public class HttpFunctionExecutor extends HttpServlet {
   /** Executes the user's method, can handle all HTTP type methods. */
   @Override
   public void service(HttpServletRequest req, HttpServletResponse res) {
-    URLRequestWrapper wrapper = new URLRequestWrapper(req);
     try {
-      function.execute(wrapper, res);
+      function.execute(req, res);
     } catch (InvocationTargetException e) {
       res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
       e.getCause().printStackTrace();
