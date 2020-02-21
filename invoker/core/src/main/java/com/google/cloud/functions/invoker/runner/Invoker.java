@@ -44,16 +44,24 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
@@ -234,9 +242,9 @@ public class Invoker {
   public void startServer() throws Exception {
     Server server = new Server(port);
 
-    ServletContextHandler context = new ServletContextHandler();
-    context.setContextPath("/");
-    server.setHandler(context);
+    ServletContextHandler servletContextHandler = new ServletContextHandler();
+    servletContextHandler.setContextPath("/");
+    server.setHandler(NotFoundHandler.forServlet(servletContextHandler));
 
     Optional<Class<?>> functionClass = loadFunctionClass();
 
@@ -273,7 +281,7 @@ public class Invoker {
           functionSignatureType);
       throw new RuntimeException(error);
     }
-    context.addServlet(new ServletHolder(servlet), "/*");
+    servletContextHandler.addServlet(new ServletHolder(servlet), "/*");
 
     server.start();
     logServerInfo();
@@ -361,6 +369,32 @@ public class Invoker {
       logger.log(Level.INFO, "Serving function...");
       logger.log(Level.INFO, "Function: {0}", functionTarget);
       logger.log(Level.INFO, "URL: http://localhost:{0,number,#}/", port);
+    }
+  }
+
+  /**
+   * Wrapper that intercepts requests for {@code /favicon.ico} and {@code /robots.txt} and causes
+   * them to produce a 404 status. Otherwise they would be sent to the function code, like any
+   * other URL, meaning that someone testing their function by using a browser as an HTTP client
+   * can see two requests, one for {@code /favicon.ico} and one for {@code /} (or whatever).
+   */
+  private static class NotFoundHandler extends HandlerWrapper {
+    static NotFoundHandler forServlet(ServletContextHandler servletHandler) {
+      NotFoundHandler handler = new NotFoundHandler();
+      handler.setHandler(servletHandler);
+      return handler;
+    }
+
+    private static final Set<String> NOT_FOUND_PATHS =
+        new HashSet<>(Arrays.asList("/favicon.ico", "/robots.txt"));
+
+    @Override
+    public void handle(String target, Request baseRequest, HttpServletRequest request,
+        HttpServletResponse response) throws IOException, ServletException {
+      if (NOT_FOUND_PATHS.contains(request.getRequestURI())) {
+        response.sendError(HttpStatus.NOT_FOUND_404, "Not Found");
+      }
+      super.handle(target, baseRequest, request, response);
     }
   }
 

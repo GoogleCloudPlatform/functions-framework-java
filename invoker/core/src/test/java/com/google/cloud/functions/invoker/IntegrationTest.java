@@ -140,7 +140,9 @@ public class IntegrationTest {
 
     abstract String requestText();
 
-    abstract String expectedResponseText();
+    abstract int expectedResponseCode();
+
+    abstract Optional<String> expectedResponseText();
 
     abstract Optional<String> expectedJsonString();
 
@@ -154,6 +156,7 @@ public class IntegrationTest {
       return new AutoValue_IntegrationTest_TestCase.Builder()
           .setUrl("/")
           .setRequestText("")
+          .setExpectedResponseCode(HttpStatus.OK_200)
           .setExpectedResponseText("")
           .setHttpContentType("text/plain")
           .setHttpHeaders(ImmutableMap.of());
@@ -166,7 +169,11 @@ public class IntegrationTest {
 
       abstract Builder setRequestText(String x);
 
+      abstract Builder setExpectedResponseCode(int x);
+
       abstract Builder setExpectedResponseText(String x);
+
+      abstract Builder setExpectedResponseText(Optional<String> x);
 
       abstract Builder setExpectedJsonString(String x);
 
@@ -184,47 +191,71 @@ public class IntegrationTest {
     return "com.google.cloud.functions.invoker.testfunctions." + nameWithoutPackage;
   }
 
+  private static final TestCase FAVICON_TEST_CASE =
+      TestCase.builder()
+          .setUrl("/favicon.ico?foo=bar")
+          .setExpectedResponseCode(HttpStatus.NOT_FOUND_404)
+          .setExpectedResponseText(Optional.empty())
+          .build();
+
+  private static final TestCase ROBOTS_TXT_TEST_CASE =
+      TestCase.builder()
+          .setUrl("/robots.txt?foo=bar")
+          .setExpectedResponseCode(HttpStatus.NOT_FOUND_404)
+          .setExpectedResponseText(Optional.empty())
+          .build();
+
   @Test
   public void helloWorld() throws Exception {
     testHttpFunction(fullTarget("HelloWorld.helloWorld"),
-        TestCase.builder().setExpectedResponseText("hello\n").build());
+        ImmutableList.of(
+            TestCase.builder().setExpectedResponseText("hello\n").build(),
+            FAVICON_TEST_CASE,
+            ROBOTS_TXT_TEST_CASE));
   }
 
   @Test
   public void newHelloWorld() throws Exception {
     testHttpFunction(fullTarget("NewHelloWorld"),
-        TestCase.builder().setExpectedResponseText("hello\n").build());
+        ImmutableList.of(
+            TestCase.builder().setExpectedResponseText("hello\n").build(),
+            FAVICON_TEST_CASE,
+            ROBOTS_TXT_TEST_CASE));
   }
 
   @Test
   public void echo() throws Exception {
     String testText = "hello\nworld\n";
-    testHttpFunction(fullTarget("Echo.echo"),
-        TestCase.builder().setRequestText(testText).setExpectedResponseText(testText).build());
+    testHttpFunction(
+        fullTarget("Echo.echo"),
+        ImmutableList.of(
+            TestCase.builder().setRequestText(testText).setExpectedResponseText(testText).build()));
   }
 
   @Test
   public void newEcho() throws Exception {
     String testText = "hello\nworld\n";
-    testHttpFunction(fullTarget("NewEcho"),
-        TestCase.builder().setRequestText(testText).setExpectedResponseText(testText).build());
+    testHttpFunction(
+        fullTarget("NewEcho"),
+        ImmutableList.of(
+            TestCase.builder().setRequestText(testText).setExpectedResponseText(testText).build()));
   }
 
   @Test
   public void echoUrl() throws Exception {
     String[] testUrls = {"/", "/foo/bar", "/?foo=bar&baz=buh", "/foo?bar=baz"};
-    TestCase[] testCases = Arrays.stream(testUrls)
+    List<TestCase> testCases = Arrays.stream(testUrls)
         .map(url -> TestCase.builder().setUrl(url).setExpectedResponseText(url + "\n").build())
-        .toArray(TestCase[]::new);
+        .collect(toList());
     testHttpFunction(fullTarget("EchoUrl.echoUrl"), testCases);
   }
 
   @Test
   public void newEchoUrl() throws Exception {
     String[] testUrls = {"/", "/foo/bar", "/?foo=bar&baz=buh", "/foo?bar=baz"};
-    TestCase[] testCases = Arrays.stream(testUrls)
+    List<TestCase> testCases = Arrays.stream(testUrls)
         .map(url -> TestCase.builder().setUrl(url).setExpectedResponseText(url + "\n").build())
-        .toArray(TestCase[]::new);
+        .collect(toList());
     testHttpFunction(fullTarget("NewEchoUrl"), testCases);
   }
 
@@ -237,7 +268,7 @@ public class IntegrationTest {
         .setSnoopFile(snoopFile)
         .setExpectedJsonString(requestText)
         .build();
-    backgroundTest(fullTarget("BackgroundSnoop.snoop"), testCase);
+    backgroundTest(fullTarget("BackgroundSnoop.snoop"), ImmutableList.of(testCase));
   }
 
   @Test
@@ -290,22 +321,22 @@ public class IntegrationTest {
 
     backgroundTest(
         fullTarget(target),
-        gcfTestCase,
-        cloudEventsStructuredTestCase,
-        cloudEventsBinaryTestCase);
+        ImmutableList.of(gcfTestCase, cloudEventsStructuredTestCase, cloudEventsBinaryTestCase));
   }
 
   @Test
   public void nested() throws Exception {
     String testText = "sic transit gloria mundi";
-    testHttpFunction(fullTarget("Nested.Echo"),
-        TestCase.builder().setRequestText(testText).setExpectedResponseText(testText).build());
+    testHttpFunction(
+        fullTarget("Nested.Echo"),
+        ImmutableList.of(
+            TestCase.builder().setRequestText(testText).setExpectedResponseText(testText).build()));
   }
 
   @Test
   public void packageless() throws Exception {
     testHttpFunction("PackagelessHelloWorld",
-        TestCase.builder().setExpectedResponseText("hello, world\n").build());
+        ImmutableList.of(TestCase.builder().setExpectedResponseText("hello, world\n").build()));
   }
 
   private File snoopFile() throws IOException {
@@ -337,12 +368,13 @@ public class IntegrationTest {
    */
   @Test
   public void classpathOptionHttp() throws Exception {
+    TestCase testCase = TestCase.builder()
+        .setUrl("/?class=" + INTERNAL_CLASS.getName())
+        .setExpectedResponseText("OK")
+        .build();
     testHttpFunction("com.example.functionjar.Foreground",
         ImmutableList.of("--classpath", functionJarString()),
-        TestCase.builder()
-            .setUrl("/?class=" + INTERNAL_CLASS.getName())
-            .setExpectedResponseText("OK")
-            .build());
+        ImmutableList.of(testCase));
   }
 
   /** Like {@link #classpathOptionHttp} but for background functions. */
@@ -357,7 +389,7 @@ public class IntegrationTest {
     jsonData.addProperty("class", INTERNAL_CLASS.getName());
     testBackgroundFunction("com.example.functionjar.Background",
         ImmutableList.of("--classpath", functionJarString()),
-        TestCase.builder().setRequestText(json.toString()).build());
+        ImmutableList.of(TestCase.builder().setRequestText(json.toString()).build()));
   }
 
   // In these tests, we test a number of different functions that express the same functionality
@@ -365,11 +397,11 @@ public class IntegrationTest {
   // event. We start with a fixed body and insert into its JSON an extra property that tells the
   // function where to write what it received. We have to do this since background functions, by
   // design, don't return a value.
-  private void backgroundTest(String functionTarget, TestCase... testCases) throws Exception {
+  private void backgroundTest(String functionTarget, List<TestCase> testCases) throws Exception {
     for (TestCase testCase : testCases) {
       File snoopFile = testCase.snoopFile().get();
       snoopFile.delete();
-      testBackgroundFunction(functionTarget, testCase);
+      testBackgroundFunction(functionTarget, ImmutableList.of(testCase));
       String snooped = new String(Files.readAllBytes(snoopFile.toPath()), StandardCharsets.UTF_8);
       Gson gson = new Gson();
       JsonObject snoopedJson = gson.fromJson(snooped, JsonObject.class);
@@ -388,21 +420,22 @@ public class IntegrationTest {
     expect.that(snoopedJson).isEqualTo(expectedJson);
   }
 
-  private void testHttpFunction(String target, TestCase... testCases) throws Exception {
+  private void testHttpFunction(String target, List<TestCase> testCases) throws Exception {
     testHttpFunction(target, ImmutableList.of(), testCases);
   }
 
   private void testHttpFunction(
-      String target, ImmutableList<String> extraArgs, TestCase... testCases) throws Exception {
+      String target, ImmutableList<String> extraArgs, List<TestCase> testCases) throws Exception {
     testFunction(SignatureType.HTTP, target, extraArgs, testCases);
   }
 
-  private void testBackgroundFunction(String target, TestCase... testCases)
+  private void testBackgroundFunction(String target, List<TestCase> testCases)
       throws Exception {
     testBackgroundFunction(target, ImmutableList.of(), testCases);
   }
+
   private void testBackgroundFunction(
-      String target, ImmutableList<String> extraArgs, TestCase... testCases)
+      String target, ImmutableList<String> extraArgs, List<TestCase> testCases)
       throws Exception {
     testFunction(SignatureType.BACKGROUND, target, extraArgs, testCases);
   }
@@ -411,7 +444,7 @@ public class IntegrationTest {
       SignatureType signatureType,
       String target,
       ImmutableList<String> extraArgs,
-      TestCase... testCases) throws Exception {
+      List<TestCase> testCases) throws Exception {
     ServerProcess serverProcess = startServer(signatureType, target, extraArgs);
     try {
       HttpClient httpClient = new HttpClient();
@@ -426,8 +459,9 @@ public class IntegrationTest {
         ContentResponse response = request.send();
         expect
             .withMessage("Response to %s is %s %s", uri, response.getStatus(), response.getReason())
-            .that(response.getStatus()).isEqualTo(HttpStatus.OK_200);
-        expect.that(response.getContentAsString()).isEqualTo(testCase.expectedResponseText());
+            .that(response.getStatus()).isEqualTo(testCase.expectedResponseCode());
+        testCase.expectedResponseText()
+            .ifPresent(text -> expect.that(response.getContentAsString()).isEqualTo(text));
         if (testCase.snoopFile().isPresent()) {
           checkSnoopFile(testCase.snoopFile().get(), testCase.expectedJsonString().get());
         }
