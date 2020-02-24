@@ -112,7 +112,6 @@ public class IntegrationTest {
         .withData(ImmutableMap.of("a", 2, "b", 3, "targetFile", snoopFile.toString()))
         .withTime(ZonedDateTime.of(2018, 4, 5, 17, 31, 0, 0, ZoneOffset.UTC))
         .build();
-
   }
 
   private static int serverPort;
@@ -146,6 +145,8 @@ public class IntegrationTest {
 
     abstract Optional<String> expectedJsonString();
 
+    abstract Optional<String> expectedContentType();
+
     abstract String httpContentType();
 
     abstract ImmutableMap<String, String> httpHeaders();
@@ -174,6 +175,8 @@ public class IntegrationTest {
       abstract Builder setExpectedResponseText(String x);
 
       abstract Builder setExpectedResponseText(Optional<String> x);
+
+      abstract Builder setExpectedContentType(String x);
 
       abstract Builder setExpectedJsonString(String x);
 
@@ -238,7 +241,17 @@ public class IntegrationTest {
     testHttpFunction(
         fullTarget("NewEcho"),
         ImmutableList.of(
-            TestCase.builder().setRequestText(testText).setExpectedResponseText(testText).build()));
+            TestCase.builder()
+                .setRequestText(testText)
+                .setExpectedResponseText(testText)
+                .setExpectedContentType("text/plain")
+                .build(),
+            TestCase.builder()
+                .setHttpContentType("application/octet-stream")
+                .setRequestText(testText)
+                .setExpectedResponseText(testText)
+                .setExpectedContentType("application/octet-stream")
+                .build()));
   }
 
   @Test
@@ -462,6 +475,8 @@ public class IntegrationTest {
             .that(response.getStatus()).isEqualTo(testCase.expectedResponseCode());
         testCase.expectedResponseText()
             .ifPresent(text -> expect.that(response.getContentAsString()).isEqualTo(text));
+        testCase.expectedContentType()
+            .ifPresent(type -> expect.that(response.getMediaType()).isEqualTo(type));
         if (testCase.snoopFile().isPresent()) {
           checkSnoopFile(testCase.snoopFile().get(), testCase.expectedJsonString().get());
         }
