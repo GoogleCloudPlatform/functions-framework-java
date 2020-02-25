@@ -72,12 +72,13 @@ public class NewHttpFunctionExecutor extends HttpServlet {
       res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     } finally {
       try {
-        // Shouldn't HttpServletResponse.flushBuffer() work here? But it doesn't. So we have to
-        // flush whichever of getWriter() or getOutputStream() works.
+        // We can't use HttpServletResponse.flushBuffer() because we wrap the PrintWriter
+        // returned by HttpServletResponse in our own BufferedWriter to match our API.
+        // So we have to flush whichever of getWriter() or getOutputStream() works.
         try {
-          respImpl.getWriter().flush();
-        } catch (IllegalStateException e) {
           respImpl.getOutputStream().flush();
+        } catch (IllegalStateException e) {
+          respImpl.getWriter().flush();
         }
       } catch (IOException e) {
         // Too bad, can't flush.
