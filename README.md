@@ -135,7 +135,7 @@ You can configure the plugin in `pom.xml`:
 <plugin>
   <groupId>com.google.cloud.functions</groupId>
   <artifactId>function-maven-plugin</artifactId>
-  <version>0.9</version>
+  <version>0.9.1</version>
   <configuration>
     <functionTarget>com.example.function.Echo</functionTarget>
   </configuration>
@@ -153,7 +153,7 @@ mvn function:run
 You can alternatively configure the plugin with properties on the command line:
 
 ```sh
-  mvn com.google.cloud.functions:function:0.9:run \
+  mvn com.google.cloud.functions:function:0.9.1:run \
       -Drun.functionTarget=com.example.function.Echo
 ```
 
@@ -164,7 +164,7 @@ Copy the Functions Framework jar to a local location like this:
 
 ```sh
 mvn dependency:copy \
-    -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.0.0-alpha-2-rc3' \
+    -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.0.0-alpha-2-rc4' \
     -DoutputDirectory=.
 ```
 
@@ -172,7 +172,7 @@ In this example we use the current directory `.` but you can specify any other
 directory to copy to. Then run your function:
 
 ```sh
-java -jar java-function-invoker-1.0.0-alpha-2-rc3.jar \
+java -jar java-function-invoker-1.0.0-alpha-2-rc4.jar \
     --classpath myfunction.jar \
     --target com.example.HelloWorld
 ```
@@ -222,7 +222,7 @@ Framework directly, you must use `--classpath` to indicate how to find the code
 and its dependencies. For example:
 
 ```
-java -jar java-function-invoker-1.0.0-alpha-2-rc3.jar \
+java -jar java-function-invoker-1.0.0-alpha-2-rc4.jar \
     --classpath 'myfunction.jar:/some/directory:/some/library/*' \
     --target com.example.HelloWorld
 ```
