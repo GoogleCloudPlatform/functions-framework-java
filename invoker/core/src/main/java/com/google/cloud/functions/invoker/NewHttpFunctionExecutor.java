@@ -61,7 +61,9 @@ public class NewHttpFunctionExecutor extends HttpServlet {
   public void service(HttpServletRequest req, HttpServletResponse res) {
     HttpRequestImpl reqImpl = new HttpRequestImpl(req);
     HttpResponseImpl respImpl = new HttpResponseImpl(res);
+    ClassLoader oldContextLoader = Thread.currentThread().getContextClassLoader();
     try {
+      Thread.currentThread().setContextClassLoader(function.getClass().getClassLoader());
       function.service(reqImpl, respImpl);
     } catch (Throwable t) {
       // TODO(b/146510646): this should be logged properly as an exception, but that currently
@@ -71,6 +73,7 @@ public class NewHttpFunctionExecutor extends HttpServlet {
       t.printStackTrace();
       res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     } finally {
+      Thread.currentThread().setContextClassLoader(oldContextLoader);
       try {
         // We can't use HttpServletResponse.flushBuffer() because we wrap the PrintWriter
         // returned by HttpServletResponse in our own BufferedWriter to match our API.

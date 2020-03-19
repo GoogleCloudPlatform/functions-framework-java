@@ -168,14 +168,18 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
    *     unmarshalling this event, if it is a CloudEvent.
    */
   private abstract static class FunctionExecutor<CloudEventDataT> {
-    private final String functionName;
+    private final Class<?> functionClass;
 
-    FunctionExecutor(String functionName) {
-      this.functionName = functionName;
+    FunctionExecutor(Class<?> functionClass) {
+      this.functionClass = functionClass;
     }
 
     final String functionName() {
-      return functionName;
+      return functionClass.getCanonicalName();
+    }
+
+    final ClassLoader functionClassLoader() {
+      return functionClass.getClassLoader();
     }
 
     abstract void serviceLegacyEvent(HttpServletRequest req)
@@ -193,7 +197,7 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
     private final RawBackgroundFunction function;
 
     RawFunctionExecutor(RawBackgroundFunction function) {
-      super(function.getClass().getCanonicalName());
+      super(function.getClass());
       this.function = function;
     }
 
@@ -234,7 +238,7 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
     private final BackgroundFunction<T> function;
 
     private TypedFunctionExecutor(Type type, BackgroundFunction<T> function) {
-      super(function.getClass().getCanonicalName());
+      super(function.getClass());
       this.type = type;
       this.function = function;
     }
@@ -287,7 +291,9 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
   @Override
   public void service(HttpServletRequest req, HttpServletResponse res) throws IOException {
     String contentType = req.getContentType();
+    ClassLoader oldContextLoader = Thread.currentThread().getContextClassLoader();
     try {
+      Thread.currentThread().setContextClassLoader(functionExecutor.functionClassLoader());
       if (contentType != null && contentType.startsWith("application/cloudevents+json")) {
         serviceCloudEvent(req, CloudEventKind.STRUCTURED);
       } else if (req.getHeader("ce-specversion") != null) {
@@ -299,6 +305,8 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
     } catch (Throwable t) {
       res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
       logger.log(Level.WARNING, "Failed to execute " + functionExecutor.functionName(), t);
+    } finally {
+      Thread.currentThread().setContextClassLoader(oldContextLoader);
     }
   }
 

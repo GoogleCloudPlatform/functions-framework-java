@@ -18,6 +18,15 @@ import com.google.escapevelocity.Template;
 
 class Checker {
   void serviceOrAssert(String runtimeClassName) {
+    // Check that the context class loader is the loader that loaded this class.
+    if (getClass().getClassLoader() != Thread.currentThread().getContextClassLoader()) {
+      throw new AssertionError(
+          String.format(
+              "ClassLoader mismatch: mine %s; context %s",
+              getClass().getClassLoader(),
+              Thread.currentThread().getContextClassLoader()));
+    }
+
     ClassLoader myLoader = getClass().getClassLoader();
     Class<Template> templateClass = Template.class;
     ClassLoader templateLoader = templateClass.getClassLoader();
