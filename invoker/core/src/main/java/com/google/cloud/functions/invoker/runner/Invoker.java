@@ -31,6 +31,7 @@ import com.google.cloud.functions.invoker.HttpFunctionExecutor;
 import com.google.cloud.functions.invoker.HttpFunctionSignatureMatcher;
 import com.google.cloud.functions.invoker.NewBackgroundFunctionExecutor;
 import com.google.cloud.functions.invoker.NewHttpFunctionExecutor;
+import com.google.cloud.functions.invoker.gcf.JsonLogHandler;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -50,8 +51,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.logging.Handler;
 import java.util.logging.Level;
-import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 import javax.servlet.ServletException;
@@ -80,17 +81,19 @@ import org.eclipse.jetty.servlet.ServletHolder;
  * </ul>
  */
 public class Invoker {
-
-  private static final Logger logger;
+  private static final Logger rootLogger = Logger.getLogger("");
+  private static final Logger logger = Logger.getLogger(Invoker.class.getName());
 
   static {
-    try {
-      LogManager.getLogManager()
-          .readConfiguration(Invoker.class.getResourceAsStream("/logging.properties"));
-    } catch (IOException e) {
-      System.out.println("Failed to read logging configuration file, error: " + e.getMessage());
+    if (isGcf()) {
+      // If we're running with Google Cloud Functions, we'll get better-looking logs if we arrange
+      // for them to be formatted using StackDriver's "structured logging" JSON format. Remove the
+      // JDK's standard logger and replace it with the JSON one.
+      for (Handler handler : rootLogger.getHandlers()) {
+        rootLogger.removeHandler(handler);
+      }
+      rootLogger.addHandler(new JsonLogHandler(System.out, false));
     }
-    logger = Logger.getLogger(Invoker.class.getName());
   }
 
   private static class Options {
@@ -365,11 +368,17 @@ public class Invoker {
   }
 
   private void logServerInfo() {
-    if (isLocalRun()) {
+    if (!isGcf()) {
       logger.log(Level.INFO, "Serving function...");
       logger.log(Level.INFO, "Function: {0}", functionTarget);
       logger.log(Level.INFO, "URL: http://localhost:{0,number,#}/", port);
     }
+  }
+
+  private static boolean isGcf() {
+    // This environment variable is set in the GCF environment but won't be set when invoking
+    // the Functions Framework directly. We don't use its value, just whether it is set.
+    return System.getenv("K_SERVICE") != null;
   }
 
   /**

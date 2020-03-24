@@ -41,6 +41,7 @@ import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -147,6 +148,8 @@ public class IntegrationTest {
 
     abstract Optional<String> expectedContentType();
 
+    abstract Optional<String> expectedOutput();
+
     abstract String httpContentType();
 
     abstract ImmutableMap<String, String> httpHeaders();
@@ -177,6 +180,8 @@ public class IntegrationTest {
       abstract Builder setExpectedResponseText(Optional<String> x);
 
       abstract Builder setExpectedContentType(String x);
+
+      abstract Builder setExpectedOutput(String x);
 
       abstract Builder setExpectedJsonString(String x);
 
@@ -270,6 +275,41 @@ public class IntegrationTest {
         .map(url -> TestCase.builder().setUrl(url).setExpectedResponseText(url + "\n").build())
         .collect(toList());
     testHttpFunction(fullTarget("NewEchoUrl"), testCases);
+  }
+
+  @Test
+  public void stackDriverLogging() throws Exception {
+    String simpleExpectedOutput =
+        "{\"severity\": \"INFO\", "
+            + "\"logging.googleapis.com/sourceLocation\": "
+            + "{\"file\": \"com/google/cloud/functions/invoker/testfunctions/Log.java\","
+            + " \"method\": \"service\"},"
+            + " \"message\": \"blim\"}";
+    TestCase simpleTestCase =
+        TestCase.builder()
+            .setUrl("/?message=blim")
+            .setExpectedOutput(simpleExpectedOutput)
+            .build();
+    String quotingExpectedOutput = "\"message\": \"foo\\nbar\\\"";
+    TestCase quotingTestCase =
+        TestCase.builder()
+            .setUrl("/?message=" + URLEncoder.encode("foo\nbar\"", "UTF-8"))
+            .setExpectedOutput(quotingExpectedOutput)
+            .build();
+    String exceptionExpectedOutput =
+        "{\"severity\": \"ERROR\", "
+            + "\"logging.googleapis.com/sourceLocation\": "
+            + "{\"file\": \"com/google/cloud/functions/invoker/testfunctions/Log.java\", "
+            + "\"method\": \"service\"}, "
+            + "\"message\": \"oops\\njava.lang.Exception: disaster\\n"
+            + "	at com.google.cloud.functions.invoker.testfunctions.Log.service(Log.java:";
+    TestCase exceptionTestCase =
+        TestCase.builder()
+            .setUrl("/?message=oops&level=severe&exception=disaster")
+            .setExpectedOutput(exceptionExpectedOutput)
+            .build();
+    testHttpFunction(
+        fullTarget("Log"), ImmutableList.of(simpleTestCase, quotingTestCase, exceptionTestCase));
   }
 
   @Test
@@ -480,6 +520,8 @@ public class IntegrationTest {
         if (testCase.snoopFile().isPresent()) {
           checkSnoopFile(testCase.snoopFile().get(), testCase.expectedJsonString().get());
         }
+        testCase.expectedOutput()
+            .ifPresent(output -> expect.that(serverProcess.output().toString()).contains(output));
       }
     } finally {
       serverProcess.close();
@@ -505,13 +547,29 @@ public class IntegrationTest {
     }
   }
 
-  @AutoValue
-  abstract static class ServerProcess implements AutoCloseable {
-    abstract Process process();
-    abstract Future<?> outputMonitorResult();
+  private static class ServerProcess implements AutoCloseable {
+    private final Process process;
+    private final Future<?> outputMonitorResult;
+    private final StringBuilder output;
 
-    static ServerProcess of(Process process, Future<?> outputMonitorResult) {
-      return new AutoValue_IntegrationTest_ServerProcess(process, outputMonitorResult);
+    ServerProcess(Process process, Future<?> outputMonitorResult, StringBuilder output) {
+      this.process = process;
+      this.outputMonitorResult = outputMonitorResult;
+      this.output = output;
+    }
+
+    Process process() {
+      return process;
+    }
+
+    Future<?> outputMonitorResult() {
+      return outputMonitorResult;
+    }
+
+    String output() {
+      synchronized (output) {
+        return output.toString();
+      }
     }
 
     @Override
@@ -544,17 +602,19 @@ public class IntegrationTest {
     processBuilder.environment().putAll(environment);
     Process serverProcess = processBuilder.start();
     CountDownLatch ready = new CountDownLatch(1);
+    StringBuilder output = new StringBuilder();
     Future<?> outputMonitorResult = EXECUTOR.submit(
-        () -> monitorOutput(serverProcess.getInputStream(), ready));
+        () -> monitorOutput(serverProcess.getInputStream(), ready, output));
     boolean serverReady = ready.await(5, TimeUnit.SECONDS);
     if (!serverReady) {
       serverProcess.destroy();
       throw new AssertionError("Server never became ready");
     }
-    return ServerProcess.of(serverProcess, outputMonitorResult);
+    return new ServerProcess(serverProcess, outputMonitorResult, output);
   }
 
-  private void monitorOutput(InputStream processOutput, CountDownLatch ready) {
+  private void monitorOutput(
+      InputStream processOutput, CountDownLatch ready, StringBuilder output) {
     try (BufferedReader reader = new BufferedReader(new InputStreamReader(processOutput))) {
       String line;
       while ((line = reader.readLine()) != null) {
@@ -562,6 +622,9 @@ public class IntegrationTest {
           ready.countDown();
         }
         System.out.println(line);
+        synchronized (output) {
+          output.append(line).append('\n');
+        }
         if (line.contains("WARNING")) {
           throw new AssertionError("Found warning in server output:\n" + line);
         }
