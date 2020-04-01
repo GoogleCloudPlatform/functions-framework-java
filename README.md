@@ -15,7 +15,12 @@ different environments, including:
 
 The Functions Framework for Java requires
 [Java](https://java.com/en/download/help/download_options.xml) and
-[Maven](http://maven.apache.org/install.html) (the `mvn` command).
+[Maven](http://maven.apache.org/install.html) (the `mvn` command),
+for building and deploying functions from source.
+
+However, it is also possible to build your functions using
+[Gradle](https://gradle.org/), as JAR archives, that you will deploy with the 
+`gcloud` command-line.
 
 ## Quickstart: Hello, World on your local machine
 
@@ -30,6 +35,16 @@ that supports Maven to create the Maven project. Add this dependency in the
       <version>1.0.0-alpha-2-rc3</version>
       <scope>provided</scope>
     </dependency>
+```
+
+If you are using Gradle for building your functions, you can define the Functions
+Framework dependency in your `build.gradle` project file as follows:
+
+```groovy
+    dependencies {
+        implementation 'com.google.cloud.functions:functions-framework-api:1.0.0-alpha-2-rc3'
+    }
+
 ```
 
 ### Writing an HTTP function
@@ -178,17 +193,62 @@ java -jar java-function-invoker-1.0.0-alpha-2-rc4.jar \
 ```
 
 
+## Running a function with Gradle
+
+From Gradle, similarily to running functions with the Functions Framework jar,
+we can invoke the `Invoker` class with a `JavaExec` task.
+
+### Configuration in `build.gradle`
+
+```groovy
+configurations {
+    invoker
+}
+
+dependencies {
+    implementation 'com.google.cloud.functions:functions-framework-api:1.0.0-alpha-2-rc3'
+    invoker 'com.google.cloud.functions.invoker:java-function-invoker:1.0.0-alpha-2-rc4'
+}
+
+tasks.register("runFunction", JavaExec) {
+    main = 'com.google.cloud.functions.invoker.runner.Invoker'
+    classpath(configurations.invoker)
+    inputs.files(configurations.runtimeClasspath, sourceSets.main.output)
+    args(
+            '--target', project.findProperty('runFunction.target'),
+            '--port', project.findProperty('runFunction.port') ?: 8080
+    )
+    doFirst {
+        args('--classpath', files(configurations.runtimeClasspath, sourceSets.main.output).asPath)
+    }
+}
+```
+
+Then in your terminal or IDE, you will be able to run the function locally with:
+
+```sh
+gradle runFunction -PrunFunction.target=com.exfn.HelloFunction \
+                   -PrunFunction.port=8080
+```
+
+Or if you use the Gradle wrapper provided by your Gradle project build:
+
+```sh
+./gradlew runFunction -PrunFunction.target=com.exfn.HelloFunction \
+                      -PrunFunction.port=8080
+```
+
 ## Functions Framework configuration
 
 There are a number of options that can be used to configure the Functions
 Framework, whether run directly or on the command line. This table summarizes
 them, and the following sections explain them in detail.
 
-| Command-line  | `pom.xml`          | Maven system property |
-|---------------|--------------------|-----------------------|
-| `--target`    | `<functionTarget>` | `run.functionTarget`  |
-| `--port`      | `<port>`           | `run.port`            |
-| `--classpath` | -                  | -                     |
+| Command-line  | `pom.xml`          | Maven system property | Gradle project property  |
+|---------------|--------------------|-----------------------|--------------------------|
+| `--target`    | `<functionTarget>` | `run.functionTarget`  | `run.functionTarget`     |
+| `--port`      | `<port>`           | `run.port`            | `run.port`               |
+| `--classpath` | -                  | -                     |                          |
 
 ### Which function to run
 
@@ -199,7 +259,13 @@ the Functions Framework:
 --target com.example.HelloWorld
 <functionTarget>com.example.HelloWorld</functionTarget>
 -Drun.functionTarget=com.example.HelloWorld
+-Prun.functionTarget=com.example.HelloWorld
 ```
+
+* Invoker argument: `--target com.example.HelloWorld`
+* Maven `pom.xml`: `<functionTarget>com.example.HelloWorld</functionTarget>`
+* Maven CLI argument: `-Drun.functionTarget=com.example.HelloWorld`
+* Gradle CLI argument: `-Prun.functionTarget=com.example.HelloWorld`
 
 ### Which port to listen on
 
@@ -207,11 +273,10 @@ The Functions Framework is an HTTP server that directs incoming HTTP requests to
 the function code. By default this server listens on port 8080. Specify an
 alternative value like this:
 
-```
---port 12345
-<port>12345</port>
--Drun.port=12345
-```
+* Invoker argument: `--port 12345`
+* Maven `pom.xml`: `<port>12345</port>`
+* Maven CLI argument: `-Drun.port=12345`
+* Gradle CLI argument: `-Prun.port=12345`
 
 ### Function classpath
 
