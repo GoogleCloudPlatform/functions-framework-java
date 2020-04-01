@@ -227,14 +227,14 @@ tasks.register("runFunction", JavaExec) {
 Then in your terminal or IDE, you will be able to run the function locally with:
 
 ```sh
-gradle runFunction -PrunFunction.target=com.exfn.HelloFunction \
+gradle runFunction -PrunFunction.target=com.example.HelloWorld \
                    -PrunFunction.port=8080
 ```
 
 Or if you use the Gradle wrapper provided by your Gradle project build:
 
 ```sh
-./gradlew runFunction -PrunFunction.target=com.exfn.HelloFunction \
+./gradlew runFunction -PrunFunction.target=com.example.HelloWorld \
                       -PrunFunction.port=8080
 ```
 
