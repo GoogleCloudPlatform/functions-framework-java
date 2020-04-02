@@ -183,12 +183,12 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
     }
 
     abstract void serviceLegacyEvent(HttpServletRequest req)
-        throws IOException;
+        throws Exception;
 
     abstract void serviceCloudEvent(
         HttpServletRequest req,
         HeadersStep<AttributesImpl, CloudEventDataT, String> unmarshaller)
-        throws IOException;
+        throws Exception;
 
     abstract Class<CloudEventDataT> cloudEventDataType();
   }
@@ -202,7 +202,7 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
     }
 
     @Override
-    void serviceLegacyEvent(HttpServletRequest req) throws IOException {
+    void serviceLegacyEvent(HttpServletRequest req) throws Exception {
       Event event = parseLegacyEvent(req);
       function.accept(new Gson().toJson(event.getData()), event.getContext());
     }
@@ -210,7 +210,7 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
     @Override
     void serviceCloudEvent(
         HttpServletRequest req, HeadersStep<AttributesImpl, Map<?, ?>, String> unmarshaller)
-        throws IOException {
+        throws Exception {
       Map<String, Object> httpHeaders = httpHeaderMap(req);
       String body = req.getReader().lines().collect(joining("\n"));
       CloudEvent<AttributesImpl, Map<?, ?>> cloudEvent =
@@ -250,7 +250,7 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
     }
 
     @Override
-    void serviceLegacyEvent(HttpServletRequest req) throws IOException {
+    void serviceLegacyEvent(HttpServletRequest req) throws Exception {
       Event event = parseLegacyEvent(req);
       T payload = new Gson().fromJson(event.getData(), type);
       function.accept(payload, event.getContext());
@@ -259,7 +259,7 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
     @Override
     void serviceCloudEvent(
         HttpServletRequest req, HeadersStep<AttributesImpl, T, String> unmarshaller)
-        throws IOException {
+        throws Exception {
       Map<String, Object> httpHeaders = httpHeaderMap(req);
       String body = req.getReader().lines().collect(joining("\n"));
       CloudEvent<AttributesImpl, T> cloudEvent =
@@ -319,7 +319,7 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
    *     {@link FunctionExecutor}.
    */
   private <CloudEventT> void serviceCloudEvent(
-      HttpServletRequest req, CloudEventKind kind) throws IOException {
+      HttpServletRequest req, CloudEventKind kind) throws Exception {
     @SuppressWarnings("unchecked")
     FunctionExecutor<CloudEventT> executor = (FunctionExecutor<CloudEventT>) functionExecutor;
     Class<CloudEventT> cloudEventDataType = executor.cloudEventDataType();
@@ -337,7 +337,7 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
     executor.serviceCloudEvent(req, unmarshaller);
   }
 
-  private void serviceLegacyEvent(HttpServletRequest req) throws IOException {
+  private void serviceLegacyEvent(HttpServletRequest req) throws Exception {
     functionExecutor.serviceLegacyEvent(req);
   }
 }
