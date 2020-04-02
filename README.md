@@ -13,7 +13,7 @@ different environments, including:
 
 ## Installation
 
-The Functions Framework for Java requires
+The Functions Framework for Java uses
 [Java](https://java.com/en/download/help/download_options.xml) and
 [Maven](http://maven.apache.org/install.html) (the `mvn` command),
 for building and deploying functions from source.
@@ -37,7 +37,7 @@ that supports Maven to create the Maven project. Add this dependency in the
     </dependency>
 ```
 
-If you are using Gradle for building your functions, you can define the Functions
+If you are using Gradle to build your functions, you can define the Functions
 Framework dependency in your `build.gradle` project file as follows:
 
 ```groovy
@@ -241,14 +241,7 @@ Or if you use the Gradle wrapper provided by your Gradle project build:
 ## Functions Framework configuration
 
 There are a number of options that can be used to configure the Functions
-Framework, whether run directly or on the command line. This table summarizes
-them, and the following sections explain them in detail.
-
-| Command-line  | `pom.xml`          | Maven system property | Gradle project property  |
-|---------------|--------------------|-----------------------|--------------------------|
-| `--target`    | `<functionTarget>` | `run.functionTarget`  | `run.functionTarget`     |
-| `--port`      | `<port>`           | `run.port`            | `run.port`               |
-| `--classpath` | -                  | -                     |                          |
+Framework, whether run directly or on the command line.
 
 ### Which function to run
 
