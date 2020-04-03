@@ -70,5 +70,5 @@ public interface RawBackgroundFunction {
    * @param context the context of the event. This is a set of values that every event has,
    *     separately from the payload, such as timestamp and event type.
    */
-  void accept(String json, Context context);
+  void accept(String json, Context context) throws Exception;
 }
