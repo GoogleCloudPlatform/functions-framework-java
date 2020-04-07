@@ -1,7 +1,4 @@
 language: java
 jdk:
   - openjdk11
-# Use a Build Matrix for subdirs (https://lord.io/blog/2014/travis-multiple-subdirs/)
-env:
-  - DIR=functions-framework-api/
-script: cd $DIR && gradle build # gradle -q run
+script: (cd functions-framework-api/ && mvn install) && (cd invoker/ && mvn test)
