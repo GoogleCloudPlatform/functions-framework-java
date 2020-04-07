@@ -133,11 +133,13 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
     // We don't have an obvious replacement for the Context.resource field, which with legacy events
     // corresponded to a value present for some proprietary Google event types.
     String resource = "{}";
+    Map<String, String> attributesMap = AttributesImpl.marshal(attributes);
     return CloudFunctionsContext.builder()
         .setEventId(attributes.getId())
         .setEventType(attributes.getType())
         .setResource(resource)
         .setTimestamp(timestampString)
+        .setAttributes(attributesMap)
         .build();
   }
 

@@ -40,6 +40,7 @@ public class NewTypedBackgroundSnoop
     JsonObject contextAndPayloadJson = new JsonObject();
     contextAndPayloadJson.add("data", gson.toJsonTree(payload));
     contextAndPayloadJson.add("context", contextJson);
+    contextAndPayloadJson.add("attributes", gson.toJsonTree(context.attributes()));
     try (FileWriter fileWriter = new FileWriter(targetFile);
         PrintWriter writer = new PrintWriter(fileWriter)) {
       writer.println(contextAndPayloadJson);

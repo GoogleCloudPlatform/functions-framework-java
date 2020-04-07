@@ -14,6 +14,9 @@
 
 package com.google.cloud.functions;
 
+import java.util.Collections;
+import java.util.Map;
+
 /** An interface for event function context. */
 public interface Context {
   /** Returns event ID. */
@@ -27,4 +30,20 @@ public interface Context {
 
   /** Returns event resource. */
   String resource();
+
+  /**
+   * Returns additional attributes from this event. For CloudEvents, the entries in this map will
+   * include the
+   * <a href="https://github.com/cloudevents/spec/blob/v1.0/spec.md#required-attributes">required
+   * attributes</a> and may include
+   * <a href="https://github.com/cloudevents/spec/blob/v1.0/spec.md#required-attributes">optional
+   * attributes</a> and
+   * <a href="https://github.com/cloudevents/spec/blob/v1.0/spec.md#extension-context-attributes">
+   * extension attributes</a>.
+   *
+   * <p>The map returned by this method may be empty but is never null.</p>
+   */
+  default Map<String, String> attributes() {
+    return Collections.emptyMap();
+  }
 }
