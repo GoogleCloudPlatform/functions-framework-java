@@ -1,8 +1,4 @@
 language: java
 jdk:
   - openjdk11
-# Use a Build Matrix for subdirs (https://lord.io/blog/2014/travis-multiple-subdirs/)
-env:
-  - API=functions-framework-api/
-  - IMPL=invoker/
-script: (cd $API && mvn install) && (cd $IMPL && mvn install)
+script: (cd functions-framework-api/ && mvn install) && (cd invoker/ && mvn test)
