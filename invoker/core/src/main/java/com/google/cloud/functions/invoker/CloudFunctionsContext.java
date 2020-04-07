@@ -20,6 +20,8 @@ import com.google.gson.Gson;
 import com.google.gson.TypeAdapter;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.Collections;
+import java.util.Map;
 
 /** Event context (metadata) for events handled by Cloud Functions. */
 @AutoValue
@@ -28,24 +30,32 @@ abstract class CloudFunctionsContext implements Context {
   @Retention(RetentionPolicy.SOURCE)
   @interface Nullable {}
 
+  @Override
   @Nullable
   public abstract String eventId();
 
+  @Override
   @Nullable
   public abstract String timestamp();
 
+  @Override
   @Nullable
   public abstract String eventType();
 
+  @Override
   @Nullable
   public abstract String resource();
+
+  @Override
+  public abstract Map<String, String> attributes();
 
   public static TypeAdapter<CloudFunctionsContext> typeAdapter(Gson gson) {
     return new AutoValue_CloudFunctionsContext.GsonTypeAdapter(gson);
   }
 
   static Builder builder() {
-    return new AutoValue_CloudFunctionsContext.Builder();
+    return new AutoValue_CloudFunctionsContext.Builder()
+        .setAttributes(Collections.emptyMap());
   }
 
   @AutoValue.Builder
@@ -54,6 +64,8 @@ abstract class CloudFunctionsContext implements Context {
     abstract Builder setTimestamp(String x);
     abstract Builder setEventType(String x);
     abstract Builder setResource(String x);
+    abstract Builder setAttributes(Map<String, String> value);
+
     abstract CloudFunctionsContext build();
   }
 }

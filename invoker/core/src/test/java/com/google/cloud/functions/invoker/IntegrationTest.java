@@ -115,6 +115,18 @@ public class IntegrationTest {
         .build();
   }
 
+  private static JsonObject expectedCloudEventAttributes() {
+    JsonObject attributes = new JsonObject();
+    attributes.addProperty("datacontenttype", "application/json");
+    attributes.addProperty("specversion", "1.0");
+    attributes.addProperty("id", "B234-1234-1234");
+    attributes.addProperty("source", "/source");
+    attributes.addProperty("time", "2018-04-05T17:31:00Z");
+    attributes.addProperty("type", "com.example.someevent.new");
+    attributes.addProperty("dataschema", "/schema");
+    return attributes;
+  }
+
   private static int serverPort;
 
   /**
@@ -144,7 +156,7 @@ public class IntegrationTest {
 
     abstract Optional<String> expectedResponseText();
 
-    abstract Optional<String> expectedJsonString();
+    abstract Optional<JsonObject> expectedJson();
 
     abstract Optional<String> expectedContentType();
 
@@ -183,7 +195,7 @@ public class IntegrationTest {
 
       abstract Builder setExpectedOutput(String x);
 
-      abstract Builder setExpectedJsonString(String x);
+      abstract Builder setExpectedJson(JsonObject x);
 
       abstract Builder setHttpContentType(String x);
 
@@ -319,7 +331,7 @@ public class IntegrationTest {
     TestCase testCase = TestCase.builder()
         .setRequestText(requestText)
         .setSnoopFile(snoopFile)
-        .setExpectedJsonString(requestText)
+        .setExpectedJson(new Gson().fromJson(requestText, JsonObject.class))
         .build();
     backgroundTest(fullTarget("BackgroundSnoop.snoop"), ImmutableList.of(testCase));
   }
@@ -337,10 +349,13 @@ public class IntegrationTest {
   private void newBackgroundTest(String target) throws Exception {
     File snoopFile = snoopFile();
     String gcfRequestText = sampleLegacyEvent(snoopFile);
+    JsonObject expectedJson = new Gson().fromJson(gcfRequestText, JsonObject.class);
+    // We don't currently put anything in the attributes() map for legacy events.
+    expectedJson.add("attributes", new JsonObject());
     TestCase gcfTestCase = TestCase.builder()
         .setRequestText(gcfRequestText)
         .setSnoopFile(snoopFile)
-        .setExpectedJsonString(gcfRequestText)
+        .setExpectedJson(expectedJson)
         .build();
 
     // A CloudEvent using the "structured content mode", where both the metadata and the payload
@@ -348,13 +363,14 @@ public class IntegrationTest {
     String cloudEventRequestText = Json.encode(sampleCloudEvent(snoopFile));
     // For CloudEvents, we don't currently populate Context#getResource with anything interesting,
     // so we excise that from the expected text we would have with legacy events.
-    String cloudEventExpectedJsonString =
-        gcfRequestText.replaceAll("\"resource\":\\s*\\{[^}]*\\}", "\"resource\":{}");
+    JsonObject cloudEventExpectedJson = new Gson().fromJson(gcfRequestText, JsonObject.class);
+    cloudEventExpectedJson.getAsJsonObject("context").add("resource", new JsonObject());
+    cloudEventExpectedJson.add("attributes", expectedCloudEventAttributes());
     TestCase cloudEventsStructuredTestCase = TestCase.builder()
         .setSnoopFile(snoopFile)
         .setRequestText(cloudEventRequestText)
         .setHttpContentType("application/cloudevents+json; charset=utf-8")
-        .setExpectedJsonString(cloudEventExpectedJsonString)
+        .setExpectedJson(cloudEventExpectedJson)
         .build();
 
     // A CloudEvent using the "binary content mode", where the metadata is in HTTP headers and the
@@ -367,7 +383,7 @@ public class IntegrationTest {
         .setRequestText(wire.getPayload().get())
         .setHttpContentType("application/json")
         .setHttpHeaders(ImmutableMap.copyOf(wire.getHeaders()))
-        .setExpectedJsonString(cloudEventExpectedJsonString)
+        .setExpectedJson(cloudEventExpectedJson)
         .build();
     // TODO(emcmanus): Update the Content-Type to "application/json; charset=utf-8" when
     // https://github.com/cloudevents/sdk-java/issues/89 has been fixed.
@@ -458,19 +474,19 @@ public class IntegrationTest {
       String snooped = new String(Files.readAllBytes(snoopFile.toPath()), StandardCharsets.UTF_8);
       Gson gson = new Gson();
       JsonObject snoopedJson = gson.fromJson(snooped, JsonObject.class);
-      String expectedJsonString = testCase.expectedJsonString().get();
-      JsonObject expectedJson = gson.fromJson(expectedJsonString, JsonObject.class);
+      JsonObject expectedJson = testCase.expectedJson().get();
       expect.withMessage("Testing %s with %s", functionTarget, testCase)
           .that(snoopedJson).isEqualTo(expectedJson);
     }
   }
 
-  private void checkSnoopFile(File snoopFile, String expectedJsonString) throws IOException {
+  private void checkSnoopFile(TestCase testCase) throws IOException {
+    File snoopFile = testCase.snoopFile().get();
+    JsonObject expectedJson = testCase.expectedJson().get();
     String snooped = new String(Files.readAllBytes(snoopFile.toPath()), StandardCharsets.UTF_8);
     Gson gson = new Gson();
     JsonObject snoopedJson = gson.fromJson(snooped, JsonObject.class);
-    JsonObject expectedJson = gson.fromJson(expectedJsonString, JsonObject.class);
-    expect.that(snoopedJson).isEqualTo(expectedJson);
+    expect.withMessage("Testing with %s", testCase).that(snoopedJson).isEqualTo(expectedJson);
   }
 
   private void testHttpFunction(String target, List<TestCase> testCases) throws Exception {
@@ -518,7 +534,7 @@ public class IntegrationTest {
         testCase.expectedContentType()
             .ifPresent(type -> expect.that(response.getMediaType()).isEqualTo(type));
         if (testCase.snoopFile().isPresent()) {
-          checkSnoopFile(testCase.snoopFile().get(), testCase.expectedJsonString().get());
+          checkSnoopFile(testCase);
         }
         testCase.expectedOutput()
             .ifPresent(output -> expect.that(serverProcess.output().toString()).contains(output));
