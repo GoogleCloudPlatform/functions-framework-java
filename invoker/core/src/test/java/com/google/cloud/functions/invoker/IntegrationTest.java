@@ -575,6 +575,11 @@ public class IntegrationTest {
     @Override
     public void close() {
       process().destroy();
+      try {
+        process().waitFor();
+      } catch (InterruptedException e) {
+        // Should not happen.
+      }
     }
   }
 
