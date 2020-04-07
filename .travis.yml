@@ -3,5 +3,6 @@ jdk:
   - openjdk11
 # Use a Build Matrix for subdirs (https://lord.io/blog/2014/travis-multiple-subdirs/)
 env:
-  - DIR=functions-framework-api/
-script: cd $DIR && gradle build # gradle -q run
+  - API=functions-framework-api/
+  - IMPL=invoker/
+script: (cd $API && mvn install) && (cd $IMPL && mvn install)
