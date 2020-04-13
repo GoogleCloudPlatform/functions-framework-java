@@ -32,7 +32,7 @@ that supports Maven to create the Maven project. Add this dependency in the
     <dependency>
       <groupId>com.google.cloud.functions</groupId>
       <artifactId>functions-framework-api</artifactId>
-      <version>1.0.0-alpha-2-rc3</version>
+      <version>1.0.1</version>
       <scope>provided</scope>
     </dependency>
 ```
@@ -42,7 +42,7 @@ Framework dependency in your `build.gradle` project file as follows:
 
 ```groovy
     dependencies {
-        implementation 'com.google.cloud.functions:functions-framework-api:1.0.0-alpha-2-rc3'
+        implementation 'com.google.cloud.functions:functions-framework-api:1.0.1'
     }
 
 ```
@@ -206,7 +206,7 @@ configurations {
 }
 
 dependencies {
-    implementation 'com.google.cloud.functions:functions-framework-api:1.0.0-alpha-2-rc3'
+    implementation 'com.google.cloud.functions:functions-framework-api:1.0.1'
     invoker 'com.google.cloud.functions.invoker:java-function-invoker:1.0.0-alpha-2-rc4'
 }
 
