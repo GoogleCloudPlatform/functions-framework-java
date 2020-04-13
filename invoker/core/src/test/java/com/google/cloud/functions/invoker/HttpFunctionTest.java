@@ -45,7 +45,7 @@ public class HttpFunctionTest {
         "com.google.cloud.functions.invoker.HttpFunctionTest$HttpWriter.writeResponse";
     String requestData = "testData";
     FunctionLoader<HttpCloudFunction> loader = new FunctionLoader<>(
-        fullTarget, getClass().getClassLoader(), new HttpFunctionSignatureMatcher());
+        fullTarget, getClass().getClassLoader(), new HttpFunctionSignatureMatcher(), null);
     HttpCloudFunction function = loader.loadUserFunction();
     HttpFunctionExecutor executor = new HttpFunctionExecutor(function);
     Mockito.when(req.getParameter("data")).thenReturn(requestData);

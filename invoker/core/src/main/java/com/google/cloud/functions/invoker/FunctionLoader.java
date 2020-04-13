@@ -22,14 +22,17 @@ public class FunctionLoader<T extends CloudFunction> {
   private final String functionTarget;
   private final ClassLoader classLoader;
   private final FunctionSignatureMatcher<T> matcher;
+  private final ClassNotFoundException newStyleException;
 
   public FunctionLoader(
       String functionTarget,
       ClassLoader classLoader,
-      FunctionSignatureMatcher<T> matcher) {
+      FunctionSignatureMatcher<T> matcher,
+      ClassNotFoundException newStyleException) {
     this.functionTarget = functionTarget;
     this.classLoader = classLoader;
     this.matcher = matcher;
+    this.newStyleException = newStyleException;
   }
 
   /**
@@ -40,7 +43,7 @@ public class FunctionLoader<T extends CloudFunction> {
   public T loadUserFunction() throws Exception {
     int lastDotIndex = functionTarget.lastIndexOf(".");
     if (lastDotIndex == -1) {
-      throw new ClassNotFoundException(functionTarget);
+      throw newStyleException;
     }
     String targetClassName = functionTarget.substring(0, lastDotIndex);
     String targetMethodName = functionTarget.substring(lastDotIndex + 1);
@@ -50,7 +53,8 @@ public class FunctionLoader<T extends CloudFunction> {
     } catch (ClassNotFoundException e) {
       throw new RuntimeException(
           "Could not load either " + functionTarget + " (new form) or "
-              + targetClassName + " (old form)");
+              + targetClassName + " (old form)",
+          newStyleException);
     }
 
     Object targetInstance = targetClass.getDeclaredConstructor().newInstance();

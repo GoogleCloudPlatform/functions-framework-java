@@ -84,8 +84,11 @@ public class BackgroundFunctionTest {
     HttpServletResponse res = Mockito.mock(HttpServletResponse.class);
     String fullTarget = "com.google.cloud.functions.invoker.BackgroundFunctionTest$" + target;
     FunctionLoader<BackgroundCloudFunction> loader =
-        new FunctionLoader<>(fullTarget, getClass().getClassLoader(),
-            new BackgroundFunctionSignatureMatcher());
+        new FunctionLoader<>(
+            fullTarget,
+            getClass().getClassLoader(),
+            new BackgroundFunctionSignatureMatcher(),
+            null);
     BackgroundCloudFunction function = loader.loadUserFunction();
     BackgroundFunctionExecutor executor = new BackgroundFunctionExecutor(function);
     Mockito.when(req.getReader())
