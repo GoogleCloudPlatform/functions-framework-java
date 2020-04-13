@@ -55,6 +55,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
+import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -284,7 +285,9 @@ public class Invoker {
           functionSignatureType);
       throw new RuntimeException(error);
     }
-    servletContextHandler.addServlet(new ServletHolder(servlet), "/*");
+    ServletHolder servletHolder = new ServletHolder(servlet);
+    servletHolder.getRegistration().setMultipartConfig(new MultipartConfigElement(""));
+    servletContextHandler.addServlet(servletHolder, "/*");
 
     server.start();
     logServerInfo();

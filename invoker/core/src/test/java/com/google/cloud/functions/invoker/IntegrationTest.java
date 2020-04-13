@@ -59,9 +59,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.MultiPartContentProvider;
 import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.BeforeClass;
@@ -150,7 +154,7 @@ public class IntegrationTest {
 
     abstract String url();
 
-    abstract String requestText();
+    abstract ContentProvider requestContent();
 
     abstract int expectedResponseCode();
 
@@ -162,7 +166,7 @@ public class IntegrationTest {
 
     abstract Optional<String> expectedOutput();
 
-    abstract String httpContentType();
+    abstract Optional<String> httpContentType();
 
     abstract ImmutableMap<String, String> httpHeaders();
 
@@ -183,7 +187,11 @@ public class IntegrationTest {
 
       abstract Builder setUrl(String x);
 
-      abstract Builder setRequestText(String x);
+      abstract Builder setRequestContent(ContentProvider x);
+
+      Builder setRequestText(String text) {
+        return setRequestContent(new StringContentProvider(text));
+      }
 
       abstract Builder setExpectedResponseCode(int x);
 
@@ -198,6 +206,8 @@ public class IntegrationTest {
       abstract Builder setExpectedJson(JsonObject x);
 
       abstract Builder setHttpContentType(String x);
+
+      abstract Builder setHttpContentType(Optional<String> x);
 
       abstract Builder setHttpHeaders(ImmutableMap<String, String> x);
 
@@ -408,6 +418,25 @@ public class IntegrationTest {
         ImmutableList.of(TestCase.builder().setExpectedResponseText("hello, world\n").build()));
   }
 
+  @Test
+  public void multipart() throws Exception {
+    MultiPartContentProvider multiPartProvider = new MultiPartContentProvider();
+    byte[] bytes = new byte[17];
+    multiPartProvider.addFieldPart("bytes", new BytesContentProvider(bytes), new HttpFields());
+    String string = "1234567890";
+    multiPartProvider.addFieldPart("string", new StringContentProvider(string), new HttpFields());
+    String expectedResponse = "part bytes type application/octet-stream length 17\n"
+        + "part string type text/plain;charset=UTF-8 length 10\n";
+    testHttpFunction(
+        fullTarget("Multipart"),
+        ImmutableList.of(
+            TestCase.builder()
+                .setHttpContentType(Optional.empty())
+                .setRequestContent(multiPartProvider)
+                .setExpectedResponseText(expectedResponse)
+                .build()));
+  }
+
   private File snoopFile() throws IOException {
     return temporaryFolder.newFile(testName.getMethodName() + ".txt");
   }
@@ -522,9 +551,10 @@ public class IntegrationTest {
         testCase.snoopFile().ifPresent(File::delete);
         String uri = "http://localhost:" + serverPort + testCase.url();
         Request request = httpClient.POST(uri);
-        request.header(HttpHeader.CONTENT_TYPE, testCase.httpContentType());
+        testCase.httpContentType().ifPresent(
+            contentType -> request.header(HttpHeader.CONTENT_TYPE, contentType));
         testCase.httpHeaders().forEach((header, value) -> request.header(header, value));
-        request.content(new StringContentProvider(testCase.requestText()));
+        request.content(testCase.requestContent());
         ContentResponse response = request.send();
         expect
             .withMessage("Response to %s is %s %s", uri, response.getStatus(), response.getReason())
