@@ -168,7 +168,7 @@ mvn function:run
 You can alternatively configure the plugin with properties on the command line:
 
 ```sh
-  mvn com.google.cloud.functions:function:0.9.1:run \
+  mvn com.google.cloud.functions:function-maven-plugin:0.9.1:run \
       -Drun.functionTarget=com.example.function.Echo
 ```
 
