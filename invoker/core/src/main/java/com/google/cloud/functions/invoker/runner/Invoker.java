@@ -19,6 +19,7 @@ import static java.util.stream.Collectors.toList;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import com.google.auto.value.AutoOneOf;
 import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.RawBackgroundFunction;
@@ -249,34 +250,48 @@ public class Invoker {
     servletContextHandler.setContextPath("/");
     server.setHandler(NotFoundHandler.forServlet(servletContextHandler));
 
-    Optional<Class<?>> functionClass = loadFunctionClass();
+    ClassOrException functionClass = loadFunctionClass();
 
     HttpServlet servlet;
     if ("http".equals(functionSignatureType)) {
-      if (functionClass.isPresent()) {
-        servlet = NewHttpFunctionExecutor.forClass(functionClass.get());
-      } else {
-        FunctionLoader<HttpCloudFunction> loader = new FunctionLoader<>(
-            functionTarget, functionClassLoader, new HttpFunctionSignatureMatcher());
-        HttpCloudFunction function = loader.loadUserFunction();
-        servlet = new HttpFunctionExecutor(function);
+      switch (functionClass.getKind()) {
+        case LOADED_CLASS:
+          servlet = NewHttpFunctionExecutor.forClass(functionClass.loadedClass());
+          break;
+        default:
+          FunctionLoader<HttpCloudFunction> loader =
+              new FunctionLoader<>(
+                  functionTarget,
+                  functionClassLoader,
+                  new HttpFunctionSignatureMatcher(),
+                  functionClass.exception());
+          HttpCloudFunction function = loader.loadUserFunction();
+          servlet = new HttpFunctionExecutor(function);
       }
     } else if ("event".equals(functionSignatureType)) {
-      if (functionClass.isPresent()) {
-        servlet = NewBackgroundFunctionExecutor.forClass(functionClass.get());
-      } else {
-        FunctionLoader<BackgroundCloudFunction> loader =
-            new FunctionLoader<>(
-                functionTarget, functionClassLoader, new BackgroundFunctionSignatureMatcher());
-        BackgroundCloudFunction function = loader.loadUserFunction();
-        servlet = new BackgroundFunctionExecutor(function);
+      switch (functionClass.getKind()) {
+        case LOADED_CLASS:
+          servlet = NewBackgroundFunctionExecutor.forClass(functionClass.loadedClass());
+          break;
+        default:
+          FunctionLoader<BackgroundCloudFunction> loader =
+              new FunctionLoader<>(
+                  functionTarget,
+                  functionClassLoader,
+                  new BackgroundFunctionSignatureMatcher(),
+                  functionClass.exception());
+          BackgroundCloudFunction function = loader.loadUserFunction();
+          servlet = new BackgroundFunctionExecutor(function);
       }
     } else if (functionSignatureType == null) {
-      if (functionClass.isPresent()) {
-        servlet = servletForDeducedSignatureType(functionClass.get());
-      } else {
-        throw new RuntimeException(
-            "Class " + functionTarget + " does not exist or could not be loaded");
+      switch (functionClass.getKind()) {
+        case LOADED_CLASS:
+          servlet = servletForDeducedSignatureType(functionClass.loadedClass());
+          break;
+        default:
+          throw new RuntimeException(
+              "Class " + functionTarget + " does not exist or could not be loaded",
+              functionClass.exception());
       }
     } else {
       String error = String.format(
@@ -291,18 +306,44 @@ public class Invoker {
     server.join();
   }
 
-  private Optional<Class<?>> loadFunctionClass() {
+  @AutoOneOf(ClassOrException.Kind.class)
+  abstract static class ClassOrException {
+    enum Kind {LOADED_CLASS, EXCEPTION}
+
+    abstract Kind getKind();
+
+    abstract Class<?> loadedClass();
+
+    abstract ClassNotFoundException exception();
+
+    static ClassOrException of(Class<?> c) {
+      return AutoOneOf_Invoker_ClassOrException.loadedClass(c);
+    }
+
+    static ClassOrException of(ClassNotFoundException e) {
+      return AutoOneOf_Invoker_ClassOrException.exception(e);
+    }
+  }
+
+  private ClassOrException loadFunctionClass() {
     String target = functionTarget;
+    ClassNotFoundException firstException = null;
     while (true) {
       try {
-        return Optional.of(functionClassLoader.loadClass(target));
+        return ClassOrException.of(functionClassLoader.loadClass(target));
       } catch (ClassNotFoundException e) {
+        if (firstException == null) {
+          firstException = e;
+        }
         // This might be a nested class like com.example.Foo.Bar. That will actually appear as
         // com.example.Foo$Bar as far as Class.forName is concerned. So we try to replace every dot
         // from the last to the first with a $ in the hope of finding a class we can load.
         int lastDot = target.lastIndexOf('.');
         if (lastDot < 0) {
-          return Optional.empty();
+          // We're going to try to load the function target using the old form, classname.method.
+          // But it's at least as likely that the class does exist, but we failed to load it for
+          // some other reason. So ensure that we keep the exception to show to the user.
+          return ClassOrException.of(firstException);
         }
         target = target.substring(0, lastDot) + '$' + target.substring(lastDot + 1);
       }
