@@ -42,7 +42,7 @@
       <dependency>
         <groupId>com.google.cloud.functions</groupId>
         <artifactId>functions-framework-api</artifactId>
-        <version>1.0.0-alpha-2-rc4-SNAPSHOT</version>
+        <version>1.0.1</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
