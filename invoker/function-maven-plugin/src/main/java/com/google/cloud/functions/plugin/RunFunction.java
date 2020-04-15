@@ -70,13 +70,6 @@ public class RunFunction extends AbstractMojo {
   @Parameter(property = "run.port", defaultValue = "8080")
   private Integer port;
 
-  /**
-   * Used to determine what classpath needs to be used to load the function. This parameter is
-   * injected by Maven and can't be set explicitly in a pom.xml file.
-   */
-  @Parameter(defaultValue = "${project.runtimeClasspathElements}", readonly = true, required = true)
-  private List<String> runtimePath;
-
   private final MavenSession mavenSession;
   private final MavenProject mavenProject;
   private final ProjectDependenciesResolver resolver;
@@ -110,7 +103,7 @@ public class RunFunction extends AbstractMojo {
       RepositorySystemSession session = mavenSession.getRepositorySession();
       DependencyResolutionRequest dependencyResolutionRequest = new DefaultDependencyResolutionRequest(mavenProject, session);
       dependencyResolutionRequest.setResolutionFilter(filter);
-    DependencyResolutionResult result = null;
+    DependencyResolutionResult result;
     try {
       result = resolver.resolve(dependencyResolutionRequest);
       List<Dependency> dependencies = result.getDependencies();
