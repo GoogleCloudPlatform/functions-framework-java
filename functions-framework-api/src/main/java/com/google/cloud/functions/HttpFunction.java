@@ -23,6 +23,10 @@ public interface HttpFunction {
    * Called to service an incoming HTTP request. This interface is implemented by user code to
    * provide the action for a given function. If the method throws any exception (including any
    * {@link Error}) then the HTTP response will have a 500 status code.
+   *
+   * @param request a representation of the incoming HTTP request.
+   * @param response an object that can be used to provide the corresponding HTTP response.
+   * @throws Exception if thrown, the HTTP response will have a 500 status code.
    */
   void service(HttpRequest request, HttpResponse response) throws Exception;
 }
