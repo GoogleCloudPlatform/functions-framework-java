@@ -1,12 +1,10 @@
 package com.google.cloud.functions.plugin;
 
 import com.google.cloud.functions.invoker.runner.Invoker;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Execute;
