@@ -39,10 +39,11 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
  */
 @Mojo(name = "run",
     defaultPhase = LifecyclePhase.GENERATE_RESOURCES,
-    requiresDependencyResolution = ResolutionScope.COMPILE,
-    requiresDependencyCollection = ResolutionScope.COMPILE)
+    requiresDependencyResolution = ResolutionScope.RUNTIME,
+    requiresDependencyCollection = ResolutionScope.RUNTIME)
 @Execute(phase = LifecyclePhase.COMPILE)
 public class RunFunction extends AbstractMojo {
+
 
   /**
    * The name of the function to run. This is the name of a class that implements one of the
@@ -61,11 +62,11 @@ public class RunFunction extends AbstractMojo {
    * Used to determine what classpath needs to be used to load the function. This parameter is
    * injected by Maven and can't be set explicitly in a pom.xml file.
    */
-  @Parameter(defaultValue = "${project.compileClasspathElements}", readonly = true, required = true)
-  private List<String> compilePath;
+  @Parameter(defaultValue = "${project.runtimeClasspathElements}", readonly = true, required = true)
+  private List<String> runtimePath;
 
   public void execute() throws MojoExecutionException {
-    String classpath = String.join(File.pathSeparator, compilePath);
+    String classpath = String.join(File.pathSeparator, runtimePath);
     List<String> args = new ArrayList<>();
     args.addAll(Arrays.asList("--classpath", classpath));
     if (functionTarget != null) {
