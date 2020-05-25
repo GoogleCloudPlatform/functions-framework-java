@@ -22,11 +22,13 @@ package com.google.cloud.functions;
  * <p>Here is an example of an implementation that parses the JSON payload using Gson, to access its
  * {@code messageId} property:
  *
+ * <!-- The {@code} placement is a bit strange here, to prevent spurious spaces introduced by the
+ *      javadoc tool. -->
  * <pre>
  * public class Example implements RawBackgroundFunction {
  *   private static final Logger logger = Logger.getLogger(Example.class.getName());
  *
- *   {@code @Override}
+ *  {@code @Override}
  *   public void accept(String json, Context context) {
  *     JsonObject jsonObject = new Gson().fromJson(json, JsonObject.class);
  *     JsonElement messageId = jsonObject.get("messageId");
@@ -43,7 +45,7 @@ package com.google.cloud.functions;
  * public class Example implements RawBackgroundFunction {
  *   private static final Logger logger = Logger.getLogger(Example.class.getName());
  *
- *   {@code @Override}
+ *  {@code @Override}
  *   public void accept(String json, Context context) {
  *     PubSubMessage message = new Gson().fromJson(json, PubSubMessage.class);
  *     logger.info("Got messageId " + message.messageId);
@@ -53,7 +55,7 @@ package com.google.cloud.functions;
  * // Where PubSubMessage is a user-defined class like this:
  * public class PubSubMessage {
  *   String data;
- *   {@code Map<String, String>} attributes;
+ *  {@code Map<String, String>} attributes;
  *   String messageId;
  *   String publishTime;
  * }
@@ -69,6 +71,7 @@ public interface RawBackgroundFunction {
    * @param json the payload of the event, as a JSON string.
    * @param context the context of the event. This is a set of values that every event has,
    *     separately from the payload, such as timestamp and event type.
+   * @throws Exception to produce a 500 status code in the HTTP response.
    */
   void accept(String json, Context context) throws Exception;
 }
