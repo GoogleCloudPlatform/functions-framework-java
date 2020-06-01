@@ -527,11 +527,13 @@ public class IntegrationTest {
         if (testCase.snoopFile().isPresent()) {
           checkSnoopFile(testCase);
         }
-        testCase.expectedOutput()
-            .ifPresent(output -> expect.that(serverProcess.output().toString()).contains(output));
       }
     } finally {
       serverProcess.close();
+    }
+    for (TestCase testCase : testCases) {
+      testCase.expectedOutput()
+          .ifPresent(output -> expect.that(serverProcess.output()).contains(output));
     }
     // Wait for the output monitor task to terminate. If it threw an exception, we will get an
     // ExecutionException here.
