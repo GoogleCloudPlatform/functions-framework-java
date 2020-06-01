@@ -69,7 +69,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
  *
  * <ul>
  *   <li>PORT - defines the port on which this server listens to HTTP requests.
- *   <li>FUNCTION_TARGET - defines the name of the method within user's class to execute.
+ *   <li>FUNCTION_TARGET - defines the name of the class defining the function.
  *   <li>FUNCTION_SIGNATURE_TYPE - determines whether the loaded code defines an HTTP or event
  *       function.
  * </ul>
