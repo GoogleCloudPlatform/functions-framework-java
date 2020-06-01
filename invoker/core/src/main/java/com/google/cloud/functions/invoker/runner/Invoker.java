@@ -19,17 +19,9 @@ import static java.util.stream.Collectors.toList;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
-import com.google.auto.value.AutoOneOf;
 import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.RawBackgroundFunction;
-import com.google.cloud.functions.invoker.BackgroundCloudFunction;
-import com.google.cloud.functions.invoker.BackgroundFunctionExecutor;
-import com.google.cloud.functions.invoker.BackgroundFunctionSignatureMatcher;
-import com.google.cloud.functions.invoker.FunctionLoader;
-import com.google.cloud.functions.invoker.HttpCloudFunction;
-import com.google.cloud.functions.invoker.HttpFunctionExecutor;
-import com.google.cloud.functions.invoker.HttpFunctionSignatureMatcher;
 import com.google.cloud.functions.invoker.NewBackgroundFunctionExecutor;
 import com.google.cloud.functions.invoker.NewHttpFunctionExecutor;
 import com.google.cloud.functions.invoker.gcf.JsonLogHandler;
@@ -105,14 +97,11 @@ public class Invoker {
     )
     private String port = System.getenv().getOrDefault("PORT", "8080");
 
-    // TODO(emcmanus): the default value here no longer makes sense and should be changed to a
-    //    class name once we have finished retiring the java8 runtime.
     @Parameter(
         description = "Name of function class to execute when servicing incoming requests.",
         names = "--target"
     )
-    private String target =
-        System.getenv().getOrDefault("FUNCTION_TARGET", "TestFunction.function");
+    private String target = System.getenv().getOrDefault("FUNCTION_TARGET", "Function");
 
     @Parameter(
         description = "List of files or directories where the compiled Java classes making up"
@@ -199,10 +188,6 @@ public class Invoker {
     jCommander.getConsole().println(usage);
   }
 
-  private static boolean isLocalRun() {
-    return System.getenv("K_SERVICE") == null;
-  }
-
   private static ClassLoader makeClassLoader(Optional<String> functionClasspath) {
     ClassLoader runtimeLoader = Invoker.class.getClassLoader();
     if (functionClasspath.isPresent()) {
@@ -251,49 +236,15 @@ public class Invoker {
     servletContextHandler.setContextPath("/");
     server.setHandler(NotFoundHandler.forServlet(servletContextHandler));
 
-    ClassOrException functionClass = loadFunctionClass();
+    Class<?> functionClass = loadFunctionClass();
 
     HttpServlet servlet;
     if ("http".equals(functionSignatureType)) {
-      switch (functionClass.getKind()) {
-        case LOADED_CLASS:
-          servlet = NewHttpFunctionExecutor.forClass(functionClass.loadedClass());
-          break;
-        default:
-          FunctionLoader<HttpCloudFunction> loader =
-              new FunctionLoader<>(
-                  functionTarget,
-                  functionClassLoader,
-                  new HttpFunctionSignatureMatcher(),
-                  functionClass.exception());
-          HttpCloudFunction function = loader.loadUserFunction();
-          servlet = new HttpFunctionExecutor(function);
-      }
+        servlet = NewHttpFunctionExecutor.forClass(functionClass);
     } else if ("event".equals(functionSignatureType)) {
-      switch (functionClass.getKind()) {
-        case LOADED_CLASS:
-          servlet = NewBackgroundFunctionExecutor.forClass(functionClass.loadedClass());
-          break;
-        default:
-          FunctionLoader<BackgroundCloudFunction> loader =
-              new FunctionLoader<>(
-                  functionTarget,
-                  functionClassLoader,
-                  new BackgroundFunctionSignatureMatcher(),
-                  functionClass.exception());
-          BackgroundCloudFunction function = loader.loadUserFunction();
-          servlet = new BackgroundFunctionExecutor(function);
-      }
+        servlet = NewBackgroundFunctionExecutor.forClass(functionClass);
     } else if (functionSignatureType == null) {
-      switch (functionClass.getKind()) {
-        case LOADED_CLASS:
-          servlet = servletForDeducedSignatureType(functionClass.loadedClass());
-          break;
-        default:
-          throw new RuntimeException(
-              "Class " + functionTarget + " does not exist or could not be loaded",
-              functionClass.exception());
-      }
+        servlet = servletForDeducedSignatureType(functionClass);
     } else {
       String error = String.format(
           "Function signature type %s is unknown; should be \"http\" or \"event\"",
@@ -309,31 +260,12 @@ public class Invoker {
     server.join();
   }
 
-  @AutoOneOf(ClassOrException.Kind.class)
-  abstract static class ClassOrException {
-    enum Kind {LOADED_CLASS, EXCEPTION}
-
-    abstract Kind getKind();
-
-    abstract Class<?> loadedClass();
-
-    abstract ClassNotFoundException exception();
-
-    static ClassOrException of(Class<?> c) {
-      return AutoOneOf_Invoker_ClassOrException.loadedClass(c);
-    }
-
-    static ClassOrException of(ClassNotFoundException e) {
-      return AutoOneOf_Invoker_ClassOrException.exception(e);
-    }
-  }
-
-  private ClassOrException loadFunctionClass() {
+  private Class<?> loadFunctionClass() throws ClassNotFoundException {
     String target = functionTarget;
     ClassNotFoundException firstException = null;
     while (true) {
       try {
-        return ClassOrException.of(functionClassLoader.loadClass(target));
+        return functionClassLoader.loadClass(target);
       } catch (ClassNotFoundException e) {
         if (firstException == null) {
           firstException = e;
@@ -343,10 +275,7 @@ public class Invoker {
         // from the last to the first with a $ in the hope of finding a class we can load.
         int lastDot = target.lastIndexOf('.');
         if (lastDot < 0) {
-          // We're going to try to load the function target using the old form, classname.method.
-          // But it's at least as likely that the class does exist, but we failed to load it for
-          // some other reason. So ensure that we keep the exception to show to the user.
-          return ClassOrException.of(firstException);
+          throw firstException;
         }
         target = target.substring(0, lastDot) + '$' + target.substring(lastDot + 1);
       }
