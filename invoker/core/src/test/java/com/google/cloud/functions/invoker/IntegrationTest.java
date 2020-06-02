@@ -146,8 +146,8 @@ public class IntegrationTest {
 
   /**
    * Description of a test case. When we send an HTTP POST to the given {@link #url()} in the
-   * server, with the given {@link #requestText()} as the body of the POST, then we expect to get
-   * back the given {@link #expectedResponseText()} in the body of the response.
+   * server, with the given {@link #requestContent()} ()} as the body of the POST, then we expect to
+   * get back the given {@link #expectedResponseText()} in the body of the response.
    */
   @AutoValue
   abstract static class TestCase {
@@ -236,30 +236,12 @@ public class IntegrationTest {
           .build();
 
   @Test
-  public void helloWorld() throws Exception {
-    testHttpFunction(fullTarget("HelloWorld.helloWorld"),
-        ImmutableList.of(
-            TestCase.builder().setExpectedResponseText("hello\n").build(),
-            FAVICON_TEST_CASE,
-            ROBOTS_TXT_TEST_CASE));
-  }
-
-  @Test
   public void newHelloWorld() throws Exception {
     testHttpFunction(fullTarget("NewHelloWorld"),
         ImmutableList.of(
             TestCase.builder().setExpectedResponseText("hello\n").build(),
             FAVICON_TEST_CASE,
             ROBOTS_TXT_TEST_CASE));
-  }
-
-  @Test
-  public void echo() throws Exception {
-    String testText = "hello\nworld\n";
-    testHttpFunction(
-        fullTarget("Echo.echo"),
-        ImmutableList.of(
-            TestCase.builder().setRequestText(testText).setExpectedResponseText(testText).build()));
   }
 
   @Test
@@ -279,15 +261,6 @@ public class IntegrationTest {
                 .setExpectedResponseText(testText)
                 .setExpectedContentType("application/octet-stream")
                 .build()));
-  }
-
-  @Test
-  public void echoUrl() throws Exception {
-    String[] testUrls = {"/", "/foo/bar", "/?foo=bar&baz=buh", "/foo?bar=baz"};
-    List<TestCase> testCases = Arrays.stream(testUrls)
-        .map(url -> TestCase.builder().setUrl(url).setExpectedResponseText(url + "\n").build())
-        .collect(toList());
-    testHttpFunction(fullTarget("EchoUrl.echoUrl"), testCases);
   }
 
   @Test
@@ -332,18 +305,6 @@ public class IntegrationTest {
             .build();
     testHttpFunction(
         fullTarget("Log"), ImmutableList.of(simpleTestCase, quotingTestCase, exceptionTestCase));
-  }
-
-  @Test
-  public void background() throws Exception {
-    File snoopFile = snoopFile();
-    String requestText = sampleLegacyEvent(snoopFile);
-    TestCase testCase = TestCase.builder()
-        .setRequestText(requestText)
-        .setSnoopFile(snoopFile)
-        .setExpectedJson(new Gson().fromJson(requestText, JsonObject.class))
-        .build();
-    backgroundTest(fullTarget("BackgroundSnoop.snoop"), ImmutableList.of(testCase));
   }
 
   @Test
@@ -442,7 +403,7 @@ public class IntegrationTest {
   }
 
   /** Any runtime class that user code shouldn't be able to see. */
-  private static final Class<?> INTERNAL_CLASS = CloudFunction.class;
+  private static final Class<?> INTERNAL_CLASS = CloudFunctionsContext.class;
 
   private String functionJarString() throws IOException {
     Path functionJarTargetDir = Paths.get("../testfunction/target");
@@ -566,11 +527,13 @@ public class IntegrationTest {
         if (testCase.snoopFile().isPresent()) {
           checkSnoopFile(testCase);
         }
-        testCase.expectedOutput()
-            .ifPresent(output -> expect.that(serverProcess.output().toString()).contains(output));
       }
     } finally {
       serverProcess.close();
+    }
+    for (TestCase testCase : testCases) {
+      testCase.expectedOutput()
+          .ifPresent(output -> expect.that(serverProcess.output()).contains(output));
     }
     // Wait for the output monitor task to terminate. If it threw an exception, we will get an
     // ExecutionException here.

@@ -11,7 +11,7 @@ import java.util.TreeMap;
 /**
  * A simple proof-of-concept function for multipart handling.
  *
- * {@code HttpFunctionTest} contains more detailed testing, but this function is part of the
+ * {@code HttpTest} contains more detailed testing, but this function is part of the
  * integration test that shows that we can indeed access the multipart API from a function.
  */
 public class Multipart implements HttpFunction {

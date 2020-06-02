@@ -49,7 +49,7 @@ public class InvokerTest {
   @Test
   public void defaultTarget() {
     Optional<Invoker> invoker = Invoker.makeInvoker();
-    assertThat(invoker.get().getFunctionTarget()).isEqualTo("TestFunction.function");
+    assertThat(invoker.get().getFunctionTarget()).isEqualTo("Function");
   }
 
   @Test
