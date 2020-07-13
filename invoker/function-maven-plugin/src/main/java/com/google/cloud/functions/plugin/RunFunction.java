@@ -72,6 +72,9 @@ public class RunFunction extends AbstractMojo {
     if (functionTarget != null) {
       args.addAll(Arrays.asList("--target", functionTarget));
     }
+    if (port != null) {
+      args.addAll(Arrays.asList("--port", port));
+    }
     try {
       getLog().info("Calling Invoker with " + args);
       Invoker.main(args.toArray(new String[0]));
