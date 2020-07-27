@@ -48,7 +48,7 @@ public class DeployFunctionTest {
             "--vpc-connector=a connector",
             "--max-instances=3",
             "--set-env-vars=env1=a,env2=b",
-            "--env-var-file=myfile",
+            "--env-vars-file=myfile",
             "--runtime=java11");
     assertThat(mojo.getCommands()).isEqualTo(expected);
   }

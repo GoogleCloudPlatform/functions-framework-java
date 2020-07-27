@@ -329,7 +329,7 @@ public class DeployFunction extends CloudSdkMojo {
       commands.add("--set-env-vars=" + mapJoiner.join(environmentVariables));
     }
     if (envVarsFile != null) {
-      commands.add("--env-var-file=" + envVarsFile);
+      commands.add("--env-vars-file=" + envVarsFile);
     }
     commands.add("--runtime=" + runtime);
 
