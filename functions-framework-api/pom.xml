@@ -108,6 +108,7 @@
             </additionalOptions>
             <linksource>true</linksource>
             <source>8</source>
+            <detectJavaApiLink>false</detectJavaApiLink>
           </configuration>
           <executions>
             <execution>
