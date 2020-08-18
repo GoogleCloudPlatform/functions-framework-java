@@ -50,12 +50,16 @@ public class NewBackgroundFunctionExecutorTest {
     assertThat(backgroundFunctionTypeArgument(GenericChild.class)).hasValue(PubSubMessage.class);
   }
 
+  @SuppressWarnings("rawtypes")
   private static class ForgotTypeParameter implements BackgroundFunction {
     @Override public void accept(Object payload, Context context) {}
   }
 
   @Test
   public void backgroundFunctionTypeArgument_raw() {
-    assertThat(backgroundFunctionTypeArgument(ForgotTypeParameter.class)).isEmpty();
+    @SuppressWarnings("unchecked")
+    Class<? extends BackgroundFunction<?>> c =
+        (Class<? extends BackgroundFunction<?>>) (Class<?>) ForgotTypeParameter.class;
+    assertThat(backgroundFunctionTypeArgument(c)).isEmpty();
   }
 }
