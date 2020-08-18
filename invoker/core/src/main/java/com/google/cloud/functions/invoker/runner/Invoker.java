@@ -20,7 +20,6 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.google.cloud.functions.BackgroundFunction;
-import com.google.cloud.functions.ExperimentalCloudEventsFunction;
 import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.RawBackgroundFunction;
 import com.google.cloud.functions.invoker.NewBackgroundFunctionExecutor;
@@ -288,8 +287,7 @@ public class Invoker {
       return NewHttpFunctionExecutor.forClass(functionClass);
     }
     if (BackgroundFunction.class.isAssignableFrom(functionClass)
-        || RawBackgroundFunction.class.isAssignableFrom(functionClass)
-        || ExperimentalCloudEventsFunction.class.isAssignableFrom(functionClass)) {
+        || RawBackgroundFunction.class.isAssignableFrom(functionClass)) {
       return NewBackgroundFunctionExecutor.forClass(functionClass);
     }
     String error = String.format(
