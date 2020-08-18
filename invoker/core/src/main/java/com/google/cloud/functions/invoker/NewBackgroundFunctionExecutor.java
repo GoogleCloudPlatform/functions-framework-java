@@ -44,7 +44,6 @@ import java.util.logging.Logger;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.xml.sax.helpers.AttributesImpl;
 
 /** Executes the user's background function. */
 public final class NewBackgroundFunctionExecutor extends HttpServlet {
