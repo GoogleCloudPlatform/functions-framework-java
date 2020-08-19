@@ -16,6 +16,7 @@ package com.google.cloud.functions.invoker;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
 
 import com.google.auto.value.AutoValue;
@@ -27,11 +28,15 @@ import com.google.common.io.Resources;
 import com.google.common.truth.Expect;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import io.cloudevents.format.Wire;
-import io.cloudevents.json.Json;
-import io.cloudevents.v1.CloudEventBuilder;
-import io.cloudevents.v1.CloudEventImpl;
-import io.cloudevents.v1.http.Marshallers;
+import io.cloudevents.CloudEvent;
+import io.cloudevents.SpecVersion;
+import io.cloudevents.core.builder.CloudEventBuilder;
+import io.cloudevents.core.format.EventFormat;
+import io.cloudevents.core.message.MessageWriter;
+import io.cloudevents.core.message.impl.MessageUtils;
+import io.cloudevents.core.provider.EventFormatProvider;
+import io.cloudevents.jackson.JsonFormat;
+import io.cloudevents.rw.CloudEventWriter;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -52,6 +57,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -107,14 +113,14 @@ public class IntegrationTest {
         + "}";
   }
 
-  private static CloudEventImpl<Map<String, Object>> sampleCloudEvent(File snoopFile) {
-    return CloudEventBuilder.<Map<String, Object>>builder()
+  private static CloudEvent sampleCloudEvent(File snoopFile) {
+    return CloudEventBuilder.v1()
         .withId("B234-1234-1234")
         .withSource(URI.create("/source"))
         .withType("com.example.someevent.new")
-        .withDataschema(URI.create("/schema"))
+        .withDataSchema(URI.create("/schema"))
         .withDataContentType("application/json")
-        .withData(ImmutableMap.of("a", 2, "b", 3, "targetFile", snoopFile.toString()))
+        .withData(("{\"a\": 2, \"b\": 3, \"targetFile\": \"" + snoopFile + "\"}").getBytes(UTF_8))
         .withTime(ZonedDateTime.of(2018, 4, 5, 17, 31, 0, 0, ZoneOffset.UTC))
         .build();
   }
@@ -125,7 +131,7 @@ public class IntegrationTest {
     attributes.addProperty("specversion", "1.0");
     attributes.addProperty("id", "B234-1234-1234");
     attributes.addProperty("source", "/source");
-    attributes.addProperty("time", "2018-04-05T17:31:00Z");
+    attributes.addProperty("time", "2018-04-05T17:31Z");
     attributes.addProperty("type", "com.example.someevent.new");
     attributes.addProperty("dataschema", "/schema");
     return attributes;
@@ -331,7 +337,8 @@ public class IntegrationTest {
 
     // A CloudEvent using the "structured content mode", where both the metadata and the payload
     // are in the body of the HTTP request.
-    String cloudEventRequestText = Json.encode(sampleCloudEvent(snoopFile));
+    EventFormat jsonFormat = EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE);
+    String cloudEventRequestText = new String(jsonFormat.serialize(sampleCloudEvent(snoopFile)), UTF_8);
     // For CloudEvents, we don't currently populate Context#getResource with anything interesting,
     // so we excise that from the expected text we would have with legacy events.
     JsonObject cloudEventExpectedJson = new Gson().fromJson(gcfRequestText, JsonObject.class);
@@ -346,18 +353,15 @@ public class IntegrationTest {
 
     // A CloudEvent using the "binary content mode", where the metadata is in HTTP headers and the
     // payload is the body of the HTTP request.
-    Wire<String, String, String> wire = Marshallers.<Map<String, Object>>binary()
-        .withEvent(() -> sampleCloudEvent(snoopFile))
-        .marshal();
+    BinaryWriter binaryWriter = new BinaryWriter();
+    Map<String, String> headers = binaryWriter.writeBinary(sampleCloudEvent(snoopFile));
     TestCase cloudEventsBinaryTestCase = TestCase.builder()
         .setSnoopFile(snoopFile)
-        .setRequestText(wire.getPayload().get())
-        .setHttpContentType("application/json")
-        .setHttpHeaders(ImmutableMap.copyOf(wire.getHeaders()))
+        .setRequestText(new String(binaryWriter.body, UTF_8))
+        .setHttpContentType(headers.get("Content-Type"))
+        .setHttpHeaders(ImmutableMap.copyOf(headers))
         .setExpectedJson(cloudEventExpectedJson)
         .build();
-    // TODO(emcmanus): Update the Content-Type to "application/json; charset=utf-8" when
-    // https://github.com/cloudevents/sdk-java/issues/89 has been fixed.
 
     backgroundTest(
         fullTarget(target),
@@ -465,7 +469,7 @@ public class IntegrationTest {
       Gson gson = new Gson();
       JsonObject snoopedJson = gson.fromJson(snooped, JsonObject.class);
       JsonObject expectedJson = testCase.expectedJson().get();
-      expect.withMessage("Testing %s with %s", functionTarget, testCase)
+      expect.withMessage("Testing %s with %s\nGOT %s\nNOT %s", functionTarget, testCase, snoopedJson, expectedJson)
           .that(snoopedJson).isEqualTo(expectedJson);
     }
   }
@@ -646,6 +650,59 @@ public class IntegrationTest {
     } catch (IOException e) {
       e.printStackTrace();
       throw new UncheckedIOException(e);
+    }
+  }
+
+  // I might be missing something, but as far as I can tell the V2 SDK forces us to go through all this
+  // rigmarole just so we can tell what HTTP headers should be set for a Binary CloudEvent. With the
+  // V1 SDK it was much simpler.
+  // https://github.com/cloudevents/sdk-java/issues/212
+  private static class BinaryWriter
+      implements MessageWriter<CloudEventWriter<Map<String, String>>, Map<String, String>> {
+
+    private static final Map<String, String> ATTRIBUTES_TO_HEADERS =
+        MessageUtils.generateAttributesToHeadersMapping(v ->
+            v.equals("datacontenttype") ? "Content-Type" : ("ce-" + v));
+
+    final Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    byte[] body;
+
+    @Override
+    public CloudEventWriter<Map<String, String>> create(SpecVersion version) {
+      headers.put("ce-specversion", version.toString());
+      return new EventWriter();
+    }
+
+    @Override
+    public Map<String, String> setEvent(EventFormat format, byte[] bytes) {
+      throw new UnsupportedOperationException("Only binary events supported, not structured");
+    }
+
+    private class EventWriter implements CloudEventWriter<Map<String, String>> {
+      @Override
+      public Map<String, String> end(byte[] bytes) {
+        body = bytes;
+        return headers;
+      }
+
+      @Override
+      public Map<String, String> end() {
+        return end(new byte[0]);
+      }
+
+      @Override
+      public void setAttribute(String name, String value) {
+        if (ATTRIBUTES_TO_HEADERS.containsKey(name)) {
+          headers.put(ATTRIBUTES_TO_HEADERS.get(name), value);
+        } else {
+          throw new IllegalArgumentException("Unknown attribute: " + name);
+        }
+      }
+
+      @Override
+      public void setExtension(String name, String value) {
+        headers.put("ce-" + name, value);
+      }
     }
   }
 }

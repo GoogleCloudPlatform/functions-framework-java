@@ -14,6 +14,7 @@
 
 package com.google.cloud.functions.invoker;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
 
@@ -24,9 +25,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
 import io.cloudevents.CloudEvent;
-import io.cloudevents.format.builder.HeadersStep;
-import io.cloudevents.v1.AttributesImpl;
-import io.cloudevents.v1.http.Unmarshallers;
+import io.cloudevents.core.message.MessageReader;
+import io.cloudevents.core.message.impl.GenericStructuredMessageReader;
+import io.cloudevents.core.message.impl.MessageUtils;
+import io.cloudevents.core.message.impl.UnknownEncodingMessageReader;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -34,6 +36,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -78,8 +81,10 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
       executor = new RawFunctionExecutor((RawBackgroundFunction) instance);
     } else {
       BackgroundFunction<?> backgroundFunction = (BackgroundFunction<?>) instance;
-      Optional<Type> maybeTargetType =
-          backgroundFunctionTypeArgument(backgroundFunction.getClass());
+      @SuppressWarnings("unchecked")
+      Class<? extends BackgroundFunction<?>> c =
+          (Class<? extends BackgroundFunction<?>>) backgroundFunction.getClass();
+      Optional<Type> maybeTargetType = backgroundFunctionTypeArgument(c);
       if (!maybeTargetType.isPresent()) {
         // This is probably because the user implemented just BackgroundFunction rather than
         // BackgroundFunction<T>.
@@ -99,7 +104,7 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
    * {@code T} can't be determined.
    */
   static Optional<Type> backgroundFunctionTypeArgument(
-      Class<? extends BackgroundFunction> functionClass) {
+      Class<? extends BackgroundFunction<?>> functionClass) {
     // If this is BackgroundFunction<Foo> then the user must have implemented a method
     // accept(Foo, Context), so we look for that method and return the type of its first argument.
     // We must be careful because the compiler will also have added a synthetic method
@@ -126,33 +131,22 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
     }
   }
 
-  private static Context contextFromCloudEvent(CloudEvent<AttributesImpl, ?> cloudEvent) {
-    AttributesImpl attributes = cloudEvent.getAttributes();
-    ZonedDateTime timestamp = attributes.getTime().orElse(ZonedDateTime.now());
+  private static Context contextFromCloudEvent(CloudEvent cloudEvent) {
+    ZonedDateTime timestamp = Optional.ofNullable(cloudEvent.getTime()).orElse(ZonedDateTime.now());
     String timestampString = DateTimeFormatter.ISO_INSTANT.format(timestamp);
     // We don't have an obvious replacement for the Context.resource field, which with legacy events
     // corresponded to a value present for some proprietary Google event types.
     String resource = "{}";
-    Map<String, String> attributesMap = AttributesImpl.marshal(attributes);
+    Map<String, String> attributesMap =
+        cloudEvent.getAttributeNames().stream()
+            .collect(toMap(a -> a, a -> String.valueOf(cloudEvent.getAttribute(a))));
     return CloudFunctionsContext.builder()
-        .setEventId(attributes.getId())
-        .setEventType(attributes.getType())
+        .setEventId(cloudEvent.getId())
+        .setEventType(cloudEvent.getType())
         .setResource(resource)
         .setTimestamp(timestampString)
         .setAttributes(attributesMap)
         .build();
-  }
-
-  /**
-   * Convert the HTTP headers from the given request into a Map. The headers of interest are
-   * the CE-* headers defined for CloudEvents in the binary encoding (where the metadata is in
-   * the HTTP headers and the payload is the HTTP body), plus Content-Type. In both cases we don't
-   * need to worry about repeated headers, so {@link HttpServletRequest#getHeader(String)} is fine.
-   */
-  private static Map<String, Object> httpHeaderMap(HttpServletRequest req) {
-    return Collections.list(req.getHeaderNames())
-        .stream()
-        .collect(toMap(header -> header, req::getHeader));
   }
 
   /**
@@ -187,10 +181,7 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
     abstract void serviceLegacyEvent(HttpServletRequest req)
         throws Exception;
 
-    abstract void serviceCloudEvent(
-        HttpServletRequest req,
-        HeadersStep<AttributesImpl, CloudEventDataT, String> unmarshaller)
-        throws Exception;
+    abstract void serviceCloudEvent(CloudEvent cloudEvent) throws Exception;
 
     abstract Class<CloudEventDataT> cloudEventDataType();
   }
@@ -210,18 +201,9 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
     }
 
     @Override
-    void serviceCloudEvent(
-        HttpServletRequest req, HeadersStep<AttributesImpl, Map<?, ?>, String> unmarshaller)
-        throws Exception {
-      Map<String, Object> httpHeaders = httpHeaderMap(req);
-      String body = req.getReader().lines().collect(joining("\n"));
-      CloudEvent<AttributesImpl, Map<?, ?>> cloudEvent =
-          unmarshaller
-              .withHeaders(() -> httpHeaders)
-              .withPayload(() -> body)
-              .unmarshal();
+    void serviceCloudEvent(CloudEvent cloudEvent) throws Exception {
       Context context = contextFromCloudEvent(cloudEvent);
-      String jsonData = cloudEvent.getData().map(data -> new Gson().toJson(data)).orElse("{}");
+      String jsonData = cloudEvent.getData() == null ? "{}" : new String(cloudEvent.getData(), UTF_8);
       function.accept(jsonData, context);
     }
 
@@ -259,18 +241,12 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
     }
 
     @Override
-    void serviceCloudEvent(
-        HttpServletRequest req, HeadersStep<AttributesImpl, T, String> unmarshaller)
-        throws Exception {
-      Map<String, Object> httpHeaders = httpHeaderMap(req);
-      String body = req.getReader().lines().collect(joining("\n"));
-      CloudEvent<AttributesImpl, T> cloudEvent =
-          unmarshaller
-              .withHeaders(() -> httpHeaders)
-              .withPayload(() -> body).unmarshal();
-      if (cloudEvent.getData().isPresent()) {
+    void serviceCloudEvent(CloudEvent cloudEvent) throws Exception {
+      if (cloudEvent.getData() != null) {
+        String data = new String(cloudEvent.getData(), UTF_8);
+        T payload = new Gson().fromJson(data, type);
         Context context = contextFromCloudEvent(cloudEvent);
-        function.accept(cloudEvent.getData().get(), context);
+        function.accept(payload, context);
       } else {
         throw new IllegalStateException("Event has no \"data\" component");
       }
@@ -296,10 +272,9 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
     ClassLoader oldContextLoader = Thread.currentThread().getContextClassLoader();
     try {
       Thread.currentThread().setContextClassLoader(functionExecutor.functionClassLoader());
-      if (contentType != null && contentType.startsWith("application/cloudevents+json")) {
-        serviceCloudEvent(req, CloudEventKind.STRUCTURED);
-      } else if (req.getHeader("ce-specversion") != null) {
-        serviceCloudEvent(req, CloudEventKind.BINARY);
+      if ((contentType != null && contentType.startsWith("application/cloudevents+json"))
+          || req.getHeader("ce-specversion") != null) {
+        serviceCloudEvent(req);
       } else {
         serviceLegacyEvent(req);
       }
@@ -320,23 +295,19 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
    * @param <CloudEventT> a fake type parameter, which corresponds to the type parameter of
    *     {@link FunctionExecutor}.
    */
-  private <CloudEventT> void serviceCloudEvent(
-      HttpServletRequest req, CloudEventKind kind) throws Exception {
+  private <CloudEventT> void serviceCloudEvent(HttpServletRequest req) throws Exception {
     @SuppressWarnings("unchecked")
     FunctionExecutor<CloudEventT> executor = (FunctionExecutor<CloudEventT>) functionExecutor;
-    Class<CloudEventT> cloudEventDataType = executor.cloudEventDataType();
-    HeadersStep<AttributesImpl, CloudEventT, String> unmarshaller;
-    switch (kind) {
-      case BINARY:
-        unmarshaller = Unmarshallers.binary(cloudEventDataType);
-        break;
-      case STRUCTURED:
-        unmarshaller = Unmarshallers.structured(cloudEventDataType);
-        break;
-      default:
-        throw new AssertionError(kind);
-    }
-    executor.serviceCloudEvent(req, unmarshaller);
+    Map<String, List<String>> headers = CloudEventsServletBinaryMessageReader.headerMap(req);
+    byte[] body = req.getInputStream().readAllBytes();
+    List<String> listOfNull = Collections.singletonList(null);
+    MessageReader reader = MessageUtils.parseStructuredOrBinaryMessage(
+        () -> headers.getOrDefault("content-type", listOfNull).get(0),
+        format -> new GenericStructuredMessageReader(format, body),
+        () -> headers.getOrDefault("ce-specversion", listOfNull).get(0),
+        unusedSpecVersion -> CloudEventsServletBinaryMessageReader.from(req, body),
+        UnknownEncodingMessageReader::new);
+    executor.serviceCloudEvent(reader.toEvent());
   }
 
   private void serviceLegacyEvent(HttpServletRequest req) throws Exception {
