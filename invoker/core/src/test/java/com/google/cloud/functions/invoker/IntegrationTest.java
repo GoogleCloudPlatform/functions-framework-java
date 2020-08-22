@@ -243,7 +243,7 @@ public class IntegrationTest {
 
   @Test
   public void newHelloWorld() throws Exception {
-    testHttpFunction(fullTarget("NewHelloWorld"),
+    testHttpFunction(fullTarget("HelloWorld"),
         ImmutableList.of(
             TestCase.builder().setExpectedResponseText("hello\n").build(),
             FAVICON_TEST_CASE,
@@ -254,7 +254,7 @@ public class IntegrationTest {
   public void newEcho() throws Exception {
     String testText = "hello\nworld\n";
     testHttpFunction(
-        fullTarget("NewEcho"),
+        fullTarget("Echo"),
         ImmutableList.of(
             TestCase.builder()
                 .setRequestText(testText)
@@ -275,7 +275,7 @@ public class IntegrationTest {
     List<TestCase> testCases = Arrays.stream(testUrls)
         .map(url -> TestCase.builder().setUrl(url).setExpectedResponseText(url + "\n").build())
         .collect(toList());
-    testHttpFunction(fullTarget("NewEchoUrl"), testCases);
+    testHttpFunction(fullTarget("EchoUrl"), testCases);
   }
 
   @Test
@@ -314,16 +314,16 @@ public class IntegrationTest {
   }
 
   @Test
-  public void newBackground() throws Exception {
-    newBackgroundTest("NewBackgroundSnoop");
+  public void background() throws Exception {
+    backgroundTest("BackgroundSnoop");
   }
 
   @Test
-  public void newTypedBackground() throws Exception {
-    newBackgroundTest("NewTypedBackgroundSnoop");
+  public void typedBackground() throws Exception {
+    backgroundTest("TypedBackgroundSnoop");
   }
 
-  private void newBackgroundTest(String target) throws Exception {
+  private void backgroundTest(String target) throws Exception {
     File snoopFile = snoopFile();
     String gcfRequestText = sampleLegacyEvent(snoopFile);
     JsonObject expectedJson = new Gson().fromJson(gcfRequestText, JsonObject.class);

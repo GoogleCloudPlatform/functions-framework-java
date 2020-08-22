@@ -25,22 +25,22 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /** Executes the user's method. */
-public class NewHttpFunctionExecutor extends HttpServlet {
+public class HttpFunctionExecutor extends HttpServlet {
   private static final Logger logger = Logger.getLogger("com.google.cloud.functions.invoker");
 
   private final HttpFunction function;
 
-  private NewHttpFunctionExecutor(HttpFunction function) {
+  private HttpFunctionExecutor(HttpFunction function) {
     this.function = function;
   }
 
   /**
-   * Makes a {@link NewHttpFunctionExecutor} for the given class.
+   * Makes a {@link HttpFunctionExecutor} for the given class.
    *
    * @throws RuntimeException if either the given class does not implement {@link HttpFunction}
    *    or we are unable to construct an instance using its no-arg constructor.
    */
-  public static NewHttpFunctionExecutor forClass(Class<?> functionClass) {
+  public static HttpFunctionExecutor forClass(Class<?> functionClass) {
     if (!HttpFunction.class.isAssignableFrom(functionClass)) {
       throw new RuntimeException(
           "Class " + functionClass.getName() + " does not implement "
@@ -49,7 +49,7 @@ public class NewHttpFunctionExecutor extends HttpServlet {
     Class<? extends HttpFunction> httpFunctionClass = functionClass.asSubclass(HttpFunction.class);
     try {
       HttpFunction httpFunction = httpFunctionClass.getConstructor().newInstance();
-      return new NewHttpFunctionExecutor(httpFunction);
+      return new HttpFunctionExecutor(httpFunction);
     } catch (ReflectiveOperationException e) {
       throw new RuntimeException(
           "Could not construct an instance of " + functionClass.getName() + ": " + e, e);

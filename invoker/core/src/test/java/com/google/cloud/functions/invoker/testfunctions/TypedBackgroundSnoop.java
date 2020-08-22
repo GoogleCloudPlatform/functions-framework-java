@@ -16,8 +16,8 @@ import java.io.UncheckedIOException;
  * identical to the JSON payload that the Functions Framework received from the client in the test.
  * This will need to be rewritten when we switch to CloudEvents.
  */
-public class NewTypedBackgroundSnoop
-    implements BackgroundFunction<NewTypedBackgroundSnoop.Payload> {
+public class TypedBackgroundSnoop
+    implements BackgroundFunction<TypedBackgroundSnoop.Payload> {
   public static class Payload {
     public int a;
     public int b;

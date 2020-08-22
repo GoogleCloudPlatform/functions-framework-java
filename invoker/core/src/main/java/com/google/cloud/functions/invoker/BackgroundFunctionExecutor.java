@@ -46,12 +46,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /** Executes the user's background function. */
-public final class NewBackgroundFunctionExecutor extends HttpServlet {
+public final class BackgroundFunctionExecutor extends HttpServlet {
   private static final Logger logger = Logger.getLogger("com.google.cloud.functions.invoker");
 
   private final FunctionExecutor<?> functionExecutor;
 
-  private NewBackgroundFunctionExecutor(FunctionExecutor<?> functionExecutor) {
+  private BackgroundFunctionExecutor(FunctionExecutor<?> functionExecutor) {
     this.functionExecutor = functionExecutor;
   }
 
@@ -62,7 +62,7 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
    *    {@link BackgroundFunction} or {@link RawBackgroundFunction},
    *    or we are unable to construct an instance using its no-arg constructor.
    */
-  public static NewBackgroundFunctionExecutor forClass(Class<?> functionClass) {
+  public static BackgroundFunctionExecutor forClass(Class<?> functionClass) {
     if (!BackgroundFunction.class.isAssignableFrom(functionClass)
         && !RawBackgroundFunction.class.isAssignableFrom(functionClass)) {
       throw new RuntimeException(
@@ -95,7 +95,7 @@ public final class NewBackgroundFunctionExecutor extends HttpServlet {
       }
       executor = new TypedFunctionExecutor<>(maybeTargetType.get(), backgroundFunction);
     }
-    return new NewBackgroundFunctionExecutor(executor);
+    return new BackgroundFunctionExecutor(executor);
   }
 
   /**
