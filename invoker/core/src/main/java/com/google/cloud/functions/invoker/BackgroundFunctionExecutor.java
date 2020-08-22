@@ -56,7 +56,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
   }
 
   /**
-   * Makes a {@link NewHttpFunctionExecutor} for the given class.
+   * Makes a {@link HttpFunctionExecutor} for the given class.
    *
    * @throws RuntimeException if either the class does not implement one of
    *    {@link BackgroundFunction} or {@link RawBackgroundFunction},

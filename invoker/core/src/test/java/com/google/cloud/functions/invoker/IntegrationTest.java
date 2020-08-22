@@ -242,7 +242,7 @@ public class IntegrationTest {
           .build();
 
   @Test
-  public void newHelloWorld() throws Exception {
+  public void helloWorld() throws Exception {
     testHttpFunction(fullTarget("HelloWorld"),
         ImmutableList.of(
             TestCase.builder().setExpectedResponseText("hello\n").build(),
@@ -251,7 +251,7 @@ public class IntegrationTest {
   }
 
   @Test
-  public void newEcho() throws Exception {
+  public void echo() throws Exception {
     String testText = "hello\nworld\n";
     testHttpFunction(
         fullTarget("Echo"),
@@ -270,7 +270,7 @@ public class IntegrationTest {
   }
 
   @Test
-  public void newEchoUrl() throws Exception {
+  public void echoUrl() throws Exception {
     String[] testUrls = {"/", "/foo/bar", "/?foo=bar&baz=buh", "/foo?bar=baz"};
     List<TestCase> testCases = Arrays.stream(testUrls)
         .map(url -> TestCase.builder().setUrl(url).setExpectedResponseText(url + "\n").build())
