@@ -16,7 +16,7 @@ import java.io.UncheckedIOException;
  * identical to the JSON payload that the Functions Framework received from the client in the test.
  * This will need to be rewritten when we switch to CloudEvents.
  */
-public class NewBackgroundSnoop implements RawBackgroundFunction {
+public class BackgroundSnoop implements RawBackgroundFunction {
   @Override
   public void accept(String json, Context context) {
     Gson gson = new Gson();

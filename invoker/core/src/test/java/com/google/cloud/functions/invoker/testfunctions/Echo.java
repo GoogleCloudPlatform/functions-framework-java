@@ -7,7 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.stream.Collectors;
 
-public class NewEcho implements HttpFunction {
+public class Echo implements HttpFunction {
   @Override
   public void service(HttpRequest request, HttpResponse response) throws Exception {
     boolean binary = "application/octet-stream".equals(request.getContentType().orElse(null));

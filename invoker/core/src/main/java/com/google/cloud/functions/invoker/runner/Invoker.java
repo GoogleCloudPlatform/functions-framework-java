@@ -22,8 +22,8 @@ import com.beust.jcommander.ParameterException;
 import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.RawBackgroundFunction;
-import com.google.cloud.functions.invoker.NewBackgroundFunctionExecutor;
-import com.google.cloud.functions.invoker.NewHttpFunctionExecutor;
+import com.google.cloud.functions.invoker.BackgroundFunctionExecutor;
+import com.google.cloud.functions.invoker.HttpFunctionExecutor;
 import com.google.cloud.functions.invoker.gcf.JsonLogHandler;
 import java.io.File;
 import java.io.IOException;
@@ -240,9 +240,9 @@ public class Invoker {
 
     HttpServlet servlet;
     if ("http".equals(functionSignatureType)) {
-        servlet = NewHttpFunctionExecutor.forClass(functionClass);
+        servlet = HttpFunctionExecutor.forClass(functionClass);
     } else if ("event".equals(functionSignatureType)) {
-        servlet = NewBackgroundFunctionExecutor.forClass(functionClass);
+        servlet = BackgroundFunctionExecutor.forClass(functionClass);
     } else if (functionSignatureType == null) {
         servlet = servletForDeducedSignatureType(functionClass);
     } else {
@@ -284,11 +284,11 @@ public class Invoker {
 
   private HttpServlet servletForDeducedSignatureType(Class<?> functionClass) {
     if (HttpFunction.class.isAssignableFrom(functionClass)) {
-      return NewHttpFunctionExecutor.forClass(functionClass);
+      return HttpFunctionExecutor.forClass(functionClass);
     }
     if (BackgroundFunction.class.isAssignableFrom(functionClass)
         || RawBackgroundFunction.class.isAssignableFrom(functionClass)) {
-      return NewBackgroundFunctionExecutor.forClass(functionClass);
+      return BackgroundFunctionExecutor.forClass(functionClass);
     }
     String error = String.format(
         "Could not determine function signature type from target %s. Either this should be"

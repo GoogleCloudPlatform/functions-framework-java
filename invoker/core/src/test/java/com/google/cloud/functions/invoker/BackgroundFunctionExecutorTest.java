@@ -1,6 +1,6 @@
 package com.google.cloud.functions.invoker;
 
-import static com.google.cloud.functions.invoker.NewBackgroundFunctionExecutor.backgroundFunctionTypeArgument;
+import static com.google.cloud.functions.invoker.BackgroundFunctionExecutor.backgroundFunctionTypeArgument;
 import static com.google.common.truth.Truth8.assertThat;
 
 import com.google.cloud.functions.BackgroundFunction;
@@ -11,7 +11,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
-public class NewBackgroundFunctionExecutorTest {
+public class BackgroundFunctionExecutorTest {
   private static class PubSubMessage {
     String data;
     Map<String, String> attributes;
