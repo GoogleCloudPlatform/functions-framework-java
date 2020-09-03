@@ -51,8 +51,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -121,7 +121,7 @@ public class IntegrationTest {
         .withDataSchema(URI.create("/schema"))
         .withDataContentType("application/json")
         .withData(("{\"a\": 2, \"b\": 3, \"targetFile\": \"" + snoopFile + "\"}").getBytes(UTF_8))
-        .withTime(ZonedDateTime.of(2018, 4, 5, 17, 31, 0, 0, ZoneOffset.UTC))
+        .withTime(OffsetDateTime.of(2018, 4, 5, 17, 31, 0, 0, ZoneOffset.UTC))
         .build();
   }
 

@@ -15,7 +15,6 @@
 package com.google.cloud.functions.invoker;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
 
 import com.google.cloud.functions.BackgroundFunction;
@@ -32,7 +31,7 @@ import io.cloudevents.core.message.impl.UnknownEncodingMessageReader;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
@@ -132,7 +131,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
   }
 
   private static Context contextFromCloudEvent(CloudEvent cloudEvent) {
-    ZonedDateTime timestamp = Optional.ofNullable(cloudEvent.getTime()).orElse(ZonedDateTime.now());
+    OffsetDateTime timestamp = Optional.ofNullable(cloudEvent.getTime()).orElse(OffsetDateTime.now());
     String timestampString = DateTimeFormatter.ISO_INSTANT.format(timestamp);
     // We don't have an obvious replacement for the Context.resource field, which with legacy events
     // corresponded to a value present for some proprietary Google event types.
