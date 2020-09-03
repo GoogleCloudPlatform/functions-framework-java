@@ -2,7 +2,6 @@ package com.google.cloud.functions.invoker;
 
 import io.cloudevents.SpecVersion;
 import io.cloudevents.core.message.impl.BaseGenericBinaryMessageReaderImpl;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

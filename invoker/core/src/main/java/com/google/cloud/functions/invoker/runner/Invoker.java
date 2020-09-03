@@ -20,6 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.google.cloud.functions.BackgroundFunction;
+import com.google.cloud.functions.ExperimentalCloudEventsFunction;
 import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.RawBackgroundFunction;
 import com.google.cloud.functions.invoker.BackgroundFunctionExecutor;
@@ -192,9 +193,16 @@ public class Invoker {
     ClassLoader runtimeLoader = Invoker.class.getClassLoader();
     if (functionClasspath.isPresent()) {
       ClassLoader parent = new OnlyApiClassLoader(runtimeLoader);
-      return new URLClassLoader(classpathToUrls(functionClasspath.get()), parent);
+      return new FunctionClassLoader(classpathToUrls(functionClasspath.get()), parent);
     }
     return runtimeLoader;
+  }
+
+  // This is a subclass just so we can identify it from its toString().
+  private static class FunctionClassLoader extends URLClassLoader {
+    FunctionClassLoader(URL[] urls, ClassLoader parent) {
+      super(urls, parent);
+    }
   }
 
   private final Integer port;
@@ -286,9 +294,10 @@ public class Invoker {
     if (HttpFunction.class.isAssignableFrom(functionClass)) {
       return HttpFunctionExecutor.forClass(functionClass);
     }
-    if (BackgroundFunction.class.isAssignableFrom(functionClass)
-        || RawBackgroundFunction.class.isAssignableFrom(functionClass)) {
-      return BackgroundFunctionExecutor.forClass(functionClass);
+    Optional<BackgroundFunctionExecutor> maybeExecutor =
+        BackgroundFunctionExecutor.maybeForClass(functionClass);
+    if (maybeExecutor.isPresent()) {
+      return maybeExecutor.get();
     }
     String error = String.format(
         "Could not determine function signature type from target %s. Either this should be"
@@ -405,10 +414,19 @@ public class Invoker {
     protected Class<?> findClass(String name) throws ClassNotFoundException {
       String prefix = "com.google.cloud.functions.";
       if ((name.startsWith(prefix) && Character.isUpperCase(name.charAt(prefix.length())))
-              || name.startsWith("javax.servlet.")) {
+              || name.startsWith("javax.servlet.")
+              || isCloudEventsApiClass(name)) {
         return runtimeClassLoader.loadClass(name);
       }
       return super.findClass(name); // should throw ClassNotFoundException
+    }
+
+    private static final String CLOUD_EVENTS_API_PREFIX = "io.cloudevents.";
+    private static final int CLOUD_EVENTS_API_PREFIX_LENGTH = CLOUD_EVENTS_API_PREFIX.length();
+
+    private static boolean isCloudEventsApiClass(String name) {
+      return name.startsWith(CLOUD_EVENTS_API_PREFIX)
+          && Character.isUpperCase(name.charAt(CLOUD_EVENTS_API_PREFIX_LENGTH));
     }
 
     private static ClassLoader getSystemOrBootstrapClassLoader() {
