@@ -368,6 +368,41 @@ public class IntegrationTest {
         ImmutableList.of(gcfTestCase, cloudEventsStructuredTestCase, cloudEventsBinaryTestCase));
   }
 
+  /** Tests a CloudEvent being handled by a CloudEvent handler (no translation to or from legacy). */
+  @Test
+  public void nativeCloudEvent() throws Exception {
+    File snoopFile = snoopFile();
+    CloudEvent cloudEvent = sampleCloudEvent(snoopFile);
+    EventFormat jsonFormat = EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE);
+    String cloudEventJson = new String(jsonFormat.serialize(cloudEvent), UTF_8);
+
+    // A CloudEvent using the "structured content mode", where both the metadata and the payload
+    // are in the body of the HTTP request.
+    JsonObject cloudEventJsonObject = new Gson().fromJson(cloudEventJson, JsonObject.class);
+    TestCase cloudEventsStructuredTestCase = TestCase.builder()
+        .setSnoopFile(snoopFile)
+        .setRequestText(cloudEventJson)
+        .setHttpContentType("application/cloudevents+json; charset=utf-8")
+        .setExpectedJson(cloudEventJsonObject)
+        .build();
+
+    // A CloudEvent using the "binary content mode", where the metadata is in HTTP headers and the
+    // payload is the body of the HTTP request.
+    BinaryWriter binaryWriter = new BinaryWriter();
+    Map<String, String> headers = binaryWriter.writeBinary(cloudEvent);
+    TestCase cloudEventsBinaryTestCase = TestCase.builder()
+        .setSnoopFile(snoopFile)
+        .setRequestText(new String(binaryWriter.body, UTF_8))
+        .setHttpContentType(headers.get("Content-Type"))
+        .setHttpHeaders(ImmutableMap.copyOf(headers))
+        .setExpectedJson(cloudEventJsonObject)
+        .build();
+
+    backgroundTest(
+        fullTarget("CloudEventSnoop"),
+        ImmutableList.of(cloudEventsStructuredTestCase, cloudEventsBinaryTestCase));
+  }
+
   @Test
   public void nested() throws Exception {
     String testText = "sic transit gloria mundi";
@@ -469,7 +504,8 @@ public class IntegrationTest {
       Gson gson = new Gson();
       JsonObject snoopedJson = gson.fromJson(snooped, JsonObject.class);
       JsonObject expectedJson = testCase.expectedJson().get();
-      expect.withMessage("Testing %s with %s\nGOT %s\nNOT %s", functionTarget, testCase, snoopedJson, expectedJson)
+      expect.withMessage(
+              "Testing %s with %s\nGOT %s\nNOT %s", functionTarget, testCase, snoopedJson, expectedJson)
           .that(snoopedJson).isEqualTo(expectedJson);
     }
   }

@@ -15,10 +15,12 @@
 package com.google.cloud.functions.invoker;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.Context;
+import com.google.cloud.functions.ExperimentalCloudEventsFunction;
 import com.google.cloud.functions.RawBackgroundFunction;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -54,20 +56,63 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     this.functionExecutor = functionExecutor;
   }
 
+  private enum FunctionKind {
+    BACKGROUND(BackgroundFunction.class),
+    RAW_BACKGROUND(RawBackgroundFunction.class),
+    CLOUD_EVENTS(ExperimentalCloudEventsFunction.class);
+
+    static final List<FunctionKind> VALUES = Arrays.asList(values());
+
+    final Class<?> functionClass;
+
+    FunctionKind(Class<?> functionClass) {
+      this.functionClass = functionClass;
+    }
+
+    /** Returns the {@link FunctionKind} that the given class implements, if any. */
+    static Optional<FunctionKind> forClass(Class<?> functionClass) {
+      return VALUES.stream().filter(v -> v.functionClass.isAssignableFrom(functionClass)).findFirst();
+    }
+  }
+
   /**
-   * Makes a {@link HttpFunctionExecutor} for the given class.
+   * Optionally makes a {@link BackgroundFunctionExecutor} for the given class, if it implements one
+   * of {@link BackgroundFunction}, {@link RawBackgroundFunction}, or
+   * {@link ExperimentalCloudEventsFunction}. Otherwise returns {@link Optional#empty()}.
+   *
+   * @param functionClass the class of a possible background function implementation.
+   * @throws RuntimeException if the given class does implement one of the required interfaces, but we are
+   *     unable to construct an instance using its no-arg constructor.
+   */
+  public static Optional<BackgroundFunctionExecutor> maybeForClass(Class<?> functionClass) {
+    Optional<FunctionKind> maybeFunctionKind = FunctionKind.forClass(functionClass);
+    if (!maybeFunctionKind.isPresent()) {
+      return Optional.empty();
+    }
+    return Optional.of(forClass(functionClass, maybeFunctionKind.get()));
+  }
+
+  /**
+   * Makes a {@link BackgroundFunctionExecutor} for the given class.
    *
    * @throws RuntimeException if either the class does not implement one of
-   *    {@link BackgroundFunction} or {@link RawBackgroundFunction},
-   *    or we are unable to construct an instance using its no-arg constructor.
+   *    {@link BackgroundFunction}, {@link RawBackgroundFunction}, or
+   *    {@link ExperimentalCloudEventsFunction}; or we are unable to construct an instance using its no-arg
+   *     constructor.
    */
   public static BackgroundFunctionExecutor forClass(Class<?> functionClass) {
-    if (!BackgroundFunction.class.isAssignableFrom(functionClass)
-        && !RawBackgroundFunction.class.isAssignableFrom(functionClass)) {
+    Optional<FunctionKind> maybeFunctionKind = FunctionKind.forClass(functionClass);
+    if (!maybeFunctionKind.isPresent()) {
+      List<String> classNames =
+          FunctionKind.VALUES.stream().map(v -> v.functionClass.getName()).collect(toList());
       throw new RuntimeException(
-          "Class " + functionClass.getName() + " implements neither " + BackgroundFunction.class
-              .getName() + " nor " + RawBackgroundFunction.class.getName());
+          "Class " + functionClass.getName() + " must implement one of these interfaces: "
+              + String.join(", ", classNames));
     }
+    return forClass(functionClass, maybeFunctionKind.get());
+  }
+
+  private static BackgroundFunctionExecutor forClass(Class<?> functionClass, FunctionKind functionKind) {
     Object instance;
     try {
       instance = functionClass.getConstructor().newInstance();
@@ -76,23 +121,31 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
           "Could not construct an instance of " + functionClass.getName() + ": " + e, e);
     }
     FunctionExecutor<?> executor;
-    if (instance instanceof RawBackgroundFunction) {
-      executor = new RawFunctionExecutor((RawBackgroundFunction) instance);
-    } else {
-      BackgroundFunction<?> backgroundFunction = (BackgroundFunction<?>) instance;
-      @SuppressWarnings("unchecked")
-      Class<? extends BackgroundFunction<?>> c =
-          (Class<? extends BackgroundFunction<?>>) backgroundFunction.getClass();
-      Optional<Type> maybeTargetType = backgroundFunctionTypeArgument(c);
-      if (!maybeTargetType.isPresent()) {
-        // This is probably because the user implemented just BackgroundFunction rather than
-        // BackgroundFunction<T>.
-        throw new RuntimeException(
-            "Could not determine the payload type for BackgroundFunction of type "
-                + instance.getClass().getName()
-                + "; must implement BackgroundFunction<T> for some T");
-      }
-      executor = new TypedFunctionExecutor<>(maybeTargetType.get(), backgroundFunction);
+    switch (functionKind) {
+      case RAW_BACKGROUND:
+        executor = new RawFunctionExecutor((RawBackgroundFunction) instance);
+        break;
+      case BACKGROUND:
+        BackgroundFunction<?> backgroundFunction = (BackgroundFunction<?>) instance;
+        @SuppressWarnings("unchecked")
+        Class<? extends BackgroundFunction<?>> c =
+            (Class<? extends BackgroundFunction<?>>) backgroundFunction.getClass();
+        Optional<Type> maybeTargetType = backgroundFunctionTypeArgument(c);
+        if (!maybeTargetType.isPresent()) {
+          // This is probably because the user implemented just BackgroundFunction rather than
+          // BackgroundFunction<T>.
+          throw new RuntimeException(
+              "Could not determine the payload type for BackgroundFunction of type "
+                  + instance.getClass().getName()
+                  + "; must implement BackgroundFunction<T> for some T");
+        }
+        executor = new TypedFunctionExecutor<>(maybeTargetType.get(), backgroundFunction);
+        break;
+      case CLOUD_EVENTS:
+        executor = new CloudEventFunctionExecutor((ExperimentalCloudEventsFunction) instance);
+        break;
+      default: // can't happen, we've listed all the FunctionKind values already.
+        throw new AssertionError(functionKind);
     }
     return new BackgroundFunctionExecutor(executor);
   }
@@ -177,12 +230,9 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
       return functionClass.getClassLoader();
     }
 
-    abstract void serviceLegacyEvent(HttpServletRequest req)
-        throws Exception;
+    abstract void serviceLegacyEvent(Event legacyEvent) throws Exception;
 
     abstract void serviceCloudEvent(CloudEvent cloudEvent) throws Exception;
-
-    abstract Class<CloudEventDataT> cloudEventDataType();
   }
 
   private static class RawFunctionExecutor extends FunctionExecutor<Map<?, ?>> {
@@ -194,9 +244,8 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     }
 
     @Override
-    void serviceLegacyEvent(HttpServletRequest req) throws Exception {
-      Event event = parseLegacyEvent(req);
-      function.accept(new Gson().toJson(event.getData()), event.getContext());
+    void serviceLegacyEvent(Event legacyEvent) throws Exception {
+      function.accept(new Gson().toJson(legacyEvent.getData()), legacyEvent.getContext());
     }
 
     @Override
@@ -204,15 +253,6 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
       Context context = contextFromCloudEvent(cloudEvent);
       String jsonData = cloudEvent.getData() == null ? "{}" : new String(cloudEvent.getData(), UTF_8);
       function.accept(jsonData, context);
-    }
-
-    @Override
-    Class<Map<?, ?>> cloudEventDataType() {
-      // This messing about with casts and @SuppressWarnings allows us to limit the use of the raw
-      // Map type to just here.
-      @SuppressWarnings("unchecked")
-      Class<Map<?, ?>> c = (Class<Map<?, ?>>) (Class<?>) Map.class;
-      return c;
     }
   }
 
@@ -233,10 +273,9 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     }
 
     @Override
-    void serviceLegacyEvent(HttpServletRequest req) throws Exception {
-      Event event = parseLegacyEvent(req);
-      T payload = new Gson().fromJson(event.getData(), type);
-      function.accept(payload, event.getContext());
+    void serviceLegacyEvent(Event legacyEvent) throws Exception {
+      T payload = new Gson().fromJson(legacyEvent.getData(), type);
+      function.accept(payload, legacyEvent.getContext());
     }
 
     @Override
@@ -250,17 +289,25 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
         throw new IllegalStateException("Event has no \"data\" component");
       }
     }
+  }
+
+  private static class CloudEventFunctionExecutor extends FunctionExecutor<Void>{
+    private final ExperimentalCloudEventsFunction function;
+
+    CloudEventFunctionExecutor(ExperimentalCloudEventsFunction function) {
+      super(function.getClass());
+      this.function = function;
+    }
 
     @Override
-    Class<T> cloudEventDataType() {
-      if (!(type instanceof Class<?>)) {
-        throw new IllegalStateException(
-            "CloudEvents SDK currently does not permit deserializing types other than classes:"
-            + " cannot deserialize " + type);
-      }
-      @SuppressWarnings("unchecked")
-      Class<T> c = (Class<T>) type;
-      return c;
+    void serviceLegacyEvent(Event legacyEvent) throws Exception {
+      throw new UnsupportedOperationException(
+          "Conversion from legacy events to CloudEvents not yet implemented");
+    }
+
+    @Override
+    void serviceCloudEvent(CloudEvent cloudEvent) throws Exception {
+      function.accept(cloudEvent);
     }
   }
 
@@ -268,9 +315,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
   @Override
   public void service(HttpServletRequest req, HttpServletResponse res) throws IOException {
     String contentType = req.getContentType();
-    ClassLoader oldContextLoader = Thread.currentThread().getContextClassLoader();
     try {
-      Thread.currentThread().setContextClassLoader(functionExecutor.functionClassLoader());
       if ((contentType != null && contentType.startsWith("application/cloudevents+json"))
           || req.getHeader("ce-specversion") != null) {
         serviceCloudEvent(req);
@@ -281,8 +326,6 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     } catch (Throwable t) {
       res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
       logger.log(Level.WARNING, "Failed to execute " + functionExecutor.functionName(), t);
-    } finally {
-      Thread.currentThread().setContextClassLoader(oldContextLoader);
     }
   }
 
@@ -306,10 +349,32 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
         () -> headers.getOrDefault("ce-specversion", listOfNull).get(0),
         unusedSpecVersion -> CloudEventsServletBinaryMessageReader.from(req, body),
         UnknownEncodingMessageReader::new);
-    executor.serviceCloudEvent(reader.toEvent());
+    // It's important not to set the context ClassLoader earlier, because MessageUtils will use
+    // ServiceLoader.load(EventFormat.class) to find a handler to deserialize a binary CloudEvent
+    // and if it finds something from the function ClassLoader then that something will implement
+    // the EventFormat interface as defined by that ClassLoader rather than ours. Then ServiceLoader.load
+    // will throw ServiceConfigurationError. At this point we're still running with the default
+    // context ClassLoader, which is the system ClassLoader that has loaded the code here.
+    runWithContextClassLoader(() -> executor.serviceCloudEvent(reader.toEvent()));
   }
 
   private void serviceLegacyEvent(HttpServletRequest req) throws Exception {
-    functionExecutor.serviceLegacyEvent(req);
+    Event event = parseLegacyEvent(req);
+    runWithContextClassLoader(() -> functionExecutor.serviceLegacyEvent(event));
+  }
+
+  private void runWithContextClassLoader(ContextClassLoaderTask task) throws Exception {
+    ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
+    try {
+      Thread.currentThread().setContextClassLoader(functionExecutor.functionClassLoader());
+      task.run();
+    } finally {
+      Thread.currentThread().setContextClassLoader(oldLoader);
+    }
+  }
+
+  @FunctionalInterface
+  private interface ContextClassLoaderTask {
+    void run() throws Exception;
   }
 }
