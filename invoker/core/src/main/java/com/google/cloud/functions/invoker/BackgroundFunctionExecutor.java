@@ -56,7 +56,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     this.functionExecutor = functionExecutor;
   }
 
-  enum FunctionKind {
+  private enum FunctionKind {
     BACKGROUND(BackgroundFunction.class),
     RAW_BACKGROUND(RawBackgroundFunction.class),
     CLOUD_EVENTS(ExperimentalCloudEventsFunction.class);
@@ -69,11 +69,21 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
       this.functionClass = functionClass;
     }
 
+    /** Returns the {@link FunctionKind} that the given class implements, if any. */
     static Optional<FunctionKind> forClass(Class<?> functionClass) {
       return VALUES.stream().filter(v -> v.functionClass.isAssignableFrom(functionClass)).findFirst();
     }
   }
 
+  /**
+   * Optionally makes a {@link BackgroundFunctionExecutor} for the given class, if it implements one
+   * of {@link BackgroundFunction}, {@link RawBackgroundFunction}, or
+   * {@link ExperimentalCloudEventsFunction}. Otherwise returns {@link Optional#empty()}.
+   *
+   * @param functionClass the class of a possible background function implementation.
+   * @throws RuntimeException if the given class does implement one of the required interfaces, but we are
+   *     unable to construct an instance using its no-arg constructor.
+   */
   public static Optional<BackgroundFunctionExecutor> maybeForClass(Class<?> functionClass) {
     Optional<FunctionKind> maybeFunctionKind = FunctionKind.forClass(functionClass);
     if (!maybeFunctionKind.isPresent()) {
@@ -83,11 +93,12 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
   }
 
   /**
-   * Makes a {@link HttpFunctionExecutor} for the given class.
+   * Makes a {@link BackgroundFunctionExecutor} for the given class.
    *
    * @throws RuntimeException if either the class does not implement one of
-   *    {@link BackgroundFunction} or {@link RawBackgroundFunction},
-   *    or we are unable to construct an instance using its no-arg constructor.
+   *    {@link BackgroundFunction}, {@link RawBackgroundFunction}, or
+   *    {@link ExperimentalCloudEventsFunction}; or we are unable to construct an instance using its no-arg
+   *     constructor.
    */
   public static BackgroundFunctionExecutor forClass(Class<?> functionClass) {
     Optional<FunctionKind> maybeFunctionKind = FunctionKind.forClass(functionClass);
