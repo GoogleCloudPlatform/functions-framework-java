@@ -1,4 +1,4 @@
-# Functions Framework for Java [![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2FGoogleCloudPlatform%2Ffunctions-framework-java%2Fbadge&style=flat)](https://actions-badge.atrox.dev/GoogleCloudPlatform/functions-framework-java/goto) [![Maven Central](https://img.shields.io/maven-central/v/com.google.cloud.functions/functions-framework-api.svg)](https://search.maven.org/search?q=com.google.cloud.functions:functions-framework-api&core=gav)
+# Functions Framework for Java [![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2FGoogleCloudPlatform%2Ffunctions-framework-java%2Fbadge&style=flat)](https://actions-badge.atrox.dev/GoogleCloudPlatform/functions-framework-java/goto) [![Maven Central](https://img.shields.io/maven-central/v/com.google.cloud.functions/functions-framework-api.svg)](https://search.maven.org/artifact/com.google.cloud.functions/functions-framework-api)
 
 An open source FaaS (Function as a service) framework for writing portable
 Java functions -- brought to you by the Google Cloud Functions team.
