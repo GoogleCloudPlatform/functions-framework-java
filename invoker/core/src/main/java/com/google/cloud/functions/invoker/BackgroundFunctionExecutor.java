@@ -32,6 +32,7 @@ import io.cloudevents.core.message.impl.MessageUtils;
 import io.cloudevents.core.message.impl.UnknownEncodingMessageReader;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.lang.reflect.Type;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -171,16 +172,20 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
 
   private static Event parseLegacyEvent(HttpServletRequest req) throws IOException {
     try (BufferedReader bodyReader = req.getReader()) {
-      // A Type Adapter is required to set the type of the JsonObject because CloudFunctionsContext
-      // is abstract and Gson default behavior instantiates the type provided.
-      TypeAdapter<CloudFunctionsContext> typeAdapter =
-          CloudFunctionsContext.typeAdapter(new Gson());
-      Gson gson = new GsonBuilder()
-          .registerTypeAdapter(CloudFunctionsContext.class, typeAdapter)
-          .registerTypeAdapter(Event.class, new Event.EventDeserializer())
-          .create();
-      return gson.fromJson(bodyReader, Event.class);
+      return parseLegacyEvent(bodyReader);
     }
+  }
+  
+  static Event parseLegacyEvent(Reader reader) throws IOException {
+    // A Type Adapter is required to set the type of the JsonObject because CloudFunctionsContext
+    // is abstract and Gson default behavior instantiates the type provided.
+    TypeAdapter<CloudFunctionsContext> typeAdapter =
+        CloudFunctionsContext.typeAdapter(new Gson());
+    Gson gson = new GsonBuilder()
+        .registerTypeAdapter(CloudFunctionsContext.class, typeAdapter)
+        .registerTypeAdapter(Event.class, new Event.EventDeserializer())
+        .create();
+    return gson.fromJson(reader, Event.class);
   }
 
   private static Context contextFromCloudEvent(CloudEvent cloudEvent) {
@@ -301,8 +306,8 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
 
     @Override
     void serviceLegacyEvent(Event legacyEvent) throws Exception {
-      throw new UnsupportedOperationException(
-          "Conversion from legacy events to CloudEvents not yet implemented");
+      CloudEvent cloudEvent = GcfEvents.convertToCloudEvent(legacyEvent);
+      function.accept(cloudEvent);
     }
 
     @Override
