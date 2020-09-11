@@ -28,6 +28,9 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -87,6 +90,118 @@ public class GcfEventsTest {
     assertThat(cloudEvent.getDataSchema()).isNull();
   }
 
+  // The next set of tests checks the result of using Gson to deserialize the JSON "data" field of the
+  // CloudEvent that we get from converting a legacy event. For the most part we're not testing much here,
+  // since the "data" field is essentially copied from the input legacy event. In some cases we adjust it,
+  // though.
+  // Later, when we have support for handling these types properly in Java, we can change the tests to use
+  // that. See https://github.com/googleapis/google-cloudevents-java
+
+  @Test
+  public void storageData() throws IOException {
+    Event legacyEvent = legacyEventForResource("storage.json");
+    CloudEvent cloudEvent = GcfEvents.convertToCloudEvent(legacyEvent);
+    Map<String, Object> data = cloudEventDataJson(cloudEvent);
+    assertThat(data).containsAtLeast(
+        "bucket", "some-bucket",
+        "timeCreated", "2020-04-23T07:38:57.230Z",
+        "generation", "1587627537231057",
+        "metageneration", "1",
+        "size", "352");
+  }
+
+  @Test
+  public void firestoreSimpleData() throws IOException {
+    Event legacyEvent = legacyEventForResource("firestore_simple.json");
+    CloudEvent cloudEvent = GcfEvents.convertToCloudEvent(legacyEvent);
+    Map<String, Object> data = cloudEventDataJson(cloudEvent);
+    Map<String, Object> expectedValue = Map.of(
+        "name", "projects/project-id/databases/(default)/documents/gcf-test/2Vm2mI1d0wIaK2Waj5to",
+        "createTime", "2020-04-23T09:58:53.211035Z",
+        "updateTime", "2020-04-23T12:00:27.247187Z",
+        "fields", Map.of(
+            "another test", Map.of("stringValue", "asd"),
+            "count", Map.of("integerValue", "4"),
+            "foo", Map.of("stringValue", "bar")));
+    Map<String, Object> expectedOldValue = Map.of(
+        "name", "projects/project-id/databases/(default)/documents/gcf-test/2Vm2mI1d0wIaK2Waj5to",
+        "createTime", "2020-04-23T09:58:53.211035Z",
+        "updateTime", "2020-04-23T12:00:27.247187Z",
+        "fields", Map.of(
+            "another test", Map.of("stringValue", "asd"),
+            "count", Map.of("integerValue", "3"),
+            "foo", Map.of("stringValue", "bar")));
+    assertThat(data).containsAtLeast(
+        "value", expectedValue,
+        "oldValue", expectedOldValue,
+        "updateMask", Map.of("fieldPaths", List.of("count")));
+  }
+
+  @Test
+  public void firestoreComplexData() throws IOException {
+    Event legacyEvent = legacyEventForResource("firestore_complex.json");
+    CloudEvent cloudEvent = GcfEvents.convertToCloudEvent(legacyEvent);
+    Map<String, Object> data = cloudEventDataJson(cloudEvent);
+    Map<?, ?> value = (Map<?, ?>) data.get("value");
+    Map<?, ?> fields = (Map<?, ?>)value.get("fields");
+    Map<String, Object> expectedFields = Map.of(
+        "arrayValue", Map.of("arrayValue",
+            Map.of("values",
+                List.of(Map.of("integerValue", "1"), Map.of("integerValue", "2")))),
+        "booleanValue", Map.of("booleanValue", true),
+        "geoPointValue", Map.of("geoPointValue", Map.of("latitude", 51.4543, "longitude", -0.9781)),
+        "intValue", Map.of("integerValue", "50"),
+        "doubleValue", Map.of("doubleValue", 5.5),
+        "nullValue", Map.of(),
+        "referenceValue", Map.of("referenceValue",
+            "projects/project-id/databases/(default)/documents/foo/bar/baz/qux"),
+        "stringValue", Map.of("stringValue", "text"),
+        "timestampValue", Map.of("timestampValue", "2020-04-23T14:23:53.241Z"),
+        "mapValue", Map.of("mapValue",
+            Map.of("fields",
+                Map.of("field1", Map.of("stringValue", "x"),
+                    "field2", Map.of("arrayValue",
+                        Map.of("values",
+                            List.of(Map.of("stringValue", "x"), Map.of("integerValue", "1")))))))
+    );
+    assertThat(fields).containsExactlyEntriesIn(expectedFields);
+  }
+
+  @Test
+  public void pubSubTextData() throws IOException {
+    Event legacyEvent = legacyEventForResource("pubsub_text.json");
+    CloudEvent cloudEvent = GcfEvents.convertToCloudEvent(legacyEvent);
+    Map<String, Object> data = cloudEventDataJson(cloudEvent);
+
+    Map<?, ?> message = (Map<?, ?>) data.get("message");
+    assertThat(message).isNotNull();
+    assertThat(message).containsKey("data");
+    // Later we should provide support for doing this more simply and test that:
+    String base64 = (String) message.get("data");
+    byte[] bytes = Base64.getDecoder().decode(base64);
+    String text = new String(bytes, UTF_8);
+    assertThat(text).isEqualTo("test message 3");
+
+    assertThat(message).containsEntry("attributes", Map.of("attr1", "attr1-value"));
+  }
+
+  @Test
+  public void pubSubBinaryData() throws IOException {
+    Event legacyEvent = legacyEventForResource("pubsub_binary.json");
+    CloudEvent cloudEvent = GcfEvents.convertToCloudEvent(legacyEvent);
+    Map<String, Object> data = cloudEventDataJson(cloudEvent);
+
+    Map<?, ?> message = (Map<?, ?>) data.get("message");
+    assertThat(message).isNotNull();
+    assertThat(message).containsKey("data");
+    // Later we should provide support for doing this more simply and test that:
+    String base64 = (String) message.get("data");
+    byte[] bytes = Base64.getDecoder().decode(base64);
+    assertThat(bytes).isEqualTo(new byte[] {1, 2, 3, 4});
+
+    assertThat(message).doesNotContainKey("attributes");
+  }
+
   // Checks that a PubSub event correctly gets its payload wrapped in a "message" dictionary.
   @Test
   public void pubSubWrapping() throws IOException {
@@ -118,5 +233,12 @@ public class GcfEventsTest {
       String legacyEventString = new String(in.readAllBytes(), UTF_8);
       return BackgroundFunctionExecutor.parseLegacyEvent(new StringReader(legacyEventString));
     }
+  }
+
+  private static Map<String, Object> cloudEventDataJson(CloudEvent cloudEvent) {
+    String data = new String(cloudEvent.getData(), UTF_8);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> map = new Gson().fromJson(data, Map.class);
+    return map;
   }
 }
