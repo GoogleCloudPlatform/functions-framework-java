@@ -49,7 +49,9 @@ import javax.servlet.http.HttpServletResponse;
 
 /** Executes the user's background function. */
 public final class BackgroundFunctionExecutor extends HttpServlet {
+  private static final long serialVersionUID = 1L;
   private static final Logger logger = Logger.getLogger("com.google.cloud.functions.invoker");
+  private static final Gson GSON_WITH_NULLS = new GsonBuilder().serializeNulls().create();
 
   private final FunctionExecutor<?> functionExecutor;
 
@@ -180,12 +182,13 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     // A Type Adapter is required to set the type of the JsonObject because CloudFunctionsContext
     // is abstract and Gson default behavior instantiates the type provided.
     TypeAdapter<CloudFunctionsContext> typeAdapter =
-        CloudFunctionsContext.typeAdapter(new Gson());
-    Gson gson = new GsonBuilder()
+        CloudFunctionsContext.typeAdapter(GSON_WITH_NULLS);
+    Gson gson = GSON_WITH_NULLS.newBuilder()
         .registerTypeAdapter(CloudFunctionsContext.class, typeAdapter)
         .registerTypeAdapter(Event.class, new Event.EventDeserializer())
         .create();
-    return gson.fromJson(reader, Event.class);
+    Event event = gson.fromJson(reader, Event.class);
+    return event;
   }
 
   private static Context contextFromCloudEvent(CloudEvent cloudEvent) {
@@ -250,7 +253,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
 
     @Override
     void serviceLegacyEvent(Event legacyEvent) throws Exception {
-      function.accept(new Gson().toJson(legacyEvent.getData()), legacyEvent.getContext());
+      function.accept(GSON_WITH_NULLS.toJson(legacyEvent.getData()), legacyEvent.getContext());
     }
 
     @Override
@@ -279,7 +282,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
 
     @Override
     void serviceLegacyEvent(Event legacyEvent) throws Exception {
-      T payload = new Gson().fromJson(legacyEvent.getData(), type);
+      T payload = GSON_WITH_NULLS.fromJson(legacyEvent.getData(), type);
       function.accept(payload, legacyEvent.getContext());
     }
 
@@ -287,7 +290,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     void serviceCloudEvent(CloudEvent cloudEvent) throws Exception {
       if (cloudEvent.getData() != null) {
         String data = new String(cloudEvent.getData(), UTF_8);
-        T payload = new Gson().fromJson(data, type);
+        T payload = GSON_WITH_NULLS.fromJson(data, type);
         Context context = contextFromCloudEvent(cloudEvent);
         function.accept(payload, context);
       } else {
