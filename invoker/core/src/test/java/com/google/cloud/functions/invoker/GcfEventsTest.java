@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -99,7 +100,9 @@ public class GcfEventsTest {
 
   // Checks that a Firestore event correctly gets an extra "wildcards" property in its CloudEvent data
   // reflecting the "params" field in the legacy event.
+  // This test is currently ignored because the final representation of the "params" field is in flux.
   @Test
+  @Ignore
   public void firestoreWildcards() throws IOException {
     Event legacyEvent = legacyEventForResource("firestore_simple.json");
     CloudEvent cloudEvent = GcfEvents.convertToCloudEvent(legacyEvent);

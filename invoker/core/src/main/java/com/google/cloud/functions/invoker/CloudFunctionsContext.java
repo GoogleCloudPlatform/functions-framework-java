@@ -22,7 +22,6 @@ import com.google.gson.TypeAdapter;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 /** Event context (metadata) for events handled by Cloud Functions. */
@@ -77,8 +76,8 @@ abstract class CloudFunctionsContext implements Context {
   }
 
   /**
-   * Depending on the event type, the {@link Context#resource()} field is either a plain string or a string
-   * representing a JSON object. In the latter case, this class allows us to redeserialize that JSON string
+   * Depending on the event type, the {@link Context#resource()} field is either a JSON string (complete
+   * with encosing quotes) or a JSON object. This class allows us to redeserialize that JSON representation
    * into its components.
    */
   @AutoValue
@@ -92,11 +91,13 @@ abstract class CloudFunctionsContext implements Context {
     }
 
     static Resource from(String s) {
+      Gson baseGson = new Gson();
       if (s.startsWith("\"") && s.endsWith("\"")) {
-        return builder().setName(s.substring(1, s.length() - 1)).build();
+        String name = baseGson.fromJson(s, String.class);
+        return builder().setName(name).build();
       }
       if (s.startsWith("{") && (s.endsWith("}") || s.endsWith("}\n"))) {
-        TypeAdapter<Resource> typeAdapter = typeAdapter(new Gson());
+        TypeAdapter<Resource> typeAdapter = typeAdapter(baseGson);
         Gson gson = new GsonBuilder().registerTypeAdapter(Resource.class, typeAdapter).create();
         return gson.fromJson(s, Resource.class);
       }

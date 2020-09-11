@@ -296,7 +296,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     }
   }
 
-  private static class CloudEventFunctionExecutor extends FunctionExecutor<Void>{
+  private static class CloudEventFunctionExecutor extends FunctionExecutor<Void> {
     private final ExperimentalCloudEventsFunction function;
 
     CloudEventFunctionExecutor(ExperimentalCloudEventsFunction function) {

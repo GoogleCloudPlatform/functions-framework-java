@@ -214,7 +214,9 @@ class GcfEvents {
 
     @Override
     String maybeReshapeData(Event legacyEvent, String jsonData) {
-      if (legacyEvent.getContext().params().isEmpty()) {
+      // The reshaping code is disabled for now, because the specification for how the legacy "params"
+      // field should be represented in a CloudEvent is in flux.
+      if (true || legacyEvent.getContext().params().isEmpty()) {
         return jsonData;
       }
       JsonObject jsonObject = GSON.fromJson(jsonData, JsonObject.class);
