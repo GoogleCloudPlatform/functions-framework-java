@@ -17,6 +17,7 @@ package com.google.cloud.functions.invoker;
 import com.google.auto.value.AutoValue;
 import com.google.cloud.functions.Context;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -46,6 +47,9 @@ abstract class CloudFunctionsContext implements Context {
   @Nullable
   public abstract String resource();
 
+  // TODO: expose this in the Context interface (as a default method).
+  abstract Map<String, String> params();
+
   @Override
   public abstract Map<String, String> attributes();
 
@@ -55,6 +59,7 @@ abstract class CloudFunctionsContext implements Context {
 
   static Builder builder() {
     return new AutoValue_CloudFunctionsContext.Builder()
+        .setParams(Collections.emptyMap())
         .setAttributes(Collections.emptyMap());
   }
 
@@ -64,8 +69,51 @@ abstract class CloudFunctionsContext implements Context {
     abstract Builder setTimestamp(String x);
     abstract Builder setEventType(String x);
     abstract Builder setResource(String x);
+    abstract Builder setParams(Map<String, String> x);
     abstract Builder setAttributes(Map<String, String> value);
 
     abstract CloudFunctionsContext build();
+  }
+
+  /**
+   * Depending on the event type, the {@link Context#resource()} field is either a JSON string (complete
+   * with encosing quotes) or a JSON object. This class allows us to redeserialize that JSON representation
+   * into its components.
+   */
+  @AutoValue
+  abstract static class Resource {
+    abstract @Nullable String service();
+    abstract String name();
+    abstract @Nullable String type();
+
+    static TypeAdapter<Resource> typeAdapter(Gson gson) {
+      return new AutoValue_CloudFunctionsContext_Resource.GsonTypeAdapter(gson);
+    }
+
+    static Resource from(String s) {
+      Gson baseGson = new Gson();
+      if (s.startsWith("\"") && s.endsWith("\"")) {
+        String name = baseGson.fromJson(s, String.class);
+        return builder().setName(name).build();
+      }
+      if (s.startsWith("{") && (s.endsWith("}") || s.endsWith("}\n"))) {
+        TypeAdapter<Resource> typeAdapter = typeAdapter(baseGson);
+        Gson gson = new GsonBuilder().registerTypeAdapter(Resource.class, typeAdapter).create();
+        return gson.fromJson(s, Resource.class);
+      }
+      throw new IllegalArgumentException("Unexpected resource syntax: " + s);
+    }
+
+    static Builder builder() {
+      return new AutoValue_CloudFunctionsContext_Resource.Builder();
+    }
+
+    @AutoValue.Builder
+    abstract static class Builder {
+      abstract Builder setService(String x);
+      abstract Builder setName(String x);
+      abstract Builder setType(String x);
+      abstract Resource build();
+    }
   }
 }

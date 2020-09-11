@@ -14,6 +14,7 @@
 
 package com.google.cloud.functions.invoker;
 
+import com.google.auto.value.AutoValue;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -25,23 +26,15 @@ import java.lang.reflect.Type;
  * Represents an event that should be handled by a background function. This is an internal format
  * which is later converted to actual background function parameter types.
  */
-class Event {
-
-  private JsonElement data;
-  private CloudFunctionsContext context;
-
-  Event(JsonElement data, CloudFunctionsContext context) {
-    this.data = data;
-    this.context = context;
+@AutoValue
+abstract class Event {
+  static Event of(JsonElement data, CloudFunctionsContext context) {
+    return new AutoValue_Event(data, context);
   }
 
-  JsonElement getData() {
-    return data;
-  }
+  abstract JsonElement getData();
 
-  CloudFunctionsContext getContext() {
-    return context;
-  }
+  abstract CloudFunctionsContext getContext();
 
   /** Custom deserializer that supports both GCF beta and GCF GA event formats. */
   static class EventDeserializer implements JsonDeserializer<Event> {
@@ -67,7 +60,7 @@ class Event {
             jsonDeserializationContext.deserialize(
                 adjustContextResource(rootCopy), CloudFunctionsContext.class);
       }
-      return new Event(data, context);
+      return Event.of(data, context);
     }
 
     /**
