@@ -143,7 +143,7 @@ public class GcfEventsTest {
     CloudEvent cloudEvent = GcfEvents.convertToCloudEvent(legacyEvent);
     Map<String, Object> data = cloudEventDataJson(cloudEvent);
     Map<?, ?> value = (Map<?, ?>) data.get("value");
-    Map<?, ?> fields = (Map<?, ?>)value.get("fields");
+    Map<?, ?> fields = (Map<?, ?>) value.get("fields");
     Map<String, Object> expectedFields = Map.of(
         "arrayValue", Map.of("arrayValue",
             Map.of("values",
