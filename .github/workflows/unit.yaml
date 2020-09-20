@@ -5,7 +5,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [11.x, 12.x, 13.x]
+        java: [
+          11.x
+          # 12.x,
+          # 13.x
+        ]
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK ${{ matrix.java }}
