@@ -13,7 +13,11 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 11.x
+    - name: Build API with Maven
+      run: (cd functions-framework-api/ && mvn install)
     - name: Lint Functions Framework API
       run: (cd functions-framework-api/ && mvn clean verify -DskipTests -P lint)
+    - name: Build Invoker with Maven
+      run: (cd functions-framework-api/ && mvn install)
     - name: Lint Invoker
       run: (cd invoker/ && mvn clean verify -DskipTests -P lint)
