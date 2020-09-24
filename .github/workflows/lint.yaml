@@ -1,0 +1,17 @@
+name: Java Lint CI
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK
+      uses: actions/setup-java@v1
+    - name: Lint Functions Framework API
+      run: (cd functions-framework-api/ && mvn clean verify -DskipTests -P lint)
+    - name: Lint Invoker
+      run: (cd invoker/ && mvn clean verify -DskipTests -P lint)
