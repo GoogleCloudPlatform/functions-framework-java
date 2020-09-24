@@ -19,16 +19,32 @@ import java.util.Map;
 
 /** An interface for event function context. */
 public interface Context {
-  /** Returns event ID. */
+  /**
+   * Returns event ID.
+   * 
+   * @return event ID
+   */
   String eventId();
 
-  /** Returns event timestamp. */
+  /**
+   * Returns event timestamp.
+   * 
+   * @return event timestamp
+   */
   String timestamp();
 
-  /** Returns event type. */
+  /**
+   * Returns event type.
+   * 
+   * @return event type
+   */
   String eventType();
 
-  /** Returns event resource. */
+  /**
+   * Returns event resource.
+   * 
+   * @return event resource
+   */
   String resource();
 
   /**
@@ -42,6 +58,8 @@ public interface Context {
    * extension attributes</a>.
    *
    * <p>The map returned by this method may be empty but is never null.</p>
+   * 
+   * @return additional attributes form this event.
    */
   default Map<String, String> attributes() {
     return Collections.emptyMap();
