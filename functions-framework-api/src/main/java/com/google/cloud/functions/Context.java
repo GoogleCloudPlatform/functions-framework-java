@@ -20,21 +20,29 @@ import java.util.Map;
 /** An interface for event function context. */
 public interface Context {
   /**
+   * Returns event ID.
+   * 
    * @return event ID
    */
   String eventId();
 
   /**
+   * Returns event timestamp.
+   * 
    * @return event timestamp
    */
   String timestamp();
 
   /**
+   * Returns event type.
+   * 
    * @return event type
    */
   String eventType();
 
   /**
+   * Returns event resource.
+   * 
    * @return event resource
    */
   String resource();
