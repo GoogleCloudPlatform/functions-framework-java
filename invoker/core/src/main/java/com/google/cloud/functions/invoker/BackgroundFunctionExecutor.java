@@ -27,20 +27,20 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.message.MessageReader;
-import io.cloudevents.core.message.impl.GenericStructuredMessageReader;
-import io.cloudevents.core.message.impl.MessageUtils;
-import io.cloudevents.core.message.impl.UnknownEncodingMessageReader;
+import io.cloudevents.http.HttpMessageFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Type;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.http.HttpServlet;
@@ -256,7 +256,9 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     @Override
     void serviceCloudEvent(CloudEvent cloudEvent) throws Exception {
       Context context = contextFromCloudEvent(cloudEvent);
-      String jsonData = cloudEvent.getData() == null ? "{}" : new String(cloudEvent.getData(), UTF_8);
+      String jsonData = (cloudEvent.getData() == null)
+          ? "{}"
+          : new String(cloudEvent.getData().toBytes(), UTF_8);
       function.accept(jsonData, context);
     }
   }
@@ -286,7 +288,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     @Override
     void serviceCloudEvent(CloudEvent cloudEvent) throws Exception {
       if (cloudEvent.getData() != null) {
-        String data = new String(cloudEvent.getData(), UTF_8);
+        String data = new String(cloudEvent.getData().toBytes(), UTF_8);
         T payload = new Gson().fromJson(data, type);
         Context context = contextFromCloudEvent(cloudEvent);
         function.accept(payload, context);
@@ -345,22 +347,27 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
   private <CloudEventT> void serviceCloudEvent(HttpServletRequest req) throws Exception {
     @SuppressWarnings("unchecked")
     FunctionExecutor<CloudEventT> executor = (FunctionExecutor<CloudEventT>) functionExecutor;
-    Map<String, List<String>> headers = CloudEventsServletBinaryMessageReader.headerMap(req);
     byte[] body = req.getInputStream().readAllBytes();
-    List<String> listOfNull = Collections.singletonList(null);
-    MessageReader reader = MessageUtils.parseStructuredOrBinaryMessage(
-        () -> headers.getOrDefault("content-type", listOfNull).get(0),
-        format -> new GenericStructuredMessageReader(format, body),
-        () -> headers.getOrDefault("ce-specversion", listOfNull).get(0),
-        unusedSpecVersion -> CloudEventsServletBinaryMessageReader.from(req, body),
-        UnknownEncodingMessageReader::new);
+    MessageReader reader = HttpMessageFactory.createReaderFromMultimap(headerMap(req), body);
     // It's important not to set the context ClassLoader earlier, because MessageUtils will use
     // ServiceLoader.load(EventFormat.class) to find a handler to deserialize a binary CloudEvent
     // and if it finds something from the function ClassLoader then that something will implement
     // the EventFormat interface as defined by that ClassLoader rather than ours. Then ServiceLoader.load
     // will throw ServiceConfigurationError. At this point we're still running with the default
     // context ClassLoader, which is the system ClassLoader that has loaded the code here.
-    runWithContextClassLoader(() -> executor.serviceCloudEvent(reader.toEvent()));
+    runWithContextClassLoader(() -> executor.serviceCloudEvent(reader.toEvent(data -> data)));
+    // The data->data is a workaround for a bug fixed since Milestone 4 of the SDK, in
+    // https://github.com/cloudevents/sdk-java/pull/259.
+  }
+
+  private static Map<String, List<String>> headerMap(HttpServletRequest req) {
+    Map<String, List<String>> headerMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    for (String header : Collections.list(req.getHeaderNames())) {
+      for (String value : Collections.list(req.getHeaders(header))) {
+        headerMap.computeIfAbsent(header, unused -> new ArrayList<>()).add(value);
+      }
+    }
+    return headerMap;
   }
 
   private void serviceLegacyEvent(HttpServletRequest req) throws Exception {

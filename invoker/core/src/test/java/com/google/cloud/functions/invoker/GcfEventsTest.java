@@ -207,7 +207,7 @@ public class GcfEventsTest {
   public void pubSubWrapping() throws IOException {
     Event legacyEvent = legacyEventForResource("legacy_pubsub.json");
     CloudEvent cloudEvent = GcfEvents.convertToCloudEvent(legacyEvent);
-    assertThat(new String(cloudEvent.getData(), UTF_8))
+    assertThat(new String(cloudEvent.getData().toBytes(), UTF_8))
         .isEqualTo("{\"message\":{\"@type\":\"type.googleapis.com/google.pubsub.v1.PubsubMessage\","
             + "\"attributes\":{\"attribute1\":\"value1\"},"
             + "\"data\":\"VGhpcyBpcyBhIHNhbXBsZSBtZXNzYWdl\"}}");
@@ -221,7 +221,8 @@ public class GcfEventsTest {
   public void firestoreWildcards() throws IOException {
     Event legacyEvent = legacyEventForResource("firestore_simple.json");
     CloudEvent cloudEvent = GcfEvents.convertToCloudEvent(legacyEvent);
-    JsonObject payload = new Gson().fromJson(new String(cloudEvent.getData(), UTF_8), JsonObject.class);
+    JsonObject payload =
+        new Gson().fromJson(new String(cloudEvent.getData().toBytes(), UTF_8), JsonObject.class);
     JsonObject wildcards = payload.getAsJsonObject("wildcards");
     assertThat(wildcards.keySet()).containsExactly("doc");
     assertThat(wildcards.getAsJsonPrimitive("doc").getAsString()).isEqualTo("2Vm2mI1d0wIaK2Waj5to");
@@ -236,7 +237,7 @@ public class GcfEventsTest {
   }
 
   private static Map<String, Object> cloudEventDataJson(CloudEvent cloudEvent) {
-    String data = new String(cloudEvent.getData(), UTF_8);
+    String data = new String(cloudEvent.getData().toBytes(), UTF_8);
     @SuppressWarnings("unchecked")
     Map<String, Object> map = new Gson().fromJson(data, Map.class);
     return map;

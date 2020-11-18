@@ -14,7 +14,7 @@ import java.io.FileOutputStream;
 public class CloudEventSnoop implements ExperimentalCloudEventsFunction {
   @Override
   public void accept(CloudEvent event) throws Exception {
-    String payloadJson = new String(event.getData(), UTF_8);
+    String payloadJson = new String(event.getData().toBytes(), UTF_8);
     Gson gson = new Gson();
     JsonObject jsonObject = gson.fromJson(payloadJson, JsonObject.class);
     String targetFile = jsonObject.get("targetFile").getAsString();

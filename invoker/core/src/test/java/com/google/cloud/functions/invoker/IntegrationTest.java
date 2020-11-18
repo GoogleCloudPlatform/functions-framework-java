@@ -29,14 +29,11 @@ import com.google.common.truth.Expect;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.cloudevents.CloudEvent;
-import io.cloudevents.SpecVersion;
 import io.cloudevents.core.builder.CloudEventBuilder;
 import io.cloudevents.core.format.EventFormat;
-import io.cloudevents.core.message.MessageWriter;
-import io.cloudevents.core.message.impl.MessageUtils;
 import io.cloudevents.core.provider.EventFormatProvider;
+import io.cloudevents.http.HttpMessageFactory;
 import io.cloudevents.jackson.JsonFormat;
-import io.cloudevents.rw.CloudEventWriter;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -63,6 +60,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentProvider;
@@ -353,11 +351,13 @@ public class IntegrationTest {
 
     // A CloudEvent using the "binary content mode", where the metadata is in HTTP headers and the
     // payload is the body of the HTTP request.
-    BinaryWriter binaryWriter = new BinaryWriter();
-    Map<String, String> headers = binaryWriter.writeBinary(sampleCloudEvent(snoopFile));
+    Map<String, String> headers = new TreeMap<>();
+    AtomicReference<byte[]> bodyRef = new AtomicReference<>();
+    HttpMessageFactory.createWriter(headers::put, bodyRef::set)
+        .writeBinary(sampleCloudEvent(snoopFile));
     TestCase cloudEventsBinaryTestCase = TestCase.builder()
         .setSnoopFile(snoopFile)
-        .setRequestText(new String(binaryWriter.body, UTF_8))
+        .setRequestText(new String(bodyRef.get(), UTF_8))
         .setHttpContentType(headers.get("Content-Type"))
         .setHttpHeaders(ImmutableMap.copyOf(headers))
         .setExpectedJson(cloudEventExpectedJson)
@@ -388,11 +388,13 @@ public class IntegrationTest {
 
     // A CloudEvent using the "binary content mode", where the metadata is in HTTP headers and the
     // payload is the body of the HTTP request.
-    BinaryWriter binaryWriter = new BinaryWriter();
-    Map<String, String> headers = binaryWriter.writeBinary(cloudEvent);
+    Map<String, String> headers = new TreeMap<>();
+    AtomicReference<byte[]> bodyRef = new AtomicReference<>();
+    HttpMessageFactory.createWriter(headers::put, bodyRef::set)
+        .writeBinary(sampleCloudEvent(snoopFile));
     TestCase cloudEventsBinaryTestCase = TestCase.builder()
         .setSnoopFile(snoopFile)
-        .setRequestText(new String(binaryWriter.body, UTF_8))
+        .setRequestText(new String(bodyRef.get(), UTF_8))
         .setHttpContentType(headers.get("Content-Type"))
         .setHttpHeaders(ImmutableMap.copyOf(headers))
         .setExpectedJson(cloudEventJsonObject)
@@ -686,59 +688,6 @@ public class IntegrationTest {
     } catch (IOException e) {
       e.printStackTrace();
       throw new UncheckedIOException(e);
-    }
-  }
-
-  // I might be missing something, but as far as I can tell the V2 SDK forces us to go through all this
-  // rigmarole just so we can tell what HTTP headers should be set for a Binary CloudEvent. With the
-  // V1 SDK it was much simpler.
-  // https://github.com/cloudevents/sdk-java/issues/212
-  private static class BinaryWriter
-      implements MessageWriter<CloudEventWriter<Map<String, String>>, Map<String, String>> {
-
-    private static final Map<String, String> ATTRIBUTES_TO_HEADERS =
-        MessageUtils.generateAttributesToHeadersMapping(v ->
-            v.equals("datacontenttype") ? "Content-Type" : ("ce-" + v));
-
-    final Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    byte[] body;
-
-    @Override
-    public CloudEventWriter<Map<String, String>> create(SpecVersion version) {
-      headers.put("ce-specversion", version.toString());
-      return new EventWriter();
-    }
-
-    @Override
-    public Map<String, String> setEvent(EventFormat format, byte[] bytes) {
-      throw new UnsupportedOperationException("Only binary events supported, not structured");
-    }
-
-    private class EventWriter implements CloudEventWriter<Map<String, String>> {
-      @Override
-      public Map<String, String> end(byte[] bytes) {
-        body = bytes;
-        return headers;
-      }
-
-      @Override
-      public Map<String, String> end() {
-        return end(new byte[0]);
-      }
-
-      @Override
-      public void setAttribute(String name, String value) {
-        if (ATTRIBUTES_TO_HEADERS.containsKey(name)) {
-          headers.put(ATTRIBUTES_TO_HEADERS.get(name), value);
-        } else {
-          throw new IllegalArgumentException("Unknown attribute: " + name);
-        }
-      }
-
-      @Override
-      public void setExtension(String name, String value) {
-        headers.put("ce-" + name, value);
-      }
     }
   }
 }
