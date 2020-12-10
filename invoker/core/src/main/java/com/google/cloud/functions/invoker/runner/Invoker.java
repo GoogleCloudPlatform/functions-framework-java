@@ -209,6 +209,7 @@ public class Invoker {
   private final String functionTarget;
   private final String functionSignatureType;
   private final ClassLoader functionClassLoader;
+  private final Runnable onServerStarted;
 
   public Invoker(
       Integer port,
@@ -219,8 +220,22 @@ public class Invoker {
     this.functionTarget = functionTarget;
     this.functionSignatureType = functionSignatureType;
     this.functionClassLoader = functionClassLoader;
+    this.onServerStarted = null;
   }
 
+  public Invoker(
+      Integer port,
+      String functionTarget,
+      String functionSignatureType,
+      ClassLoader functionClassLoader,
+      Runnable onServerStarted) {
+    this.port = port;
+    this.functionTarget = functionTarget;
+    this.functionSignatureType = functionSignatureType;
+    this.functionClassLoader = functionClassLoader;
+    this.onServerStarted = onServerStarted;
+  }
+  
   Integer getPort() {
     return port;
   }
@@ -235,6 +250,10 @@ public class Invoker {
 
   ClassLoader getFunctionClassLoader() {
     return functionClassLoader;
+  }
+  
+  Runnable onServerStarted() {
+    return onServerStarted;
   }
 
   public void startServer() throws Exception {
@@ -264,6 +283,10 @@ public class Invoker {
     servletContextHandler.addServlet(servletHolder, "/*");
 
     server.start();
+    if (onServerStarted != null) {
+      onServerStarted();
+    }
+    
     logServerInfo();
     server.join();
   }
