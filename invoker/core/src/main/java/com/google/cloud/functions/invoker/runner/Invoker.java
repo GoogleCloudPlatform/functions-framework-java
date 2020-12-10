@@ -252,7 +252,7 @@ public class Invoker {
     return functionClassLoader;
   }
   
-  Runnable onServerStarted() {
+  Runnable getOnServerStarted() {
     return onServerStarted;
   }
 
