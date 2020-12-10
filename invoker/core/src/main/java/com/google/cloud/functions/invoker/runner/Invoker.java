@@ -284,7 +284,7 @@ public class Invoker {
 
     server.start();
     if (onServerStarted != null) {
-      onServerStarted();
+      onServerStarted.run();
     }
     
     logServerInfo();
