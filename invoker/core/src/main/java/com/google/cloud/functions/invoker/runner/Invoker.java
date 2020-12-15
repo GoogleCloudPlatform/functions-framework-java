@@ -262,6 +262,7 @@ public class Invoker {
     ServletHolder servletHolder = new ServletHolder(servlet);
     servletHolder.getRegistration().setMultipartConfig(new MultipartConfigElement(""));
     servletContextHandler.addServlet(servletHolder, "/*");
+    server.setStopAtShutdown(true);
 
     server.start();
     logServerInfo();
