@@ -364,6 +364,7 @@ public class IntegrationTest {
         .build();
 
     backgroundTest(
+        SignatureType.BACKGROUND,
         fullTarget(target),
         ImmutableList.of(gcfTestCase, cloudEventsStructuredTestCase, cloudEventsBinaryTestCase));
   }
@@ -401,6 +402,7 @@ public class IntegrationTest {
         .build();
 
     backgroundTest(
+        SignatureType.CLOUD_EVENT,
         fullTarget("CloudEventSnoop"),
         ImmutableList.of(cloudEventsStructuredTestCase, cloudEventsBinaryTestCase));
   }
@@ -472,7 +474,9 @@ public class IntegrationTest {
         .setUrl("/?class=" + INTERNAL_CLASS.getName())
         .setExpectedResponseText("OK")
         .build();
-    testHttpFunction("com.example.functionjar.Foreground",
+    testFunction(
+        SignatureType.HTTP,
+        "com.example.functionjar.Foreground",
         ImmutableList.of("--classpath", functionJarString()),
         ImmutableList.of(testCase));
   }
@@ -487,7 +491,9 @@ public class IntegrationTest {
     JsonObject json = gson.fromJson(originalJson, JsonObject.class);
     JsonObject jsonData = json.getAsJsonObject("data");
     jsonData.addProperty("class", INTERNAL_CLASS.getName());
-    testBackgroundFunction("com.example.functionjar.Background",
+    testFunction(
+        SignatureType.BACKGROUND,
+        "com.example.functionjar.Background",
         ImmutableList.of("--classpath", functionJarString()),
         ImmutableList.of(TestCase.builder().setRequestText(json.toString()).build()));
   }
@@ -497,11 +503,13 @@ public class IntegrationTest {
   // event. We start with a fixed body and insert into its JSON an extra property that tells the
   // function where to write what it received. We have to do this since background functions, by
   // design, don't return a value.
-  private void backgroundTest(String functionTarget, List<TestCase> testCases) throws Exception {
+  private void backgroundTest(
+      SignatureType signatureType, String functionTarget, List<TestCase> testCases)
+      throws Exception {
     for (TestCase testCase : testCases) {
       File snoopFile = testCase.snoopFile().get();
       snoopFile.delete();
-      testBackgroundFunction(functionTarget, ImmutableList.of(testCase));
+      testFunction(signatureType, functionTarget, ImmutableList.of(), ImmutableList.of(testCase));
       String snooped = new String(Files.readAllBytes(snoopFile.toPath()), StandardCharsets.UTF_8);
       Gson gson = new Gson();
       JsonObject snoopedJson = gson.fromJson(snooped, JsonObject.class);
@@ -522,23 +530,7 @@ public class IntegrationTest {
   }
 
   private void testHttpFunction(String target, List<TestCase> testCases) throws Exception {
-    testHttpFunction(target, ImmutableList.of(), testCases);
-  }
-
-  private void testHttpFunction(
-      String target, ImmutableList<String> extraArgs, List<TestCase> testCases) throws Exception {
-    testFunction(SignatureType.HTTP, target, extraArgs, testCases);
-  }
-
-  private void testBackgroundFunction(String target, List<TestCase> testCases)
-      throws Exception {
-    testBackgroundFunction(target, ImmutableList.of(), testCases);
-  }
-
-  private void testBackgroundFunction(
-      String target, ImmutableList<String> extraArgs, List<TestCase> testCases)
-      throws Exception {
-    testFunction(SignatureType.BACKGROUND, target, extraArgs, testCases);
+    testFunction(SignatureType.HTTP, target, ImmutableList.of(), testCases);
   }
 
   private void testFunction(
@@ -584,7 +576,8 @@ public class IntegrationTest {
 
   private enum SignatureType {
     HTTP("http"),
-    BACKGROUND("event");
+    BACKGROUND("event"),
+    CLOUD_EVENT("cloudevent");
 
     private final String name;
 

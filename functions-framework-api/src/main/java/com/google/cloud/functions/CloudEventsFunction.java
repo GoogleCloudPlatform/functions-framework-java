@@ -4,12 +4,9 @@ import io.cloudevents.CloudEvent;
 
 /**
  * Represents a Cloud Function that is activated by an event and parsed into a {@link CloudEvent} object.
- * Because the {@link CloudEvent} API is not yet stable, a function implemented using this class may not
- * build or work correctly with later versions of that API. Once the API is stable, this interface will
- * become {@code CloudEventsFunction} and will also be stable.
  */
 @FunctionalInterface
-public interface ExperimentalCloudEventsFunction {
+public interface CloudEventsFunction {
   /**
    * Called to service an incoming event. This interface is implemented by user code to
    * provide the action for a given background function. If this method throws any exception

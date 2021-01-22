@@ -19,10 +19,7 @@ import static java.util.stream.Collectors.toList;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
-import com.google.cloud.functions.BackgroundFunction;
-import com.google.cloud.functions.ExperimentalCloudEventsFunction;
 import com.google.cloud.functions.HttpFunction;
-import com.google.cloud.functions.RawBackgroundFunction;
 import com.google.cloud.functions.invoker.BackgroundFunctionExecutor;
 import com.google.cloud.functions.invoker.HttpFunctionExecutor;
 import com.google.cloud.functions.invoker.gcf.JsonLogHandler;
@@ -247,17 +244,24 @@ public class Invoker {
     Class<?> functionClass = loadFunctionClass();
 
     HttpServlet servlet;
-    if ("http".equals(functionSignatureType)) {
-        servlet = HttpFunctionExecutor.forClass(functionClass);
-    } else if ("event".equals(functionSignatureType)) {
-        servlet = BackgroundFunctionExecutor.forClass(functionClass);
-    } else if (functionSignatureType == null) {
-        servlet = servletForDeducedSignatureType(functionClass);
+    if (functionSignatureType == null) {
+      servlet = servletForDeducedSignatureType(functionClass);
     } else {
-      String error = String.format(
-          "Function signature type %s is unknown; should be \"http\" or \"event\"",
-          functionSignatureType);
-      throw new RuntimeException(error);
+      switch (functionSignatureType) {
+        case "http":
+          servlet = HttpFunctionExecutor.forClass(functionClass);
+          break;
+        case "event":
+        case "cloudevent":
+          servlet = BackgroundFunctionExecutor.forClass(functionClass);
+          break;
+        default:
+          String error = String.format(
+              "Function signature type %s is unknown; should be \"http\", \"event\","
+                  + " or \"cloudevent\"",
+              functionSignatureType);
+          throw new RuntimeException(error);
+      }
     }
     ServletHolder servletHolder = new ServletHolder(servlet);
     servletHolder.getRegistration().setMultipartConfig(new MultipartConfigElement(""));
