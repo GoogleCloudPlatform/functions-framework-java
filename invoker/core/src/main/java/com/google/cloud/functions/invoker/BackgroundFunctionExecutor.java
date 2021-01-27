@@ -19,6 +19,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 import com.google.cloud.functions.BackgroundFunction;
+import com.google.cloud.functions.CloudEventsFunction;
 import com.google.cloud.functions.Context;
 import com.google.cloud.functions.RawBackgroundFunction;
 import com.google.gson.Gson;
@@ -45,7 +46,6 @@ import java.util.logging.Logger;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import com.google.cloud.functions.CloudEventsFunction;
 
 /** Executes the user's background function. */
 public final class BackgroundFunctionExecutor extends HttpServlet {
