@@ -44,3 +44,4 @@ properties
 
 # IDE
 .vscode/
+/invoker/target/

@@ -20,7 +20,6 @@ import static java.util.stream.Collectors.toMap;
 
 import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.Context;
-import com.google.cloud.functions.ExperimentalCloudEventsFunction;
 import com.google.cloud.functions.RawBackgroundFunction;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -46,6 +45,7 @@ import java.util.logging.Logger;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import com.google.cloud.functions.CloudEventsFunction;
 
 /** Executes the user's background function. */
 public final class BackgroundFunctionExecutor extends HttpServlet {
@@ -60,7 +60,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
   private enum FunctionKind {
     BACKGROUND(BackgroundFunction.class),
     RAW_BACKGROUND(RawBackgroundFunction.class),
-    CLOUD_EVENTS(ExperimentalCloudEventsFunction.class);
+    CLOUD_EVENTS(CloudEventsFunction.class);
 
     static final List<FunctionKind> VALUES = Arrays.asList(values());
 
@@ -79,7 +79,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
   /**
    * Optionally makes a {@link BackgroundFunctionExecutor} for the given class, if it implements one
    * of {@link BackgroundFunction}, {@link RawBackgroundFunction}, or
-   * {@link ExperimentalCloudEventsFunction}. Otherwise returns {@link Optional#empty()}.
+   * {@link CloudEventsFunction}. Otherwise returns {@link Optional#empty()}.
    *
    * @param functionClass the class of a possible background function implementation.
    * @throws RuntimeException if the given class does implement one of the required interfaces, but we are
@@ -98,7 +98,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
    *
    * @throws RuntimeException if either the class does not implement one of
    *    {@link BackgroundFunction}, {@link RawBackgroundFunction}, or
-   *    {@link ExperimentalCloudEventsFunction}; or we are unable to construct an instance using its no-arg
+   *    {@link CloudEventsFunction}; or we are unable to construct an instance using its no-arg
    *     constructor.
    */
   public static BackgroundFunctionExecutor forClass(Class<?> functionClass) {
@@ -143,7 +143,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
         executor = new TypedFunctionExecutor<>(maybeTargetType.get(), backgroundFunction);
         break;
       case CLOUD_EVENTS:
-        executor = new CloudEventFunctionExecutor((ExperimentalCloudEventsFunction) instance);
+        executor = new CloudEventFunctionExecutor((CloudEventsFunction) instance);
         break;
       default: // can't happen, we've listed all the FunctionKind values already.
         throw new AssertionError(functionKind);
@@ -299,9 +299,9 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
   }
 
   private static class CloudEventFunctionExecutor extends FunctionExecutor<Void> {
-    private final ExperimentalCloudEventsFunction function;
+    private final CloudEventsFunction function;
 
-    CloudEventFunctionExecutor(ExperimentalCloudEventsFunction function) {
+    CloudEventFunctionExecutor(CloudEventsFunction function) {
       super(function.getClass());
       this.function = function;
     }
