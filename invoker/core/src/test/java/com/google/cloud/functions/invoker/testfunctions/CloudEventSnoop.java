@@ -2,6 +2,7 @@ package com.google.cloud.functions.invoker.testfunctions;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.cloud.functions.CloudEventsFunction;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.cloudevents.CloudEvent;
@@ -9,7 +10,6 @@ import io.cloudevents.core.format.EventFormat;
 import io.cloudevents.core.provider.EventFormatProvider;
 import io.cloudevents.jackson.JsonFormat;
 import java.io.FileOutputStream;
-import com.google.cloud.functions.CloudEventsFunction;
 
 public class CloudEventSnoop implements CloudEventsFunction {
   @Override
