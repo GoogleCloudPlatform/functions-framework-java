@@ -18,6 +18,9 @@
 *.tar.gz
 *.rar
 
+# Maven
+target/
+
 # Gradle
 .gradle
 .idea/
@@ -44,4 +47,3 @@ properties
 
 # IDE
 .vscode/
-/invoker/target/
