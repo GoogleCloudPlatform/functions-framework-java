@@ -47,3 +47,8 @@ properties
 
 # IDE
 .vscode/
+
+# Conformance testing
+function_output.json
+serverlog_stderr.txt
+serverlog_stdout.txt
