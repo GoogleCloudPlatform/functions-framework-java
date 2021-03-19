@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>java-function-invoker-parent</artifactId>
+    <groupId>com.google.cloud.functions.invoker</groupId>
+    <version>1.0.3-SNAPSHOT</version>
+  </parent>
+
+  <groupId>com.google.cloud.functions.invoker</groupId>
+  <artifactId>conformance</artifactId>
+  <version>1.0-SNAPSHOT</version>
+
+  <name>GCF Confromance Tests</name>
+  <description>
+    A GCF project used to validate conformance to the Functions Framework contract
+    using the Functions Framework Conformance tools.
+  </description>
+  <url>https://github.com/GoogleCloudPlatform/functions-framework-conformance</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.google.cloud.functions</groupId>
+      <artifactId>functions-framework-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.8.6</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>com.google.cloud.functions</groupId>
+          <artifactId>function-maven-plugin</artifactId>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

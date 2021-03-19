@@ -28,6 +28,7 @@
     <module>core</module>
     <module>testfunction</module>
     <module>function-maven-plugin</module>
+    <module>conformance</module>
   </modules>
 
   <properties>
