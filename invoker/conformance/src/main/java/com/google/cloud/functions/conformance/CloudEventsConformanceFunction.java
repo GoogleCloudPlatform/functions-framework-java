@@ -23,8 +23,7 @@ import com.google.gson.JsonObject;
 import io.cloudevents.CloudEvent;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.format.DateTimeFormatter;
 
 /**
  * This class is used by the Functions Framework Conformance Tools to validate
@@ -48,14 +47,8 @@ public class CloudEventsConformanceFunction implements CloudEventsFunction {
 
   @Override
   public void accept(CloudEvent event) throws Exception {
-    BufferedWriter writer = null;
-    try {
-      writer = new BufferedWriter(new FileWriter("function_output.json"));
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter("function_output.json"))) {
       writer.write(serialize(event));
-    } finally {
-      if (writer != null) {
-        writer.close();
-      }
     }
   }
 
@@ -72,9 +65,8 @@ public class CloudEventsConformanceFunction implements CloudEventsFunction {
     jsonEvent.addProperty("subject", event.getSubject());
     jsonEvent.addProperty("specversion", event.getSpecVersion().toString());
 
-    String time = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")
-      .format(new Date(event.getTime().toInstant().toEpochMilli()));
-    jsonEvent.addProperty("time", time);
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
+    jsonEvent.addProperty("time", event.getTime().format(formatter));
 
     String payloadJson = new String(event.getData().toBytes(), UTF_8);
     JsonObject jsonObject = new Gson().fromJson(payloadJson, JsonObject.class);

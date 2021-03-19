@@ -40,19 +40,11 @@ public class HttpConformanceFunction implements HttpFunction {
   @Override
   public void service(HttpRequest request, HttpResponse response)
       throws IOException {
-
-    final BufferedReader reader = request.getReader();
-    BufferedWriter writer = null;
-
-    try {
-      writer = new BufferedWriter(new FileWriter("function_output.json"));
+    try (BufferedReader reader = request.getReader();
+        BufferedWriter writer = new BufferedWriter(new FileWriter("function_output.json"))) {
       int c;
       while ((c = reader.read()) != -1) {
         writer.write(c);
-      }
-    } finally {
-      if (writer != null) {
-        writer.close();
       }
     }
   }
