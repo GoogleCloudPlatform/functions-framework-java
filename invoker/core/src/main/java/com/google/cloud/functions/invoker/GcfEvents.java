@@ -21,6 +21,7 @@ import com.google.auto.value.AutoValue;
 import com.google.cloud.functions.invoker.CloudFunctionsContext.Nullable;
 import com.google.cloud.functions.invoker.CloudFunctionsContext.Resource;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.builder.CloudEventBuilder;
@@ -39,6 +40,8 @@ import java.util.regex.Pattern;
  */
 class GcfEvents {
   private static final String FIREBASE_SERVICE = "firebase.googleapis.com";
+  private static final String FIREBASE_AUTH_SERVICE = "firebaseauth.googleapis.com";
+  private static final String FIREBASE_DB_SERVICE = "firebasedatabase.googleapis.com";
   private static final String FIRESTORE_SERVICE = "firestore.googleapis.com";
   private static final String PUB_SUB_SERVICE = "pubsub.googleapis.com";
   private static final String STORAGE_SERVICE = "storage.googleapis.com";
@@ -71,25 +74,25 @@ class GcfEvents {
               FIRESTORE_SERVICE)),
 
       entry("providers/firebase.auth/eventTypes/user.create",
-          new FirestoreFirebaseEventAdapter("google.firebase.auth.user.v1.created", FIREBASE_SERVICE)),
+          new FirebaseAuthEventAdapter("google.firebase.auth.user.v1.created")),
       entry("providers/firebase.auth/eventTypes/user.delete",
-          new FirestoreFirebaseEventAdapter("google.firebase.auth.user.v1.deleted", FIREBASE_SERVICE)),
+          new FirebaseAuthEventAdapter("google.firebase.auth.user.v1.deleted")),
 
       entry("providers/google.firebase.analytics/eventTypes/event.log",
           new FirestoreFirebaseEventAdapter("google.firebase.analytics.log.v1.written", FIREBASE_SERVICE)),
 
       entry("providers/google.firebase.database/eventTypes/ref.create",
           new FirestoreFirebaseEventAdapter("google.firebase.database.document.v1.created",
-              FIREBASE_SERVICE)),
+              FIREBASE_DB_SERVICE)),
       entry("providers/google.firebase.database/eventTypes/ref.write",
           new FirestoreFirebaseEventAdapter("google.firebase.database.document.v1.written",
-              FIREBASE_SERVICE)),
+              FIREBASE_DB_SERVICE)),
       entry("providers/google.firebase.database/eventTypes/ref.update",
           new FirestoreFirebaseEventAdapter("google.firebase.database.document.v1.updated",
-              FIREBASE_SERVICE)),
+              FIREBASE_DB_SERVICE)),
       entry("providers/google.firebase.database/eventTypes/ref.delete",
           new FirestoreFirebaseEventAdapter("google.firebase.database.document.v1.deleted",
-              FIREBASE_SERVICE)),
+              FIREBASE_DB_SERVICE)),
 
       entry("providers/cloud.pubsub/eventTypes/topic.publish",
           new PubSubEventAdapter(PUB_SUB_MESSAGE_PUBLISHED)),
@@ -98,7 +101,7 @@ class GcfEvents {
           new StorageEventAdapter("google.cloud.storage.object.v1.changed"))
   );
 
-  private static final Gson GSON = new Gson();
+  private static final Gson GSON = new GsonBuilder().serializeNulls().create();
 
   static CloudEvent convertToCloudEvent(Event legacyEvent) {
     String eventType = legacyEvent.getContext().eventType();
@@ -135,7 +138,7 @@ class GcfEvents {
       Resource resource = Resource.from(legacyEvent.getContext().resource());
       String service = Optional.ofNullable(resource.service()).orElse(defaultService);
       String resourceName = resource.name();
-      SourceAndSubject sourceAndSubject = convertResourceToSourceAndSubject(resourceName);
+      SourceAndSubject sourceAndSubject = convertResourceToSourceAndSubject(resourceName, legacyEvent);
       URI source = URI.create("//" + service + "/" + sourceAndSubject.source());
       OffsetDateTime timestamp =
           Optional.ofNullable(legacyEvent.getContext().timestamp())
@@ -156,7 +159,7 @@ class GcfEvents {
       return jsonData;
     }
 
-    SourceAndSubject convertResourceToSourceAndSubject(String resourceName) {
+    SourceAndSubject convertResourceToSourceAndSubject(String resourceName, Event legacyEvent) {
       return SourceAndSubject.of(resourceName, null);
     }
   }
@@ -184,32 +187,34 @@ class GcfEvents {
     }
 
     @Override
-    SourceAndSubject convertResourceToSourceAndSubject(String resourceName) {
+    SourceAndSubject convertResourceToSourceAndSubject(String resourceName, Event legacyEvent) {
       Matcher matcher = STORAGE_RESOURCE_PATTERN.matcher(resourceName);
       if (matcher.matches()) {
         String resource = matcher.group(1);
         String subject = matcher.group(2);
         return SourceAndSubject.of(resource, subject);
       }
-      return super.convertResourceToSourceAndSubject(resourceName);
+      return super.convertResourceToSourceAndSubject(resourceName, legacyEvent);
     }
   }
 
   private static class FirestoreFirebaseEventAdapter extends EventAdapter {
+    private static final Pattern FIRESTORE_RESOURCE_PATTERN =
+        Pattern.compile("^(projects/.+)/((documents|refs)/.+)$");
+
     FirestoreFirebaseEventAdapter(String cloudEventType, String defaultService) {
       super(cloudEventType, defaultService);
     }
 
     @Override
-    SourceAndSubject convertResourceToSourceAndSubject(String resourceName) {
-      List<String> resourceSegments = Arrays.asList(resourceName.split("/"));
-      int documentsIndex = resourceSegments.indexOf("documents");
-      if (documentsIndex < 0) {
-        return super.convertResourceToSourceAndSubject(resourceName);
+    SourceAndSubject convertResourceToSourceAndSubject(String resourceName, Event legacyEvent) {
+      Matcher matcher = FIRESTORE_RESOURCE_PATTERN.matcher(resourceName);
+      if (matcher.matches()) {
+        String resource = matcher.group(1);
+        String subject = matcher.group(2);
+        return SourceAndSubject.of(resource, subject);
       }
-      String sourcePath = String.join("/", resourceSegments.subList(0, documentsIndex));
-      String subject = String.join("/", resourceSegments.subList(documentsIndex, resourceSegments.size()));
-      return SourceAndSubject.of(sourcePath, subject);
+      return super.convertResourceToSourceAndSubject(resourceName, legacyEvent);
     }
 
     @Override
@@ -223,6 +228,40 @@ class GcfEvents {
       JsonObject wildcards = new JsonObject();
       legacyEvent.getContext().params().forEach((k, v) -> wildcards.addProperty(k, v));
       jsonObject.add("wildcards", wildcards);
+      return GSON.toJson(jsonObject);
+    }
+  }
+
+  private static class FirebaseAuthEventAdapter extends EventAdapter {
+    FirebaseAuthEventAdapter(String cloudEventType) {
+      super(cloudEventType, FIREBASE_AUTH_SERVICE);
+    }
+
+    @Override
+    SourceAndSubject convertResourceToSourceAndSubject(String resourceName, Event legacyEvent) {
+      String subject = null;
+      JsonObject data = legacyEvent.getData().getAsJsonObject();
+      if (data.has("uid")) {
+        subject = "users/" + data.get("uid").getAsString();
+      }
+      return SourceAndSubject.of(resourceName, subject);
+    }
+
+    @Override
+    String maybeReshapeData(Event legacyEvent, String jsonData) {
+      JsonObject jsonObject = GSON.fromJson(jsonData, JsonObject.class);
+      if (!jsonObject.has("metadata")) {
+        return jsonData;
+      }
+      JsonObject metadata = jsonObject.getAsJsonObject("metadata");
+      if (metadata.has("createdAt")) {
+        metadata.add("createTime", metadata.get("createdAt"));
+        metadata.remove("createdAt");
+      }
+      if (metadata.has("lastSignedInAt")) {
+        metadata.add("lastSignInTime", metadata.get("lastSignedInAt"));
+        metadata.remove("lastSignedInAt");
+      }
       return GSON.toJson(jsonObject);
     }
   }

@@ -28,6 +28,7 @@
     <dependency>
       <groupId>com.google.cloud.functions</groupId>
       <artifactId>functions-framework-api</artifactId>
+      <version>1.0.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
@@ -42,6 +43,7 @@
         <plugin>
           <groupId>com.google.cloud.functions</groupId>
           <artifactId>function-maven-plugin</artifactId>
+          <version>0.9.8-SNAPSHOT</version>
         </plugin>
       </plugins>
     </pluginManagement>
