@@ -29,7 +29,7 @@ import java.io.StringReader;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Base64;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.junit.Ignore;
@@ -145,8 +145,6 @@ public class GcfEventsTest {
     Map<String, Object> data = cloudEventDataJson(cloudEvent);
     Map<?, ?> value = (Map<?, ?>) data.get("value");
     Map<?, ?> fields = (Map<?, ?>) value.get("fields");
-    Map<String, String> nullValues = new HashMap<String, String>();
-    nullValues.put("nullValue", null);
     Map<String, Object> expectedFields = Map.of(
         "arrayValue", Map.of("arrayValue",
             Map.of("values",
@@ -155,7 +153,7 @@ public class GcfEventsTest {
         "geoPointValue", Map.of("geoPointValue", Map.of("latitude", 51.4543, "longitude", -0.9781)),
         "intValue", Map.of("integerValue", "50"),
         "doubleValue", Map.of("doubleValue", 5.5),
-        "nullValue", nullValues,
+        "nullValue", Collections.singletonMap("nullValue", null),
         "referenceValue", Map.of("referenceValue",
             "projects/project-id/databases/(default)/documents/foo/bar/baz/qux"),
         "stringValue", Map.of("stringValue", "text"),
