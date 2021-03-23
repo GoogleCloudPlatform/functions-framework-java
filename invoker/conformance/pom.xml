@@ -28,7 +28,6 @@
     <dependency>
       <groupId>com.google.cloud.functions</groupId>
       <artifactId>functions-framework-api</artifactId>
-      <version>1.0.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
