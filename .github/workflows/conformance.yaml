@@ -47,6 +47,5 @@ jobs:
       with:
         functionType: 'cloudevent'
         useBuildpacks: false
-        validateMapping: false
         cmd: "'mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.CloudEventsConformanceFunction'"
         startDelay: 10

@@ -42,6 +42,7 @@
         <plugin>
           <groupId>com.google.cloud.functions</groupId>
           <artifactId>function-maven-plugin</artifactId>
+          <version>0.9.8-SNAPSHOT</version>
         </plugin>
       </plugins>
     </pluginManagement>
