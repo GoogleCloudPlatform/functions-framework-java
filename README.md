@@ -215,8 +215,8 @@ tasks.register("runFunction", JavaExec) {
     classpath(configurations.invoker)
     inputs.files(configurations.runtimeClasspath, sourceSets.main.output)
     args(
-            '--target', project.findProperty('runFunction.target'),
-            '--port', project.findProperty('runFunction.port') ?: 8080
+            '--target', project.findProperty('run.functionTarget'),
+            '--port', project.findProperty('run.port') ?: 8080
     )
     doFirst {
         args('--classpath', files(configurations.runtimeClasspath, sourceSets.main.output).asPath)
@@ -227,15 +227,15 @@ tasks.register("runFunction", JavaExec) {
 Then in your terminal or IDE, you will be able to run the function locally with:
 
 ```sh
-gradle runFunction -PrunFunction.target=com.example.HelloWorld \
-                   -PrunFunction.port=8080
+gradle runFunction -Prun.functionTarget=com.example.HelloWorld \
+                   -Prun.port=8080
 ```
 
 Or if you use the Gradle wrapper provided by your Gradle project build:
 
 ```sh
-./gradlew runFunction -PrunFunction.target=com.example.HelloWorld \
-                      -PrunFunction.port=8080
+./gradlew runFunction -Prun.functionTarget=com.example.HelloWorld \
+                      -Prun.port=8080
 ```
 
 ## Functions Framework configuration
