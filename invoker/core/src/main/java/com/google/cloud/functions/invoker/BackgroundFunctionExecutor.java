@@ -241,6 +241,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
   }
 
   private static class RawFunctionExecutor extends FunctionExecutor<Map<?, ?>> {
+    private static Gson gson = new GsonBuilder().serializeNulls().create();
     private final RawBackgroundFunction function;
 
     RawFunctionExecutor(RawBackgroundFunction function) {
@@ -250,7 +251,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
 
     @Override
     void serviceLegacyEvent(Event legacyEvent) throws Exception {
-      function.accept(new Gson().toJson(legacyEvent.getData()), legacyEvent.getContext());
+      function.accept(gson.toJson(legacyEvent.getData()), legacyEvent.getContext());
     }
 
     @Override
