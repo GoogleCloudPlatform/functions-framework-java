@@ -1,0 +1,10 @@
+{
+  "subscription": "projects/FOO/subscriptions/BAR_SUB",
+  "message": {
+    "data": "eyJmb28iOiJiYXIifQ==",
+    "messageId": "1",
+    "attributes": {
+      "test": "123"
+    }
+  }
+}
