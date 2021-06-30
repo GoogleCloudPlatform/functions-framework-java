@@ -50,6 +50,9 @@ abstract class CloudFunctionsContext implements Context {
   // TODO: expose this in the Context interface (as a default method).
   abstract Map<String, String> params();
 
+  @Nullable
+  abstract String domain();
+
   @Override
   public abstract Map<String, String> attributes();
 
@@ -71,6 +74,7 @@ abstract class CloudFunctionsContext implements Context {
     abstract Builder setResource(String x);
     abstract Builder setParams(Map<String, String> x);
     abstract Builder setAttributes(Map<String, String> value);
+    abstract Builder setDomain(String x);
 
     abstract CloudFunctionsContext build();
   }

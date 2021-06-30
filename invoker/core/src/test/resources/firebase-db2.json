@@ -6,14 +6,16 @@
   "auth": {
     "admin": true
   },
-  "domain": "firebaseio.com",
+  "domain":"europe-west1.firebasedatabase.app",
   "data": {
-    "data": null,
-    "delta": {
+    "data": {
       "grandchild": "other"
+    },
+    "delta": {
+      "grandchild": "other changed"
     }
   },
   "resource": "projects/_/instances/my-project-id/refs/gcf-test/xyz",
-  "timestamp": "2020-05-21T11:15:34.178Z",
-  "eventId": "/SnHth9OSlzK1Puj85kk4tDbF90="
+  "timestamp": "2020-09-29T11:32:00.000Z",
+  "eventId": "aaaaaa-1111-bbbb-2222-cccccccccccc"
 }

@@ -52,7 +52,11 @@ public class GcfEventsTest {
     {"legacy_pubsub.json", "google.cloud.pubsub.topic.v1.messagePublished",
       "//pubsub.googleapis.com/projects/sample-project/topics/gcf-test", null},
     {"firebase-db1.json", "google.firebase.database.document.v1.written",
-      "//firebasedatabase.googleapis.com/projects/_/instances/my-project-id", "refs/gcf-test/xyz"},
+      "//firebasedatabase.googleapis.com/projects/_/locations/us-central1/instances/my-project-id",
+      "refs/gcf-test/xyz"},
+    {"firebase-db2.json", "google.firebase.database.document.v1.written",
+      "//firebasedatabase.googleapis.com/projects/_/locations/europe-west1/instances/my-project-id",
+      "refs/gcf-test/xyz"},
     {"firebase-auth1.json", "google.firebase.auth.user.v1.created",
       "//firebaseauth.googleapis.com/projects/my-project-id", "users/UUpby3s4spZre6kHsgVSPetzQ8l2"},
     {"firebase-auth2.json", "google.firebase.auth.user.v1.deleted",
@@ -211,7 +215,9 @@ public class GcfEventsTest {
     assertThat(new String(cloudEvent.getData().toBytes(), UTF_8))
         .isEqualTo("{\"message\":{\"@type\":\"type.googleapis.com/google.pubsub.v1.PubsubMessage\","
             + "\"attributes\":{\"attribute1\":\"value1\"},"
-            + "\"data\":\"VGhpcyBpcyBhIHNhbXBsZSBtZXNzYWdl\"}}");
+            + "\"data\":\"VGhpcyBpcyBhIHNhbXBsZSBtZXNzYWdl\","
+            + "\"messageId\":\"1215011316659232\","
+            + "\"publishTime\":\"2020-05-18T12:13:19.209Z\"}}");
   }
 
   // Checks that a Firestore event correctly gets an extra "wildcards" property in its CloudEvent data

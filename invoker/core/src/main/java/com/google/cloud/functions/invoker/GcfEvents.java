@@ -82,17 +82,13 @@ class GcfEvents {
           new FirestoreFirebaseEventAdapter("google.firebase.analytics.log.v1.written", FIREBASE_SERVICE)),
 
       entry("providers/google.firebase.database/eventTypes/ref.create",
-          new FirestoreFirebaseEventAdapter("google.firebase.database.document.v1.created",
-              FIREBASE_DB_SERVICE)),
+          new FirebaseDatabaseEventAdapter("google.firebase.database.document.v1.created")),
       entry("providers/google.firebase.database/eventTypes/ref.write",
-          new FirestoreFirebaseEventAdapter("google.firebase.database.document.v1.written",
-              FIREBASE_DB_SERVICE)),
+          new FirebaseDatabaseEventAdapter("google.firebase.database.document.v1.written")),
       entry("providers/google.firebase.database/eventTypes/ref.update",
-          new FirestoreFirebaseEventAdapter("google.firebase.database.document.v1.updated",
-              FIREBASE_DB_SERVICE)),
+          new FirebaseDatabaseEventAdapter("google.firebase.database.document.v1.updated")),
       entry("providers/google.firebase.database/eventTypes/ref.delete",
-          new FirestoreFirebaseEventAdapter("google.firebase.database.document.v1.deleted",
-              FIREBASE_DB_SERVICE)),
+          new FirebaseDatabaseEventAdapter("google.firebase.database.document.v1.deleted")),
 
       entry("providers/cloud.pubsub/eventTypes/topic.publish",
           new PubSubEventAdapter(PUB_SUB_MESSAGE_PUBLISHED)),
@@ -172,6 +168,8 @@ class GcfEvents {
     @Override
     String maybeReshapeData(Event legacyEvent, String jsonData) {
       JsonObject jsonObject = GSON.fromJson(jsonData, JsonObject.class);
+      jsonObject.addProperty("messageId", legacyEvent.getContext().eventId());
+      jsonObject.addProperty("publishTime", legacyEvent.getContext().timestamp());
       JsonObject wrapped = new JsonObject();
       wrapped.add("message", jsonObject);
       return GSON.toJson(wrapped);
@@ -229,6 +227,44 @@ class GcfEvents {
       legacyEvent.getContext().params().forEach((k, v) -> wildcards.addProperty(k, v));
       jsonObject.add("wildcards", wildcards);
       return GSON.toJson(jsonObject);
+    }
+  }
+
+  private static class FirebaseDatabaseEventAdapter extends EventAdapter {
+    private static final Pattern FIREBASE_DB_RESOURCE_PATTERN =
+        Pattern.compile("^projects/_/(instances/[^/]+)/((documents|refs)/.+)$");
+
+    FirebaseDatabaseEventAdapter(String cloudEventType) {
+      super(cloudEventType, FIREBASE_DB_SERVICE);
+    }
+
+    @Override
+    SourceAndSubject convertResourceToSourceAndSubject(String resourceName, Event legacyEvent) {
+      Matcher matcher = FIREBASE_DB_RESOURCE_PATTERN.matcher(resourceName);
+      String location = parseLocation(legacyEvent);
+      if (matcher.matches() && location != null) {
+        String resource = String.format("projects/_/locations/%s/%s", location, matcher.group(1));
+        String subject = matcher.group(2);
+        return SourceAndSubject.of(resource, subject);
+      }
+      return super.convertResourceToSourceAndSubject(resourceName, legacyEvent);
+    }
+
+    private String parseLocation(Event legacyEvent) {
+      String domain = legacyEvent.getContext().domain();
+      if (domain == null) {
+        return null;
+      }
+      // The default location for firebaseio.com is us-central1
+      if ("firebaseio.com".equals(domain)) {
+        return "us-central1";
+      }
+      // Otherwise the location can be inferred from the first subdomain
+      String[] subdomains = domain.split("\\.");
+      if (subdomains.length > 1) {
+        return subdomains[0];
+      }
+      return null;
     }
   }
 
