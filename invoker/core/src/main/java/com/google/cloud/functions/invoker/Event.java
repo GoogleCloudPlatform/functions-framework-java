@@ -58,20 +58,23 @@ abstract class Event {
       } else if (isPubSubEmulatorPayload(root)) {
         JsonObject message = root.getAsJsonObject("message");
 
-        String timestampString = message.has("publishTime")
-          ? message.get("publishTime").getAsString()
-          : DateTimeFormatter.ISO_INSTANT.format(OffsetDateTime.now());
+        String timestampString =
+            message.has("publishTime")
+                ? message.get("publishTime").getAsString()
+                : DateTimeFormatter.ISO_INSTANT.format(OffsetDateTime.now());
 
-        context = CloudFunctionsContext.builder()
-          .setEventType("google.pubsub.topic.publish")
-          .setTimestamp(timestampString)
-          .setEventId(message.get("messageId").getAsString())
-          .setResource("{" +
-              "\"name\":null," +
-              "\"service\":\"pubsub.googleapis.com\"," +
-              "\"type\":\"type.googleapis.com/google.pubsub.v1.PubsubMessage\""+
-            "}")
-          .build();
+        context =
+            CloudFunctionsContext.builder()
+                .setEventType("google.pubsub.topic.publish")
+                .setTimestamp(timestampString)
+                .setEventId(message.get("messageId").getAsString())
+                .setResource(
+                    "{"
+                        + "\"name\":null,"
+                        + "\"service\":\"pubsub.googleapis.com\","
+                        + "\"type\":\"type.googleapis.com/google.pubsub.v1.PubsubMessage\""
+                        + "}")
+                .build();
 
         JsonObject marshalledData = new JsonObject();
         marshalledData.addProperty("@type", "type.googleapis.com/google.pubsub.v1.PubsubMessage");
