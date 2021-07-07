@@ -112,27 +112,19 @@ public class IntegrationTest {
   }
 
   private static CloudEvent sampleCloudEvent(File snoopFile) {
+    return sampleCloudEvent(snoopFile, "/source", "com.example.someevent.new");
+  }
+
+  private static CloudEvent sampleCloudEvent(File snoopFile, String ceSource, String ceType) {
     return CloudEventBuilder.v1()
         .withId("B234-1234-1234")
-        .withSource(URI.create("/source"))
-        .withType("com.example.someevent.new")
+        .withSource(URI.create(ceSource))
+        .withType(ceType)
         .withDataSchema(URI.create("/schema"))
         .withDataContentType("application/json")
         .withData(("{\"a\": 2, \"b\": 3, \"targetFile\": \"" + snoopFile + "\"}").getBytes(UTF_8))
         .withTime(OffsetDateTime.of(2018, 4, 5, 17, 31, 0, 0, ZoneOffset.UTC))
         .build();
-  }
-
-  private static JsonObject expectedCloudEventAttributes() {
-    JsonObject attributes = new JsonObject();
-    attributes.addProperty("datacontenttype", "application/json");
-    attributes.addProperty("specversion", "1.0");
-    attributes.addProperty("id", "B234-1234-1234");
-    attributes.addProperty("source", "/source");
-    attributes.addProperty("time", "2018-04-05T17:31Z");
-    attributes.addProperty("type", "com.example.someevent.new");
-    attributes.addProperty("dataschema", "/schema");
-    return attributes;
   }
 
   private static int serverPort;
@@ -333,15 +325,33 @@ public class IntegrationTest {
         .setExpectedJson(expectedJson)
         .build();
 
+    backgroundTest(
+        SignatureType.BACKGROUND,
+        fullTarget(target),
+        ImmutableList.of(gcfTestCase));
+  }
+
+  @Test
+  public void cloudEventToBackgroundEvent() throws Exception {
+    File snoopFile = snoopFile();
+    CloudEvent ce = sampleCloudEvent(
+        snoopFile,
+        "//pubsub.googleapis.com/projects/sample-project/topics/gcf-test",
+         "google.cloud.pubsub.topic.v1.messagePublished");
+    String gcfRequestText = sampleLegacyEvent(snoopFile);
+
     // A CloudEvent using the "structured content mode", where both the metadata and the payload
     // are in the body of the HTTP request.
     EventFormat jsonFormat = EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE);
-    String cloudEventRequestText = new String(jsonFormat.serialize(sampleCloudEvent(snoopFile)), UTF_8);
-    // For CloudEvents, we don't currently populate Context#getResource with anything interesting,
-    // so we excise that from the expected text we would have with legacy events.
+    String cloudEventRequestText = new String(jsonFormat.serialize(ce), UTF_8);
+    // Update the dummy values from sampleLegacyEvent to match those of an actual PubSub event
     JsonObject cloudEventExpectedJson = new Gson().fromJson(gcfRequestText, JsonObject.class);
-    cloudEventExpectedJson.getAsJsonObject("context").add("resource", new JsonObject());
-    cloudEventExpectedJson.add("attributes", expectedCloudEventAttributes());
+    cloudEventExpectedJson.getAsJsonObject("context").addProperty("eventType", "google.pubsub.topic.publish");
+    cloudEventExpectedJson.add("attributes", new JsonObject());
+    JsonObject resource = cloudEventExpectedJson.getAsJsonObject("context").getAsJsonObject("resource");
+    resource.addProperty("service", "pubsub.googleapis.com");
+    resource.addProperty("name", "projects/sample-project/topics/gcf-test");
+    resource.addProperty("type", "type.googleapis.com/google.pubsub.v1.PubsubMessage");
     TestCase cloudEventsStructuredTestCase = TestCase.builder()
         .setSnoopFile(snoopFile)
         .setRequestText(cloudEventRequestText)
@@ -354,7 +364,7 @@ public class IntegrationTest {
     Map<String, String> headers = new TreeMap<>();
     AtomicReference<byte[]> bodyRef = new AtomicReference<>();
     HttpMessageFactory.createWriter(headers::put, bodyRef::set)
-        .writeBinary(sampleCloudEvent(snoopFile));
+        .writeBinary(ce);
     TestCase cloudEventsBinaryTestCase = TestCase.builder()
         .setSnoopFile(snoopFile)
         .setRequestText(new String(bodyRef.get(), UTF_8))
@@ -365,8 +375,8 @@ public class IntegrationTest {
 
     backgroundTest(
         SignatureType.BACKGROUND,
-        fullTarget(target),
-        ImmutableList.of(gcfTestCase, cloudEventsStructuredTestCase, cloudEventsBinaryTestCase));
+        fullTarget("BackgroundSnoop"),
+        ImmutableList.of(cloudEventsStructuredTestCase, cloudEventsBinaryTestCase));
   }
 
   /** Tests a CloudEvent being handled by a CloudEvent handler (no translation to or from legacy). */
