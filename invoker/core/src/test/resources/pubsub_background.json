@@ -1,0 +1,19 @@
+{
+  "data": {
+    "@type": "type.googleapis.com/google.pubsub.v1.PubsubMessage",
+    "data": "eyJmb28iOiJiYXIifQ==",
+    "attributes": {
+      "test": "123"
+    }
+  },
+  "context": {
+    "eventId": "1",
+    "eventType": "google.pubsub.topic.publish",
+    "resource": {
+      "name": "projects/FOO/topics/BAR_TOPIC",
+      "service": "pubsub.googleapis.com",
+      "type": "type.googleapis.com/google.pubsub.v1.PubsubMessage"
+    },
+    "timestamp": "2021-06-28T05:46:32.390Z"
+  }
+}

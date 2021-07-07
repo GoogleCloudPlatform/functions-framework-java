@@ -21,6 +21,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Represents an event that should be handled by a background function. This is an internal format
@@ -53,6 +55,34 @@ abstract class Event {
         context =
             jsonDeserializationContext.deserialize(
                 adjustContextResource(contextCopy), CloudFunctionsContext.class);
+      } else if (isPubSubEmulatorPayload(root)) {
+        JsonObject message = root.getAsJsonObject("message");
+
+        String timestampString =
+            message.has("publishTime")
+                ? message.get("publishTime").getAsString()
+                : DateTimeFormatter.ISO_INSTANT.format(OffsetDateTime.now());
+
+        context =
+            CloudFunctionsContext.builder()
+                .setEventType("google.pubsub.topic.publish")
+                .setTimestamp(timestampString)
+                .setEventId(message.get("messageId").getAsString())
+                .setResource(
+                    "{"
+                        + "\"name\":null,"
+                        + "\"service\":\"pubsub.googleapis.com\","
+                        + "\"type\":\"type.googleapis.com/google.pubsub.v1.PubsubMessage\""
+                        + "}")
+                .build();
+
+        JsonObject marshalledData = new JsonObject();
+        marshalledData.addProperty("@type", "type.googleapis.com/google.pubsub.v1.PubsubMessage");
+        marshalledData.add("data", message.get("data"));
+        if (message.has("attributes")) {
+          marshalledData.add("attributes", message.get("attributes"));
+        }
+        data = marshalledData;
       } else {
         JsonObject rootCopy = root.deepCopy();
         rootCopy.remove("data");
@@ -61,6 +91,14 @@ abstract class Event {
                 adjustContextResource(rootCopy), CloudFunctionsContext.class);
       }
       return Event.of(data, context);
+    }
+
+    private boolean isPubSubEmulatorPayload(JsonObject root) {
+      if (root.has("subscription") && root.has("message") && root.get("message").isJsonObject()) {
+        JsonObject message = root.getAsJsonObject("message");
+        return message.has("data") && message.has("messageId");
+      }
+      return false;
     }
 
     /**
