@@ -7,8 +7,8 @@ jobs:
       matrix:
         java: [
           11.x
-          # 12.x,
-          # 13.x
+          15.x
+          # See supported versions: https://github.com/actions/setup-java#supported-version-syntax
         ]
     steps:
     - uses: actions/checkout@v2
