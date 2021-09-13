@@ -112,11 +112,18 @@ contents:
 ```java
 package com.example;
 
-import com.example.PubSubBackground.PubSubMessage;
 import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.Context;
 import java.util.Map;
 import java.util.logging.Logger;
+
+// This is the Pub/Sub message format from the Pub/Sub emulator. 
+class PubSubMessage {
+  String data;
+  Map<String, String> attributes;
+  String messageId;
+  String publishTime;
+}
 
 public class PubSubBackground implements BackgroundFunction<PubSubMessage> {
   private static final Logger logger =
@@ -124,14 +131,7 @@ public class PubSubBackground implements BackgroundFunction<PubSubMessage> {
 
   @Override
   public void accept(PubSubMessage pubSubMessage, Context context) {
-    logger.info("Received message with id " + pubSubMessage.messageId);
-  }
-
-  public static class PubSubMessage {
-    public String data;
-    public Map<String, String> attributes;
-    public String messageId;
-    public String publishTime;
+    logger.info("Received message with id " + context.eventId());
   }
 }
 ```
