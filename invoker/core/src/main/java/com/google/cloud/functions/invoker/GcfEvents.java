@@ -82,13 +82,13 @@ class GcfEvents {
           new FirestoreFirebaseEventAdapter("google.firebase.analytics.log.v1.written", FIREBASE_SERVICE)),
 
       entry("providers/google.firebase.database/eventTypes/ref.create",
-          new FirebaseDatabaseEventAdapter("google.firebase.database.document.v1.created")),
+          new FirebaseDatabaseEventAdapter("google.firebase.database.ref.v1.created")),
       entry("providers/google.firebase.database/eventTypes/ref.write",
-          new FirebaseDatabaseEventAdapter("google.firebase.database.document.v1.written")),
+          new FirebaseDatabaseEventAdapter("google.firebase.database.ref.v1.written")),
       entry("providers/google.firebase.database/eventTypes/ref.update",
-          new FirebaseDatabaseEventAdapter("google.firebase.database.document.v1.updated")),
+          new FirebaseDatabaseEventAdapter("google.firebase.database.ref.v1.updated")),
       entry("providers/google.firebase.database/eventTypes/ref.delete",
-          new FirebaseDatabaseEventAdapter("google.firebase.database.document.v1.deleted")),
+          new FirebaseDatabaseEventAdapter("google.firebase.database.ref.v1.deleted")),
 
       entry("providers/cloud.pubsub/eventTypes/topic.publish",
           new PubSubEventAdapter(PUB_SUB_MESSAGE_PUBLISHED)),
