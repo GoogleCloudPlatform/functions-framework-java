@@ -8,7 +8,7 @@ different environments, including:
 
 *   [Google Cloud Functions](https://cloud.google.com/functions/)
 *   Your local development machine
-*   [Cloud Run and Cloud Run on GKE](https://cloud.google.com/run/)
+*   [Cloud Run](https://cloud.google.com/run/) and [Cloud Run for Anthos](https://cloud.google.com/anthos/run/)
 *   [Knative](https://github.com/knative/)-based environments
 
 ## Installation
