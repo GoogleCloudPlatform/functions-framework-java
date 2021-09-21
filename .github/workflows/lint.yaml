@@ -21,3 +21,20 @@ jobs:
       run: (cd functions-framework-api/ && mvn install)
     - name: Lint Invoker
       run: (cd invoker/ && mvn clean verify -DskipTests -P lint)
+  lintjava17:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK ${{ matrix.java }}
+      uses: actions/setup-java@v2
+      with:
+        java-version: 17
+        distribution: zulu
+    - name: Build API with Maven
+      run: (cd functions-framework-api/ && mvn install)
+    - name: Lint Functions Framework API
+      run: (cd functions-framework-api/ && mvn clean verify -DskipTests -P lint)
+    - name: Build Invoker with Maven
+      run: (cd functions-framework-api/ && mvn install)
+    - name: Lint Invoker
+      run: (cd invoker/ && mvn clean verify -DskipTests -P lint)
