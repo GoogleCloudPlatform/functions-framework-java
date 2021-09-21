@@ -311,10 +311,10 @@ public class IntegrationTest {
         fullTarget("Log"), ImmutableList.of(simpleTestCase, quotingTestCase, exceptionTestCase));
   }
 
-  // @Test
-  // public void background() throws Exception {
-  //   backgroundTest("BackgroundSnoop");
-  // }
+  @Test
+  public void background() throws Exception {
+    backgroundTest("BackgroundSnoop");
+  }
 
   // @Test
   // public void typedBackground() throws Exception {
