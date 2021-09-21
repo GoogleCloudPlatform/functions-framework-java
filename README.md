@@ -1,4 +1,11 @@
-# Functions Framework for Java [![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2FGoogleCloudPlatform%2Ffunctions-framework-java%2Fbadge&style=flat)](https://actions-badge.atrox.dev/GoogleCloudPlatform/functions-framework-java/goto) [![Maven Central](https://img.shields.io/maven-central/v/com.google.cloud.functions/functions-framework-api.svg)](https://search.maven.org/artifact/com.google.cloud.functions/functions-framework-api)
+# Functions Framework for Java
+
+[![Maven Central](https://img.shields.io/maven-central/v/com.google.cloud.functions/functions-framework-api.svg?label=functions-framework-api)](https://search.maven.org/artifact/com.google.cloud.functions/functions-framework-api)
+[![Maven Central](https://img.shields.io/maven-central/v/com.google.cloud.functions.invoker/java-function-invoker.svg?label=java-function-invoker)](https://search.maven.org/artifact/com.google.cloud.functions.invoker/java-function-invoker)
+
+[![Java Unit CI](https://github.com/GoogleCloudPlatform/functions-framework-java/actions/workflows/unit.yaml/badge.svg)](https://github.com/GoogleCloudPlatform/functions-framework-java/actions/workflows/unit.yaml)
+[![Java Lint CI](https://github.com/GoogleCloudPlatform/functions-framework-java/actions/workflows/lint.yaml/badge.svg)](https://github.com/GoogleCloudPlatform/functions-framework-java/actions/workflows/lint.yaml)
+[![Java Conformance CI](https://github.com/GoogleCloudPlatform/functions-framework-java/actions/workflows/conformance.yaml/badge.svg)](https://github.com/GoogleCloudPlatform/functions-framework-java/actions/workflows/conformance.yaml)
 
 An open source FaaS (Function as a service) framework for writing portable
 Java functions -- brought to you by the Google Cloud Functions team.
