@@ -333,7 +333,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
       res.setStatus(HttpServletResponse.SC_OK);
     } catch (Throwable t) {
       res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-      logger.log(Level.WARNING, "Failed to execute " + functionExecutor.functionName(), t);
+      logger.log(Level.SEVERE, "Failed to execute " + functionExecutor.functionName(), t);
     }
   }
 
