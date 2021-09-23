@@ -249,6 +249,48 @@ public class IntegrationTest {
   }
 
   @Test
+  public void exceptionHttp() throws Exception {
+    String exceptionExpectedOutput =
+        "\"severity\": \"ERROR\", \"logging.googleapis.com/sourceLocation\": {\"file\":"
+            + " \"com/google/cloud/functions/invoker/HttpFunctionExecutor.java\", \"method\":"
+            + " \"service\"}, \"message\": \"Failed to execute"
+            + " com.google.cloud.functions.invoker.testfunctions.ExceptionHttp\\n"
+            + "java.lang.RuntimeException: exception thrown for test";
+    testHttpFunction(
+        fullTarget("ExceptionHttp"),
+        ImmutableList.of(
+            TestCase.builder()
+                .setExpectedResponseCode(500)
+                .setExpectedOutput(exceptionExpectedOutput)
+                .build()));
+  }
+
+
+  @Test
+  public void exceptionBackground() throws Exception {
+    String exceptionExpectedOutput =
+        "\"severity\": \"ERROR\", \"logging.googleapis.com/sourceLocation\": {\"file\":"
+            + " \"com/google/cloud/functions/invoker/BackgroundFunctionExecutor.java\", \"method\":"
+            + " \"service\"}, \"message\": \"Failed to execute"
+            + " com.google.cloud.functions.invoker.testfunctions.ExceptionBackground\\n"
+            + "java.lang.RuntimeException: exception thrown for test";
+
+    File snoopFile = snoopFile();
+    String gcfRequestText = sampleLegacyEvent(snoopFile);
+
+    testFunction(
+        SignatureType.BACKGROUND,
+        fullTarget("ExceptionBackground"),
+        ImmutableList.of(),
+        ImmutableList.of(
+            TestCase.builder()
+                .setRequestText(gcfRequestText)
+                .setExpectedResponseCode(500)
+                .setExpectedOutput(exceptionExpectedOutput)
+                .build()));
+  }
+
+  @Test
   public void echo() throws Exception {
     String testText = "hello\nworld\n";
     testHttpFunction(

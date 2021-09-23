@@ -66,11 +66,7 @@ public class HttpFunctionExecutor extends HttpServlet {
       Thread.currentThread().setContextClassLoader(function.getClass().getClassLoader());
       function.service(reqImpl, respImpl);
     } catch (Throwable t) {
-      // TODO(b/146510646): this should be logged properly as an exception, but that currently
-      //   causes integration tests to fail.
-      // logger.log(Level.WARNING, "Failed to execute " + function.getClass().getName(), t);
-      logger.log(Level.WARNING, "Failed to execute {0}", function.getClass().getName());
-      t.printStackTrace();
+      logger.log(Level.SEVERE, "Failed to execute " + function.getClass().getName(), t);
       res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     } finally {
       Thread.currentThread().setContextClassLoader(oldContextLoader);
