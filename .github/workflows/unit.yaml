@@ -16,6 +16,7 @@ jobs:
       uses: actions/setup-java@v2
       with:
         java-version: ${{ matrix.java }}
+        distribution: temurin
     - name: Build with Maven
       run: (cd functions-framework-api/ && mvn install)
     - name: Test
