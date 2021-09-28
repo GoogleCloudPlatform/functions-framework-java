@@ -355,12 +355,18 @@ public class IntegrationTest {
 
   @Test
   public void background() throws Exception {
-    backgroundTest("BackgroundSnoop");
+    // Only enable background tests for < 17
+    if (Integer.valueOf(System.getProperty("java.version")) < 17) {
+      backgroundTest("BackgroundSnoop");
+    }
   }
 
   @Test
   public void typedBackground() throws Exception {
-    backgroundTest("TypedBackgroundSnoop");
+    // Only enable background tests for < 17
+    if (Integer.valueOf(System.getProperty("java.version")) < 17) {
+      backgroundTest("TypedBackgroundSnoop");
+    }
   }
 
   private void backgroundTest(String target) throws Exception {
