@@ -2,6 +2,8 @@
 
 [![Maven Central](https://img.shields.io/maven-central/v/com.google.cloud.functions/functions-framework-api.svg?label=functions-framework-api)](https://search.maven.org/artifact/com.google.cloud.functions/functions-framework-api)
 [![Maven Central](https://img.shields.io/maven-central/v/com.google.cloud.functions.invoker/java-function-invoker.svg?label=java-function-invoker)](https://search.maven.org/artifact/com.google.cloud.functions.invoker/java-function-invoker)
+[![Maven Central](https://img.shields.io/maven-central/v/com.google.cloud.functions.invoker/java-function-invoker-parent.svg?label=java-function-invoker-parent)](https://search.maven.org/artifact/com.google.cloud.functions.invoker-parent/java-function-invoker-parent)
+[![Maven Central](https://img.shields.io/maven-central/v/com.google.cloud.functions/function-maven-plugin.svg?label=function-maven-plugin)](https://search.maven.org/artifact/com.google.cloud.functions/function-maven-plugin)
 
 [![Java Unit CI](https://github.com/GoogleCloudPlatform/functions-framework-java/actions/workflows/unit.yaml/badge.svg)](https://github.com/GoogleCloudPlatform/functions-framework-java/actions/workflows/unit.yaml)
 [![Java Lint CI](https://github.com/GoogleCloudPlatform/functions-framework-java/actions/workflows/lint.yaml/badge.svg)](https://github.com/GoogleCloudPlatform/functions-framework-java/actions/workflows/lint.yaml)
