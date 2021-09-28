@@ -353,10 +353,20 @@ public class IntegrationTest {
         fullTarget("Log"), ImmutableList.of(simpleTestCase, quotingTestCase, exceptionTestCase));
   }
 
+  private static int getJavaVersion() {
+    String version = System.getProperty("java.version");
+    if(version.startsWith("1.")) {
+      version = version.substring(2, 3);
+    } else {
+      int dot = version.indexOf(".");
+      if(dot != -1) { version = version.substring(0, dot); }
+    } return Integer.parseInt(version);
+  }
+
   @Test
   public void background() throws Exception {
     // Only enable background tests for < 17
-    if (Integer.valueOf(System.getProperty("java.version")) < 17) {
+    if (getJavaVersion() < 17) {
       backgroundTest("BackgroundSnoop");
     }
   }
@@ -364,7 +374,7 @@ public class IntegrationTest {
   @Test
   public void typedBackground() throws Exception {
     // Only enable background tests for < 17
-    if (Integer.valueOf(System.getProperty("java.version")) < 17) {
+    if (getJavaVersion() < 17) {
       backgroundTest("TypedBackgroundSnoop");
     }
   }
