@@ -367,7 +367,7 @@ public class IntegrationTest {
 
   @Test
   public void background() throws Exception {
-    // Only enable background tests for < 17
+    // TODO: Only enable background tests for < 17
     if (getJavaVersion() < 17) {
       backgroundTest("BackgroundSnoop");
     }
@@ -375,7 +375,7 @@ public class IntegrationTest {
 
   @Test
   public void typedBackground() throws Exception {
-    // Only enable background tests for < 17
+    // TODO: Only enable background tests for < 17
     if (getJavaVersion() < 17) {
       backgroundTest("TypedBackgroundSnoop");
     }
