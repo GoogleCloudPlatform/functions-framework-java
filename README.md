@@ -176,7 +176,7 @@ mvn function:run
 You can alternatively configure the plugin with properties on the command line:
 
 ```sh
-  mvn com.google.cloud.functions:function-maven-plugin:0.9.7:run \
+  mvn com.google.cloud.functions:function-maven-plugin:0.9.8:run \
       -Drun.functionTarget=com.example.function.Echo
 ```
 
@@ -245,6 +245,109 @@ Or if you use the Gradle wrapper provided by your Gradle project build:
 ./gradlew runFunction -Prun.functionTarget=com.example.HelloWorld \
                       -Prun.port=8080
 ```
+
+## Running a function with Pub/Sub Emulator
+
+Start three terminals.
+
+1. In the first terminal, start the [Pub/Sub emulator](https://cloud.google.com/pubsub/docs/emulator) on port 8043 with a fake project `abc`.
+   ```sh
+   gcloud beta emulators pubsub start \
+     --project=abc \
+     --host-port=localhost:8043
+   ```
+
+1. In the second terminal, clone this repo and navigate to the samples directory.
+   ```sh
+   git clone https://github.com/googleapis/java-pubsub.git
+   cd samples/snippets/
+   ```
+   > __Note:__ You must complete the `TODO(developer)` and also [modify your code to set the channel and credentials provider](https://cloud.google.com/pubsub/docs/emulator#accessing_environment_variables) in order to run the create topic and subscription samples successfully against the emulator.
+   
+   Run `CreateTopicExample.java` to create a Pub/Sub topic. 
+   ```sh
+   mvn clean compile exec:java -Dexec.mainClass=pubsub.CreateTopicExample
+   ```
+   Run `CreatePushSubscriptionExample.java` to create a push subscription, using `http://localhost:8082` as the push endpoint.
+   ```sh
+   mvn clean compile exec:java -Dexec.mainClass=pubsub.CreatePushSubscriptionExample
+   ```
+
+1. Add a simple background function `samples/snippets/src/main/java/pubsub/PubSubBackground.java` alongside the other samples:
+
+    ```java
+    package pubsub;
+    
+    import com.google.cloud.functions.BackgroundFunction;
+    import com.google.cloud.functions.Context;
+    import java.util.Map;
+    import java.util.logging.Logger;
+    
+    class PubSubEmulatorMessage {
+      String data;
+      Map<String, String> attributes;
+      String messageId;
+      String publishTime;
+    }
+    
+    public class PubSubBackground implements BackgroundFunction<PubSubEmulatorMessage> {
+      private static final Logger logger =
+          Logger.getLogger(PubSubBackground.class.getName());
+    
+      @Override
+      public void accept(PubSubEmulatorMessage pubSubEmulatorMessage, Context context) {
+        logger.info("Received message with id " + context.eventId());
+      }
+    }
+    ```
+
+   Include the Function Frameworks API and the Java Function Maven Plugin in `samples/snippets/pom.xml`:
+   ```xml
+   <dependencies>
+     <dependency>
+       <groupId>com.google.cloud.functions</groupId>
+       <artifactId>functions-framework-api</artifactId>
+       <version>1.0.4</version>
+       <scope>provided</scope>
+     </dependency>
+   </dependencies>
+   
+   <build>
+     <plugins>
+       <plugin>
+         <groupId>com.google.cloud.functions</groupId>
+         <artifactId>function-maven-plugin</artifactId>
+         <version>0.9.8</version>
+         </plugin>
+     </plugins>
+   </build>
+    ```
+
+1. In the third terminal, start a Pub/Sub background function on port 8082. This is the endpoint where the emulator serves published messages.
+   ```sh
+    cd samples/snippets/
+    mvn com.google.cloud.functions:function-maven-plugin:0.9.8:run \
+     -Drun.functionTarget=pubsub.PubSubBackground \
+     -Drun.port=8082
+   ```
+
+1. Go back to the second terminal, invoke the background function.
+   
+   > __Note:__ You must complete the `TODO(developer)` and also [modify your code to set the channel and credentials provider](https://cloud.google.com/pubsub/docs/emulator#accessing_environment_variables) in order to run the publisher sample successfully against the emulator.
+   
+   Run `PublisherExample.java` to publish a message:
+   ```sh
+   mvn clean compile exec:java -Dexec.mainClass=pubsub.PublisherExample
+   ```
+   You should see the output in the third terminal as follows:
+   ```none
+   INFO: Received message with id 1
+   ```
+   Publish again, and you should see the event ID increase:
+   ```none
+   INFO: Received message with id 2
+   ```
+   Press `Ctrl+C` to abort.
 
 ## Functions Framework configuration
 
