@@ -257,23 +257,18 @@ Start three terminals.
      --host-port=localhost:8043
    ```
 
-1. In the second terminal, clone this repo and navigate to the samples directory.
+1. In the second terminal, create a Pub/Sub topic `mytopic`. 
    ```sh
-   git clone https://github.com/googleapis/java-pubsub.git
-   cd samples/snippets/
+   curl -s -X PUT http://localhost:8043/v1/projects/abc/topics/mytopic 
    ```
-   > __Note:__ You must complete the `TODO(developer)` and also [modify your code to set the channel and credentials provider](https://cloud.google.com/pubsub/docs/emulator#accessing_environment_variables) in order to run the create topic and subscription samples successfully against the emulator.
-   
-   Run `CreateTopicExample.java` to create a Pub/Sub topic. 
+   Create a push subscription `mysub`, using `http://localhost:8082` as the push endpoint.
    ```sh
-   mvn clean compile exec:java -Dexec.mainClass=pubsub.CreateTopicExample
-   ```
-   Run `CreatePushSubscriptionExample.java` to create a push subscription, using `http://localhost:8082` as the push endpoint.
-   ```sh
-   mvn clean compile exec:java -Dexec.mainClass=pubsub.CreatePushSubscriptionExample
+   curl -s -X PUT http://localhost:8043/v1/projects/abc/subscriptions/mysub \
+     -H 'Content-Type: application/json' \
+     --data '{"topic":"projects/abc/topics/mytopic","pushConfig": {"pushEndpoint":"http://localhost:8082"}}'
    ```
 
-1. Add a simple background function `samples/snippets/src/main/java/pubsub/PubSubBackground.java` alongside the other samples:
+1. Create a simple background function `PubSubBackground.java`:
 
     ```java
     package pubsub;
@@ -301,7 +296,7 @@ Start three terminals.
     }
     ```
 
-   Include the Function Frameworks API and the Java Function Maven Plugin in `samples/snippets/pom.xml`:
+   Include the Function Frameworks API and the Java Function Maven Plugin in your `pom.xml`:
    ```xml
    <dependencies>
      <dependency>
@@ -325,19 +320,16 @@ Start three terminals.
 
 1. In the third terminal, start a Pub/Sub background function on port 8082. This is the endpoint where the emulator serves published messages.
    ```sh
-    cd samples/snippets/
     mvn com.google.cloud.functions:function-maven-plugin:0.9.8:run \
-     -Drun.functionTarget=pubsub.PubSubBackground \
+     -Drun.functionTarget=PubSubBackground \
      -Drun.port=8082
    ```
 
-1. Go back to the second terminal, invoke the background function.
-   
-   > __Note:__ You must complete the `TODO(developer)` and also [modify your code to set the channel and credentials provider](https://cloud.google.com/pubsub/docs/emulator#accessing_environment_variables) in order to run the publisher sample successfully against the emulator.
-   
-   Run `PublisherExample.java` to publish a message:
+1. Go back to the second terminal, invoke the background function by publishing a message:
    ```sh
-   mvn clean compile exec:java -Dexec.mainClass=pubsub.PublisherExample
+   curl -s -X POST http://localhost:8043/v1/projects/abc/topics/mytopic:publish \
+     -H 'Content-Type: application/json' \
+     --data '{"messages":[{"data":"eyJmb28iOiJiYXIifQ=="}]}'
    ```
    You should see the output in the third terminal as follows:
    ```none
