@@ -55,11 +55,15 @@ Verify Java version with:
 java --version
 ```
 
+### Setup Apache Maven
+
+Install `mvn`:
+
+https://maven.apache.org/install.html
+
 ## Install and Run Invoker Tests Locally
 
 ```
 cd invoker;
-mvn clean;
-mvn compile;
 mvn test;
 ```
