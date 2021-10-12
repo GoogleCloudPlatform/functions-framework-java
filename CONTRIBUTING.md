@@ -26,3 +26,44 @@ information on using pull requests.
 
 This project follows [Google's Open Source Community
 Guidelines](https://opensource.google.com/conduct/).
+
+## Developing
+
+This project is divided into multiple packages, primarily:
+
+- [`functions-framework-api`](./functions-framework-api)
+  - `core`
+  - `testfunction`
+  - `function-maven-plugin`
+  - `conformance`
+- [`java-function-invoker`](./invoker)
+
+### Setup JDK 11 / 17
+
+Install JDK 11 and 17. One way to install these is through [SDK man](https://sdkman.io/).
+
+```sh
+sdk install java 11.0.2-open
+sdk install java 17
+sdk use java 17
+sdk use java 11.0.2-open
+```
+
+Verify Java version with:
+
+```sh
+java --version
+```
+
+### Setup Apache Maven
+
+Install `mvn`:
+
+https://maven.apache.org/install.html
+
+## Install and Run Invoker Tests Locally
+
+```
+cd invoker;
+mvn test;
+```
