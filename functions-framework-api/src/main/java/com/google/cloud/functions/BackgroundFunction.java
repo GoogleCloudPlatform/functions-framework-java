@@ -17,14 +17,14 @@ package com.google.cloud.functions;
 /**
  * Represents a Cloud Function that is activated by an event and parsed into a user-supplied class.
  * The payload of the event is a JSON object, which is deserialized into a user-defined class as
- * described for
- * <a href="https://github.com/google/gson/blob/master/UserGuide.md#TOC-Object-Examples">Gson</a>.
+ * described for <a
+ * href="https://github.com/google/gson/blob/master/UserGuide.md#TOC-Object-Examples">Gson</a>.
  *
- * <p>Here is an example of an implementation that accesses the {@code messageId} property from
- * a payload that matches a user-defined {@code PubSubMessage} class:
- *
+ * <p>Here is an example of an implementation that accesses the {@code messageId} property from a
+ * payload that matches a user-defined {@code PubSubMessage} class:
  * <!-- The {@code} placement is a bit strange here, to prevent spurious spaces introduced by the
  *      javadoc tool. -->
+ *
  * <pre>
  * public class Example implements{@code BackgroundFunction<PubSubMessage>} {
  *   private static final Logger logger = Logger.getLogger(Example.class.getName());
@@ -49,9 +49,9 @@ package com.google.cloud.functions;
 @FunctionalInterface
 public interface BackgroundFunction<T> {
   /**
-   * Called to service an incoming event. This interface is implemented by user code to
-   * provide the action for a given background function. If this method throws any exception
-   * (including any {@link Error}) then the HTTP response will have a 500 status code.
+   * Called to service an incoming event. This interface is implemented by user code to provide the
+   * action for a given background function. If this method throws any exception (including any
+   * {@link Error}) then the HTTP response will have a 500 status code.
    *
    * @param payload the payload of the event, deserialized from the original JSON string.
    * @param context the context of the event. This is a set of values that every event has,

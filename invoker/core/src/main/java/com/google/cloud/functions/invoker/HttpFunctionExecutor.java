@@ -37,13 +37,15 @@ public class HttpFunctionExecutor extends HttpServlet {
   /**
    * Makes a {@link HttpFunctionExecutor} for the given class.
    *
-   * @throws RuntimeException if either the given class does not implement {@link HttpFunction}
-   *    or we are unable to construct an instance using its no-arg constructor.
+   * @throws RuntimeException if either the given class does not implement {@link HttpFunction} or
+   *     we are unable to construct an instance using its no-arg constructor.
    */
   public static HttpFunctionExecutor forClass(Class<?> functionClass) {
     if (!HttpFunction.class.isAssignableFrom(functionClass)) {
       throw new RuntimeException(
-          "Class " + functionClass.getName() + " does not implement "
+          "Class "
+              + functionClass.getName()
+              + " does not implement "
               + HttpFunction.class.getName());
     }
     Class<? extends HttpFunction> httpFunctionClass = functionClass.asSubclass(HttpFunction.class);

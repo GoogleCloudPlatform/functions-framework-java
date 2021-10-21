@@ -40,27 +40,60 @@ public class GcfEventsTest {
   @Rule public Expect expect = Expect.create();
 
   private static final String[][] EVENT_DATA = {
-    {"storage.json", "google.cloud.storage.object.v1.finalized",
-      "//storage.googleapis.com/projects/_/buckets/some-bucket", "objects/folder/Test.cs"},
-    {"legacy_storage_change.json", "google.cloud.storage.object.v1.changed",
-      "//storage.googleapis.com/projects/_/buckets/sample-bucket", "objects/MyFile"},
-    {"firestore_simple.json", "google.cloud.firestore.document.v1.written",
+    {
+      "storage.json",
+      "google.cloud.storage.object.v1.finalized",
+      "//storage.googleapis.com/projects/_/buckets/some-bucket",
+      "objects/folder/Test.cs"
+    },
+    {
+      "legacy_storage_change.json",
+      "google.cloud.storage.object.v1.changed",
+      "//storage.googleapis.com/projects/_/buckets/sample-bucket",
+      "objects/MyFile"
+    },
+    {
+      "firestore_simple.json",
+      "google.cloud.firestore.document.v1.written",
       "//firestore.googleapis.com/projects/project-id/databases/(default)",
-      "documents/gcf-test/2Vm2mI1d0wIaK2Waj5to"},
-    {"pubsub_text.json", "google.cloud.pubsub.topic.v1.messagePublished",
-      "//pubsub.googleapis.com/projects/sample-project/topics/gcf-test", null},
-    {"legacy_pubsub.json", "google.cloud.pubsub.topic.v1.messagePublished",
-      "//pubsub.googleapis.com/projects/sample-project/topics/gcf-test", null},
-    {"firebase-db1.json", "google.firebase.database.ref.v1.written",
+      "documents/gcf-test/2Vm2mI1d0wIaK2Waj5to"
+    },
+    {
+      "pubsub_text.json",
+      "google.cloud.pubsub.topic.v1.messagePublished",
+      "//pubsub.googleapis.com/projects/sample-project/topics/gcf-test",
+      null
+    },
+    {
+      "legacy_pubsub.json",
+      "google.cloud.pubsub.topic.v1.messagePublished",
+      "//pubsub.googleapis.com/projects/sample-project/topics/gcf-test",
+      null
+    },
+    {
+      "firebase-db1.json",
+      "google.firebase.database.ref.v1.written",
       "//firebasedatabase.googleapis.com/projects/_/locations/us-central1/instances/my-project-id",
-      "refs/gcf-test/xyz"},
-    {"firebase-db2.json", "google.firebase.database.ref.v1.written",
+      "refs/gcf-test/xyz"
+    },
+    {
+      "firebase-db2.json",
+      "google.firebase.database.ref.v1.written",
       "//firebasedatabase.googleapis.com/projects/_/locations/europe-west1/instances/my-project-id",
-      "refs/gcf-test/xyz"},
-    {"firebase-auth1.json", "google.firebase.auth.user.v1.created",
-      "//firebaseauth.googleapis.com/projects/my-project-id", "users/UUpby3s4spZre6kHsgVSPetzQ8l2"},
-    {"firebase-auth2.json", "google.firebase.auth.user.v1.deleted",
-      "//firebaseauth.googleapis.com/projects/my-project-id", "users/UUpby3s4spZre6kHsgVSPetzQ8l2"},
+      "refs/gcf-test/xyz"
+    },
+    {
+      "firebase-auth1.json",
+      "google.firebase.auth.user.v1.created",
+      "//firebaseauth.googleapis.com/projects/my-project-id",
+      "users/UUpby3s4spZre6kHsgVSPetzQ8l2"
+    },
+    {
+      "firebase-auth2.json",
+      "google.firebase.auth.user.v1.deleted",
+      "//firebaseauth.googleapis.com/projects/my-project-id",
+      "users/UUpby3s4spZre6kHsgVSPetzQ8l2"
+    },
   };
 
   @Test
@@ -71,7 +104,8 @@ public class GcfEventsTest {
     }
   }
 
-  private void convertGcfEvent(Event legacyEvent, String expectedType, String expectedSource, String expectedSubject) {
+  private void convertGcfEvent(
+      Event legacyEvent, String expectedType, String expectedSource, String expectedSubject) {
     CloudEvent cloudEvent = GcfEvents.convertToCloudEvent(legacyEvent);
     expect.that(cloudEvent.getType()).isEqualTo(expectedType);
     expect.that(cloudEvent.getSource().toString()).isEqualTo(expectedSource);
@@ -95,11 +129,15 @@ public class GcfEventsTest {
     assertThat(cloudEvent.getDataSchema()).isNull();
   }
 
-  // The next set of tests checks the result of using Gson to deserialize the JSON "data" field of the
-  // CloudEvent that we get from converting a legacy event. For the most part we're not testing much here,
-  // since the "data" field is essentially copied from the input legacy event. In some cases we adjust it,
+  // The next set of tests checks the result of using Gson to deserialize the JSON "data" field of
+  // the
+  // CloudEvent that we get from converting a legacy event. For the most part we're not testing much
+  // here,
+  // since the "data" field is essentially copied from the input legacy event. In some cases we
+  // adjust it,
   // though.
-  // Later, when we have support for handling these types properly in Java, we can change the tests to use
+  // Later, when we have support for handling these types properly in Java, we can change the tests
+  // to use
   // that. See https://github.com/googleapis/google-cloudevents-java
 
   @Test
@@ -107,12 +145,13 @@ public class GcfEventsTest {
     Event legacyEvent = legacyEventForResource("storage.json");
     CloudEvent cloudEvent = GcfEvents.convertToCloudEvent(legacyEvent);
     Map<String, Object> data = cloudEventDataJson(cloudEvent);
-    assertThat(data).containsAtLeast(
-        "bucket", "some-bucket",
-        "timeCreated", "2020-04-23T07:38:57.230Z",
-        "generation", "1587627537231057",
-        "metageneration", "1",
-        "size", "352");
+    assertThat(data)
+        .containsAtLeast(
+            "bucket", "some-bucket",
+            "timeCreated", "2020-04-23T07:38:57.230Z",
+            "generation", "1587627537231057",
+            "metageneration", "1",
+            "size", "352");
   }
 
   @Test
@@ -120,26 +159,33 @@ public class GcfEventsTest {
     Event legacyEvent = legacyEventForResource("firestore_simple.json");
     CloudEvent cloudEvent = GcfEvents.convertToCloudEvent(legacyEvent);
     Map<String, Object> data = cloudEventDataJson(cloudEvent);
-    Map<String, Object> expectedValue = Map.of(
-        "name", "projects/project-id/databases/(default)/documents/gcf-test/2Vm2mI1d0wIaK2Waj5to",
-        "createTime", "2020-04-23T09:58:53.211035Z",
-        "updateTime", "2020-04-23T12:00:27.247187Z",
-        "fields", Map.of(
-            "another test", Map.of("stringValue", "asd"),
-            "count", Map.of("integerValue", "4"),
-            "foo", Map.of("stringValue", "bar")));
-    Map<String, Object> expectedOldValue = Map.of(
-        "name", "projects/project-id/databases/(default)/documents/gcf-test/2Vm2mI1d0wIaK2Waj5to",
-        "createTime", "2020-04-23T09:58:53.211035Z",
-        "updateTime", "2020-04-23T12:00:27.247187Z",
-        "fields", Map.of(
-            "another test", Map.of("stringValue", "asd"),
-            "count", Map.of("integerValue", "3"),
-            "foo", Map.of("stringValue", "bar")));
-    assertThat(data).containsAtLeast(
-        "value", expectedValue,
-        "oldValue", expectedOldValue,
-        "updateMask", Map.of("fieldPaths", List.of("count")));
+    Map<String, Object> expectedValue =
+        Map.of(
+            "name",
+                "projects/project-id/databases/(default)/documents/gcf-test/2Vm2mI1d0wIaK2Waj5to",
+            "createTime", "2020-04-23T09:58:53.211035Z",
+            "updateTime", "2020-04-23T12:00:27.247187Z",
+            "fields",
+                Map.of(
+                    "another test", Map.of("stringValue", "asd"),
+                    "count", Map.of("integerValue", "4"),
+                    "foo", Map.of("stringValue", "bar")));
+    Map<String, Object> expectedOldValue =
+        Map.of(
+            "name",
+                "projects/project-id/databases/(default)/documents/gcf-test/2Vm2mI1d0wIaK2Waj5to",
+            "createTime", "2020-04-23T09:58:53.211035Z",
+            "updateTime", "2020-04-23T12:00:27.247187Z",
+            "fields",
+                Map.of(
+                    "another test", Map.of("stringValue", "asd"),
+                    "count", Map.of("integerValue", "3"),
+                    "foo", Map.of("stringValue", "bar")));
+    assertThat(data)
+        .containsAtLeast(
+            "value", expectedValue,
+            "oldValue", expectedOldValue,
+            "updateMask", Map.of("fieldPaths", List.of("count")));
   }
 
   @Test
@@ -149,26 +195,42 @@ public class GcfEventsTest {
     Map<String, Object> data = cloudEventDataJson(cloudEvent);
     Map<?, ?> value = (Map<?, ?>) data.get("value");
     Map<?, ?> fields = (Map<?, ?>) value.get("fields");
-    Map<String, Object> expectedFields = Map.of(
-        "arrayValue", Map.of("arrayValue",
-            Map.of("values",
-                List.of(Map.of("integerValue", "1"), Map.of("integerValue", "2")))),
-        "booleanValue", Map.of("booleanValue", true),
-        "geoPointValue", Map.of("geoPointValue", Map.of("latitude", 51.4543, "longitude", -0.9781)),
-        "intValue", Map.of("integerValue", "50"),
-        "doubleValue", Map.of("doubleValue", 5.5),
-        "nullValue", Collections.singletonMap("nullValue", null),
-        "referenceValue", Map.of("referenceValue",
-            "projects/project-id/databases/(default)/documents/foo/bar/baz/qux"),
-        "stringValue", Map.of("stringValue", "text"),
-        "timestampValue", Map.of("timestampValue", "2020-04-23T14:23:53.241Z"),
-        "mapValue", Map.of("mapValue",
-            Map.of("fields",
-                Map.of("field1", Map.of("stringValue", "x"),
-                    "field2", Map.of("arrayValue",
-                        Map.of("values",
-                            List.of(Map.of("stringValue", "x"), Map.of("integerValue", "1")))))))
-    );
+    Map<String, Object> expectedFields =
+        Map.of(
+            "arrayValue",
+                Map.of(
+                    "arrayValue",
+                    Map.of(
+                        "values",
+                        List.of(Map.of("integerValue", "1"), Map.of("integerValue", "2")))),
+            "booleanValue", Map.of("booleanValue", true),
+            "geoPointValue",
+                Map.of("geoPointValue", Map.of("latitude", 51.4543, "longitude", -0.9781)),
+            "intValue", Map.of("integerValue", "50"),
+            "doubleValue", Map.of("doubleValue", 5.5),
+            "nullValue", Collections.singletonMap("nullValue", null),
+            "referenceValue",
+                Map.of(
+                    "referenceValue",
+                    "projects/project-id/databases/(default)/documents/foo/bar/baz/qux"),
+            "stringValue", Map.of("stringValue", "text"),
+            "timestampValue", Map.of("timestampValue", "2020-04-23T14:23:53.241Z"),
+            "mapValue",
+                Map.of(
+                    "mapValue",
+                    Map.of(
+                        "fields",
+                        Map.of(
+                            "field1",
+                            Map.of("stringValue", "x"),
+                            "field2",
+                            Map.of(
+                                "arrayValue",
+                                Map.of(
+                                    "values",
+                                    List.of(
+                                        Map.of("stringValue", "x"),
+                                        Map.of("integerValue", "1"))))))));
     assertThat(fields).containsExactlyEntriesIn(expectedFields);
   }
 
@@ -213,16 +275,19 @@ public class GcfEventsTest {
     Event legacyEvent = legacyEventForResource("legacy_pubsub.json");
     CloudEvent cloudEvent = GcfEvents.convertToCloudEvent(legacyEvent);
     assertThat(new String(cloudEvent.getData().toBytes(), UTF_8))
-        .isEqualTo("{\"message\":{\"@type\":\"type.googleapis.com/google.pubsub.v1.PubsubMessage\","
-            + "\"attributes\":{\"attribute1\":\"value1\"},"
-            + "\"data\":\"VGhpcyBpcyBhIHNhbXBsZSBtZXNzYWdl\","
-            + "\"messageId\":\"1215011316659232\","
-            + "\"publishTime\":\"2020-05-18T12:13:19.209Z\"}}");
+        .isEqualTo(
+            "{\"message\":{\"@type\":\"type.googleapis.com/google.pubsub.v1.PubsubMessage\","
+                + "\"attributes\":{\"attribute1\":\"value1\"},"
+                + "\"data\":\"VGhpcyBpcyBhIHNhbXBsZSBtZXNzYWdl\","
+                + "\"messageId\":\"1215011316659232\","
+                + "\"publishTime\":\"2020-05-18T12:13:19.209Z\"}}");
   }
 
-  // Checks that a Firestore event correctly gets an extra "wildcards" property in its CloudEvent data
+  // Checks that a Firestore event correctly gets an extra "wildcards" property in its CloudEvent
+  // data
   // reflecting the "params" field in the legacy event.
-  // This test is currently ignored because the final representation of the "params" field is in flux.
+  // This test is currently ignored because the final representation of the "params" field is in
+  // flux.
   @Test
   @Ignore
   public void firestoreWildcards() throws IOException {

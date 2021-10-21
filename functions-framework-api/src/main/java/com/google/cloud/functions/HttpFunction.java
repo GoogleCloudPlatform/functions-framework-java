@@ -14,9 +14,7 @@
 
 package com.google.cloud.functions;
 
-/**
- * Represents a Cloud Function that is activated by an HTTP request.
- */
+/** Represents a Cloud Function that is activated by an HTTP request. */
 @FunctionalInterface
 public interface HttpFunction {
   /**

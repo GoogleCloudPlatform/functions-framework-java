@@ -14,36 +14,35 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
- * Runs a function using the Java Functions Framework. Typically this plugin is configured in one
- * of two ways. Either in the pom.xml file, like this...
+ * Runs a function using the Java Functions Framework. Typically this plugin is configured in one of
+ * two ways. Either in the pom.xml file, like this...
  *
  * <pre>{@code
- *  <plugin>
- *    <groupId>com.google.cloud.functions</groupId>
- *    <artifactId>function-maven-plugin</artifactId>
- *    <version>1.0.0-alpha-2-rc3</version>
- *    <configuration>
- *      <functionTarget>com.example.function.Echo</functionTarget>
- *    </configuration>
- *  </plugin>
+ * <plugin>
+ *   <groupId>com.google.cloud.functions</groupId>
+ *   <artifactId>function-maven-plugin</artifactId>
+ *   <version>1.0.0-alpha-2-rc3</version>
+ *   <configuration>
+ *     <functionTarget>com.example.function.Echo</functionTarget>
+ *   </configuration>
+ * </plugin>
  * }</pre>
  *
  * ...and then run using {@code mvn function:run}. Or using properties on the command line, like
  * this...<br>
  *
  * <pre>{@code
- *   mvn com.google.cloud.functions:function:1.0.0-alpha-2-rc3:run \
- *       -Drun.functionTarget=com.example.function.Echo}
- * </pre>
- *
+ * mvn com.google.cloud.functions:function:1.0.0-alpha-2-rc3:run \
+ *     -Drun.functionTarget=com.example.function.Echo
+ * }</pre>
  */
-@Mojo(name = "run",
+@Mojo(
+    name = "run",
     defaultPhase = LifecyclePhase.GENERATE_RESOURCES,
     requiresDependencyResolution = ResolutionScope.RUNTIME,
     requiresDependencyCollection = ResolutionScope.RUNTIME)
 @Execute(phase = LifecyclePhase.COMPILE)
 public class RunFunction extends AbstractMojo {
-
 
   /**
    * The name of the function to run. This is the name of a class that implements one of the
@@ -52,9 +51,7 @@ public class RunFunction extends AbstractMojo {
   @Parameter(property = "run.functionTarget")
   private String functionTarget;
 
-  /**
-   * The port on which the HTTP server wrapping the function should listen.
-   */
+  /** The port on which the HTTP server wrapping the function should listen. */
   @Parameter(property = "run.port", defaultValue = "8080")
   private Integer port;
 

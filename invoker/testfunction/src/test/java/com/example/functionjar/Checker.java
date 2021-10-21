@@ -23,8 +23,7 @@ class Checker {
       throw new AssertionError(
           String.format(
               "ClassLoader mismatch: mine %s; context %s",
-              getClass().getClassLoader(),
-              Thread.currentThread().getContextClassLoader()));
+              getClass().getClassLoader(), Thread.currentThread().getContextClassLoader()));
     }
 
     ClassLoader myLoader = getClass().getClassLoader();

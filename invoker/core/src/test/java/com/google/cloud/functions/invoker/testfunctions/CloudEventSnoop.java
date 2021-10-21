@@ -21,7 +21,8 @@ public class CloudEventSnoop implements CloudEventsFunction {
     if (targetFile == null) {
       throw new IllegalArgumentException("Expected targetFile in JSON payload");
     }
-    EventFormat jsonFormat = EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE);
+    EventFormat jsonFormat =
+        EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE);
     byte[] bytes = jsonFormat.serialize(event);
     try (FileOutputStream out = new FileOutputStream(targetFile)) {
       out.write(bytes);
