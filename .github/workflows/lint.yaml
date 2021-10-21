@@ -4,6 +4,7 @@ on:
     branches:
     - master
   pull_request:
+  workflow_dispatch:
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -21,3 +22,19 @@ jobs:
       run: (cd functions-framework-api/ && mvn install)
     - name: Lint Invoker
       run: (cd invoker/ && mvn clean verify -DskipTests -P lint)
+  formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2 # v2 minimum required
+      - name: Run formatter
+        id: formatter
+        uses: axel-op/googlejavaformat-action@v3
+        with:
+          args: "--dry-run --set-exit-if-changed"
+        continue-on-error: true
+      - name: Check for failure
+        if: steps.formatter.outcome != 'success'
+        run: |
+          echo "Java format check failed, see 'Run formatter' step for more information."
+          echo "See https://github.com/google/google-java-format for options on running the formatter locally."
+          exit 1

@@ -21,44 +21,44 @@ import java.util.Map;
 public interface Context {
   /**
    * Returns event ID.
-   * 
+   *
    * @return event ID
    */
   String eventId();
 
   /**
    * Returns event timestamp.
-   * 
+   *
    * @return event timestamp
    */
   String timestamp();
 
   /**
    * Returns event type.
-   * 
+   *
    * @return event type
    */
   String eventType();
 
   /**
    * Returns event resource.
-   * 
+   *
    * @return event resource
    */
   String resource();
 
   /**
    * Returns additional attributes from this event. For CloudEvents, the entries in this map will
-   * include the
-   * <a href="https://github.com/cloudevents/spec/blob/v1.0/spec.md#required-attributes">required
-   * attributes</a> and may include
-   * <a href="https://github.com/cloudevents/spec/blob/v1.0/spec.md#required-attributes">optional
-   * attributes</a> and
-   * <a href="https://github.com/cloudevents/spec/blob/v1.0/spec.md#extension-context-attributes">
+   * include the <a
+   * href="https://github.com/cloudevents/spec/blob/v1.0/spec.md#required-attributes">required
+   * attributes</a> and may include <a
+   * href="https://github.com/cloudevents/spec/blob/v1.0/spec.md#required-attributes">optional
+   * attributes</a> and <a
+   * href="https://github.com/cloudevents/spec/blob/v1.0/spec.md#extension-context-attributes">
    * extension attributes</a>.
    *
-   * <p>The map returned by this method may be empty but is never null.</p>
-   * 
+   * <p>The map returned by this method may be empty but is never null.
+   *
    * @return additional attributes form this event.
    */
   default Map<String, String> attributes() {

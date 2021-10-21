@@ -16,7 +16,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -25,10 +24,12 @@ import org.junit.runners.JUnit4;
 public class InvokerTest {
   @Test
   public void help() throws IOException {
-    String help = captureOutput(() -> {
-      Optional<Invoker> invoker = Invoker.makeInvoker("--help");
-      assertThat(invoker).isEmpty();
-    });
+    String help =
+        captureOutput(
+            () -> {
+              Optional<Invoker> invoker = Invoker.makeInvoker("--help");
+              assertThat(invoker).isEmpty();
+            });
     assertThat(help).contains("Usage:");
     assertThat(help).contains("--target");
     assertThat(help).containsMatch("separated\\s+by\\s+'" + File.pathSeparator + "'");

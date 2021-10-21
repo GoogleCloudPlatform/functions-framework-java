@@ -26,8 +26,8 @@ import java.io.FileWriter;
 import java.time.format.DateTimeFormatter;
 
 /**
- * This class is used by the Functions Framework Conformance Tools to validate
- * the framework's Cloud Events API. It can be run with the following command:
+ * This class is used by the Functions Framework Conformance Tools to validate the framework's Cloud
+ * Events API. It can be run with the following command:
  *
  * <pre>{@code
  * $ functions-framework-conformance-client \
@@ -40,10 +40,7 @@ import java.time.format.DateTimeFormatter;
  */
 public class CloudEventsConformanceFunction implements CloudEventsFunction {
 
-  private static final Gson gson = new GsonBuilder()
-      .serializeNulls()
-      .setPrettyPrinting()
-      .create();
+  private static final Gson gson = new GsonBuilder().serializeNulls().setPrettyPrinting().create();
 
   @Override
   public void accept(CloudEvent event) throws Exception {
@@ -52,9 +49,7 @@ public class CloudEventsConformanceFunction implements CloudEventsFunction {
     }
   }
 
-  /**
-   * Create a structured JSON representation of a cloud event
-   */
+  /** Create a structured JSON representation of a cloud event */
   private String serialize(CloudEvent event) {
     JsonObject jsonEvent = new JsonObject();
 

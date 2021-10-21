@@ -63,6 +63,7 @@ public class HttpTest {
           + "To marry two wives at a time.\n";
 
   private static final byte[] RANDOM_BYTES = new byte[1024];
+
   static {
     new Random().nextBytes(RANDOM_BYTES);
   }
@@ -111,10 +112,10 @@ public class HttpTest {
   }
 
   /**
-   * Tests methods on the {@link HttpRequest} object while the request is being serviced. We are
-   * not guaranteed that the underlying {@link HttpServletRequest} object will still be valid when
-   * the request completes, and in fact in Jetty it isn't. So we perform the checks in the context
-   * of the servlet, and report any exception back to the test method.
+   * Tests methods on the {@link HttpRequest} object while the request is being serviced. We are not
+   * guaranteed that the underlying {@link HttpServletRequest} object will still be valid when the
+   * request completes, and in fact in Jetty it isn't. So we perform the checks in the context of
+   * the servlet, and report any exception back to the test method.
    */
   @Test
   public void httpRequestMethods() throws Exception {
@@ -133,66 +134,70 @@ public class HttpTest {
     httpClient.start();
     String uri = "http://localhost:" + serverPort + "/foo/bar?baz=buh&baz=xxx&blim=blam&baz=what";
     HttpRequestTest[] tests = {
-        request -> assertThat(request.getMethod()).isEqualTo("POST"),
-        request -> assertThat(request.getMethod()).isEqualTo("POST"),
-        request -> assertThat(request.getUri()).isEqualTo(uri),
-        request -> assertThat(request.getPath()).isEqualTo("/foo/bar"),
-        request -> assertThat(request.getQuery()).hasValue("baz=buh&baz=xxx&blim=blam&baz=what"),
-        request -> {
-          Map<String, List<String>> expectedQueryParameters = new TreeMap<>();
-          expectedQueryParameters.put("baz", Arrays.asList("buh", "xxx", "what"));
-          expectedQueryParameters.put("blim", Arrays.asList("blam"));
-          assertThat(request.getQueryParameters()).isEqualTo(expectedQueryParameters);
-        },
-        request -> assertThat(request.getFirstQueryParameter("baz")).hasValue("buh"),
-        request -> assertThat(request.getFirstQueryParameter("something")).isEmpty(),
-        request -> assertThat(request.getContentType().get()).ignoringCase()
-            .isEqualTo("text/plain; charset=utf-8"),
-        request -> assertThat(request.getContentLength()).isEqualTo(TEST_BODY.length()),
-        request -> assertThat(request.getCharacterEncoding()).isPresent(),
-        request -> assertThat(request.getCharacterEncoding().get()).ignoringCase()
-            .isEqualTo("utf-8"),
-        request -> {
-          try (BufferedReader reader = request.getReader()) {
-            validateReader(reader);
-            assertThat(request.getReader()).isSameInstanceAs(reader);
-          }
-          try {
-            request.getInputStream();
-            fail("Did not get expected exception");
-          } catch (IllegalStateException expected) {
-          }
-        },
-        request -> {
-          try (InputStream inputStream = request.getInputStream();
-              BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-            validateReader(reader);
-            assertThat(request.getInputStream()).isSameInstanceAs(inputStream);
-          }
-        },
-        request -> {
-          Map<String, List<String>> expectedHeaders = new TreeMap<>();
-          expectedHeaders.put(HttpHeader.CONTENT_LENGTH.asString(),
-              Arrays.asList(String.valueOf(TEST_BODY.length())));
-          expectedHeaders.put("foo", Arrays.asList("bar", "baz"));
-          assertThat(request.getHeaders()).containsAtLeastEntriesIn(expectedHeaders);
-        },
-        request -> assertThat(request.getFirstHeader("foo")).hasValue("bar"),
-        request -> {
-          try {
-            request.getParts();
-            fail("Did not get expected exception");
-          } catch (IllegalStateException expected) {
-          }
+      request -> assertThat(request.getMethod()).isEqualTo("POST"),
+      request -> assertThat(request.getMethod()).isEqualTo("POST"),
+      request -> assertThat(request.getUri()).isEqualTo(uri),
+      request -> assertThat(request.getPath()).isEqualTo("/foo/bar"),
+      request -> assertThat(request.getQuery()).hasValue("baz=buh&baz=xxx&blim=blam&baz=what"),
+      request -> {
+        Map<String, List<String>> expectedQueryParameters = new TreeMap<>();
+        expectedQueryParameters.put("baz", Arrays.asList("buh", "xxx", "what"));
+        expectedQueryParameters.put("blim", Arrays.asList("blam"));
+        assertThat(request.getQueryParameters()).isEqualTo(expectedQueryParameters);
+      },
+      request -> assertThat(request.getFirstQueryParameter("baz")).hasValue("buh"),
+      request -> assertThat(request.getFirstQueryParameter("something")).isEmpty(),
+      request ->
+          assertThat(request.getContentType().get())
+              .ignoringCase()
+              .isEqualTo("text/plain; charset=utf-8"),
+      request -> assertThat(request.getContentLength()).isEqualTo(TEST_BODY.length()),
+      request -> assertThat(request.getCharacterEncoding()).isPresent(),
+      request -> assertThat(request.getCharacterEncoding().get()).ignoringCase().isEqualTo("utf-8"),
+      request -> {
+        try (BufferedReader reader = request.getReader()) {
+          validateReader(reader);
+          assertThat(request.getReader()).isSameInstanceAs(reader);
         }
+        try {
+          request.getInputStream();
+          fail("Did not get expected exception");
+        } catch (IllegalStateException expected) {
+        }
+      },
+      request -> {
+        try (InputStream inputStream = request.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+          validateReader(reader);
+          assertThat(request.getInputStream()).isSameInstanceAs(inputStream);
+        }
+      },
+      request -> {
+        Map<String, List<String>> expectedHeaders = new TreeMap<>();
+        expectedHeaders.put(
+            HttpHeader.CONTENT_LENGTH.asString(),
+            Arrays.asList(String.valueOf(TEST_BODY.length())));
+        expectedHeaders.put("foo", Arrays.asList("bar", "baz"));
+        assertThat(request.getHeaders()).containsAtLeastEntriesIn(expectedHeaders);
+      },
+      request -> assertThat(request.getFirstHeader("foo")).hasValue("bar"),
+      request -> {
+        try {
+          request.getParts();
+          fail("Did not get expected exception");
+        } catch (IllegalStateException expected) {
+        }
+      }
     };
     for (HttpRequestTest test : tests) {
       testReference.set(test);
-      Request request = httpClient.POST(uri)
-          .header(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8")
-          .header("foo", "bar")
-          .header("foo", "baz")
-          .content(new StringContentProvider(TEST_BODY));
+      Request request =
+          httpClient
+              .POST(uri)
+              .header(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8")
+              .header("foo", "bar")
+              .header("foo", "baz")
+              .content(new StringContentProvider(TEST_BODY));
       ContentResponse response = request.send();
       assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
       throwIfNotNull(exceptionReference.get());
@@ -204,14 +209,15 @@ public class HttpTest {
     HttpClient httpClient = new HttpClient();
     httpClient.start();
     String uri = "http://localhost:" + serverPort;
-    HttpRequestTest test = request -> {
-      assertThat(request.getUri()).isEqualTo(uri + "/");
-      assertThat(request.getPath()).isEqualTo("/");
-      assertThat(request.getQuery()).isEmpty();
-      assertThat(request.getQueryParameters()).isEmpty();
-      assertThat(request.getContentType()).isEmpty();
-      assertThat(request.getContentLength()).isEqualTo(0L);
-    };
+    HttpRequestTest test =
+        request -> {
+          assertThat(request.getUri()).isEqualTo(uri + "/");
+          assertThat(request.getPath()).isEqualTo("/");
+          assertThat(request.getQuery()).isEmpty();
+          assertThat(request.getQueryParameters()).isEmpty();
+          assertThat(request.getContentType()).isEmpty();
+          assertThat(request.getContentLength()).isEqualTo(0L);
+        };
     AtomicReference<Throwable> exceptionReference = new AtomicReference<>();
     AtomicReference<HttpRequestTest> testReference = new AtomicReference<>(test);
     HttpRequestServlet testServlet = new HttpRequestServlet(testReference, exceptionReference);
@@ -245,39 +251,38 @@ public class HttpTest {
     assertThat(bytesHttpFields.getValuesList("foo")).containsExactly("baz", "buh");
     multiPart.addFilePart(
         "binary", "/tmp/binary.x", new BytesContentProvider(RANDOM_BYTES), bytesHttpFields);
-    HttpRequestTest test = request -> {
-      // The Content-Type header will also have a boundary=something attribute.
-      assertThat(request.getContentType().get()).startsWith("multipart/form-data");
-      assertThat(request.getParts().keySet()).containsExactly("text", "binary");
-      HttpPart textPart = request.getParts().get("text");
-      assertThat(textPart.getFileName()).isEmpty();
-      assertThat(textPart.getContentLength()).isEqualTo(TEST_BODY.length());
-      assertThat(textPart.getContentType().get()).startsWith("text/plain");
-      assertThat(textPart.getCharacterEncoding()).isPresent();
-      assertThat(textPart.getCharacterEncoding().get()).ignoringCase().isEqualTo("utf-8");
-      assertThat(textPart.getHeaders()).containsAtLeast("foo", Arrays.asList("bar"));
-      assertThat(textPart.getFirstHeader("foo")).hasValue("bar");
-      validateReader(textPart.getReader());
-      HttpPart bytesPart = request.getParts().get("binary");
-      assertThat(bytesPart.getFileName()).hasValue("/tmp/binary.x");
-      assertThat(bytesPart.getContentLength()).isEqualTo(RANDOM_BYTES.length);
-      assertThat(bytesPart.getContentType()).hasValue("application/octet-stream");
-      // We only see ["buh"] here, not ["baz", "buh"], apparently due to a Jetty bug.
-      // Repeated headers on multi-part content are not a big problem anyway.
-      List<String> foos = bytesPart.getHeaders().get("foo");
-      assertThat(foos).contains("buh");
-      byte[] bytes = new byte[RANDOM_BYTES.length];
-      try (InputStream inputStream = bytesPart.getInputStream()) {
-        assertThat(inputStream.read(bytes)).isEqualTo(bytes.length);
-        assertThat(inputStream.read()).isEqualTo(-1);
-        assertThat(bytes).isEqualTo(RANDOM_BYTES);
-      }
-   };
+    HttpRequestTest test =
+        request -> {
+          // The Content-Type header will also have a boundary=something attribute.
+          assertThat(request.getContentType().get()).startsWith("multipart/form-data");
+          assertThat(request.getParts().keySet()).containsExactly("text", "binary");
+          HttpPart textPart = request.getParts().get("text");
+          assertThat(textPart.getFileName()).isEmpty();
+          assertThat(textPart.getContentLength()).isEqualTo(TEST_BODY.length());
+          assertThat(textPart.getContentType().get()).startsWith("text/plain");
+          assertThat(textPart.getCharacterEncoding()).isPresent();
+          assertThat(textPart.getCharacterEncoding().get()).ignoringCase().isEqualTo("utf-8");
+          assertThat(textPart.getHeaders()).containsAtLeast("foo", Arrays.asList("bar"));
+          assertThat(textPart.getFirstHeader("foo")).hasValue("bar");
+          validateReader(textPart.getReader());
+          HttpPart bytesPart = request.getParts().get("binary");
+          assertThat(bytesPart.getFileName()).hasValue("/tmp/binary.x");
+          assertThat(bytesPart.getContentLength()).isEqualTo(RANDOM_BYTES.length);
+          assertThat(bytesPart.getContentType()).hasValue("application/octet-stream");
+          // We only see ["buh"] here, not ["baz", "buh"], apparently due to a Jetty bug.
+          // Repeated headers on multi-part content are not a big problem anyway.
+          List<String> foos = bytesPart.getHeaders().get("foo");
+          assertThat(foos).contains("buh");
+          byte[] bytes = new byte[RANDOM_BYTES.length];
+          try (InputStream inputStream = bytesPart.getInputStream()) {
+            assertThat(inputStream.read(bytes)).isEqualTo(bytes.length);
+            assertThat(inputStream.read()).isEqualTo(-1);
+            assertThat(bytes).isEqualTo(RANDOM_BYTES);
+          }
+        };
     try (SimpleServer server = new SimpleServer(testServlet)) {
       testReference.set(test);
-      Request request = httpClient.POST(uri)
-          .header("foo", "oof")
-          .content(multiPart);
+      Request request = httpClient.POST(uri).header("foo", "oof").content(multiPart);
       ContentResponse response = request.send();
       assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
       throwIfNotNull(exceptionReference.get());
@@ -311,9 +316,9 @@ public class HttpTest {
   }
 
   /**
-   * Tests interactions with the {@link HttpResponse} object while the request is still ongoing.
-   * For example, if we append a header then we should see that header in
-   * {@link HttpResponse#getHeaders()}.
+   * Tests interactions with the {@link HttpResponse} object while the request is still ongoing. For
+   * example, if we append a header then we should see that header in {@link
+   * HttpResponse#getHeaders()}.
    */
   @Test
   public void httpResponseSetAndGet() throws Exception {
@@ -327,31 +332,32 @@ public class HttpTest {
 
   private void httpResponseSetAndGet(
       AtomicReference<HttpResponseTest> testReference,
-      AtomicReference<Throwable> exceptionReference) throws Exception {
+      AtomicReference<Throwable> exceptionReference)
+      throws Exception {
     HttpResponseTest[] tests = {
-        response -> assertThat(response.getContentType()).isEmpty(),
-        response -> {
-          response.setContentType("text/plain; charset=utf-8");
-          assertThat(response.getContentType().get()).matches("(?i)text/plain;\\s*charset=utf-8");
-        },
-        response -> {
-          response.appendHeader("Content-Type", "application/octet-stream");
-          assertThat(response.getContentType()).hasValue("application/octet-stream");
-          assertThat(response.getHeaders())
-              .containsAtLeast("Content-Type", Arrays.asList("application/octet-stream"));
-        },
-        response -> {
-          Map<String, List<String>> initialHeaders = response.getHeaders();
-          // The servlet spec says this should be empty, but actually we get a Date header here.
-          // So we just check that we can add our own headers.
-          response.appendHeader("foo", "bar");
-          response.appendHeader("wibbly", "wobbly");
-          response.appendHeader("foo", "baz");
-          Map<String, List<String>> updatedHeaders = new TreeMap<>(response.getHeaders());
-          updatedHeaders.keySet().removeAll(initialHeaders.keySet());
-          assertThat(updatedHeaders).containsExactly(
-              "foo", Arrays.asList("bar", "baz"), "wibbly", Arrays.asList("wobbly"));
-        },
+      response -> assertThat(response.getContentType()).isEmpty(),
+      response -> {
+        response.setContentType("text/plain; charset=utf-8");
+        assertThat(response.getContentType().get()).matches("(?i)text/plain;\\s*charset=utf-8");
+      },
+      response -> {
+        response.appendHeader("Content-Type", "application/octet-stream");
+        assertThat(response.getContentType()).hasValue("application/octet-stream");
+        assertThat(response.getHeaders())
+            .containsAtLeast("Content-Type", Arrays.asList("application/octet-stream"));
+      },
+      response -> {
+        Map<String, List<String>> initialHeaders = response.getHeaders();
+        // The servlet spec says this should be empty, but actually we get a Date header here.
+        // So we just check that we can add our own headers.
+        response.appendHeader("foo", "bar");
+        response.appendHeader("wibbly", "wobbly");
+        response.appendHeader("foo", "baz");
+        Map<String, List<String>> updatedHeaders = new TreeMap<>(response.getHeaders());
+        updatedHeaders.keySet().removeAll(initialHeaders.keySet());
+        assertThat(updatedHeaders)
+            .containsExactly("foo", Arrays.asList("bar", "baz"), "wibbly", Arrays.asList("wobbly"));
+      },
     };
     for (HttpResponseTest test : tests) {
       testReference.set(test);
@@ -395,9 +401,7 @@ public class HttpTest {
     final HttpResponseTest responseOperation;
     final ResponseCheck responseCheck;
 
-    private ResponseTest(
-        HttpResponseTest responseOperation,
-        ResponseCheck responseCheck) {
+    private ResponseTest(HttpResponseTest responseOperation, ResponseCheck responseCheck) {
       this.responseOperation = responseOperation;
       this.responseCheck = responseCheck;
     }
@@ -426,58 +430,59 @@ public class HttpTest {
 
   private void httpResponseEffects(
       AtomicReference<HttpResponseTest> testReference,
-      AtomicReference<Throwable> exceptionReference) throws Exception {
+      AtomicReference<Throwable> exceptionReference)
+      throws Exception {
     ResponseTest[] tests = {
-        responseTest(
-            response -> {},
-            response -> assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200)),
-        responseTest(
-            response -> response.setStatusCode(HttpStatus.OK_200),
-            response -> assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200)),
-        responseTest(
-            response -> response.setStatusCode(HttpStatus.IM_A_TEAPOT_418),
-            response -> assertThat(response.getStatus()).isEqualTo(HttpStatus.IM_A_TEAPOT_418)),
-        responseTest(
-            response -> response.setStatusCode(HttpStatus.IM_A_TEAPOT_418, "Je suis une théière"),
-            response -> {
-              assertThat(response.getStatus()).isEqualTo(HttpStatus.IM_A_TEAPOT_418);
-              assertThat(response.getReason()).isEqualTo("Je suis une théière");
-            }),
-        responseTest(
-            response -> response.setContentType("application/noddy"),
-            response -> assertThat(response.getMediaType()).isEqualTo("application/noddy")),
-        responseTest(
-            response -> {
-              response.appendHeader("foo", "bar");
-              response.appendHeader("blim", "blam");
-              response.appendHeader("foo", "baz");
-            },
-            response -> {
-              assertThat(response.getHeaders().getValuesList("foo")).containsExactly("bar", "baz");
-              assertThat(response.getHeaders().getValuesList("blim")).containsExactly("blam");
-            }),
-        responseTest(
-            response -> {
-              response.setContentType("text/plain");
-              try (BufferedWriter writer = response.getWriter()) {
-                writer.write(TEST_BODY);
-              }
-            },
-            response -> {
-              assertThat(response.getMediaType()).isEqualTo("text/plain");
-              assertThat(response.getContentAsString()).isEqualTo(TEST_BODY);
-            }),
-        responseTest(
-            response -> {
-              response.setContentType("application/octet-stream");
-              try (OutputStream outputStream = response.getOutputStream()) {
-                outputStream.write(RANDOM_BYTES);
-              }
-            },
-            response -> {
-              assertThat(response.getMediaType()).isEqualTo("application/octet-stream");
-              assertThat(response.getContent()).isEqualTo(RANDOM_BYTES);
-            }),
+      responseTest(
+          response -> {},
+          response -> assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200)),
+      responseTest(
+          response -> response.setStatusCode(HttpStatus.OK_200),
+          response -> assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200)),
+      responseTest(
+          response -> response.setStatusCode(HttpStatus.IM_A_TEAPOT_418),
+          response -> assertThat(response.getStatus()).isEqualTo(HttpStatus.IM_A_TEAPOT_418)),
+      responseTest(
+          response -> response.setStatusCode(HttpStatus.IM_A_TEAPOT_418, "Je suis une théière"),
+          response -> {
+            assertThat(response.getStatus()).isEqualTo(HttpStatus.IM_A_TEAPOT_418);
+            assertThat(response.getReason()).isEqualTo("Je suis une théière");
+          }),
+      responseTest(
+          response -> response.setContentType("application/noddy"),
+          response -> assertThat(response.getMediaType()).isEqualTo("application/noddy")),
+      responseTest(
+          response -> {
+            response.appendHeader("foo", "bar");
+            response.appendHeader("blim", "blam");
+            response.appendHeader("foo", "baz");
+          },
+          response -> {
+            assertThat(response.getHeaders().getValuesList("foo")).containsExactly("bar", "baz");
+            assertThat(response.getHeaders().getValuesList("blim")).containsExactly("blam");
+          }),
+      responseTest(
+          response -> {
+            response.setContentType("text/plain");
+            try (BufferedWriter writer = response.getWriter()) {
+              writer.write(TEST_BODY);
+            }
+          },
+          response -> {
+            assertThat(response.getMediaType()).isEqualTo("text/plain");
+            assertThat(response.getContentAsString()).isEqualTo(TEST_BODY);
+          }),
+      responseTest(
+          response -> {
+            response.setContentType("application/octet-stream");
+            try (OutputStream outputStream = response.getOutputStream()) {
+              outputStream.write(RANDOM_BYTES);
+            }
+          },
+          response -> {
+            assertThat(response.getMediaType()).isEqualTo("application/octet-stream");
+            assertThat(response.getContent()).isEqualTo(RANDOM_BYTES);
+          }),
     };
     for (ResponseTest test : tests) {
       testReference.set(test.responseOperation);

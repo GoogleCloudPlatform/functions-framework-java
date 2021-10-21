@@ -11,8 +11,8 @@ import java.util.TreeMap;
 /**
  * A simple proof-of-concept function for multipart handling.
  *
- * {@code HttpTest} contains more detailed testing, but this function is part of the
- * integration test that shows that we can indeed access the multipart API from a function.
+ * <p>{@code HttpTest} contains more detailed testing, but this function is part of the integration
+ * test that shows that we can indeed access the multipart API from a function.
  */
 public class Multipart implements HttpFunction {
   @Override
@@ -30,7 +30,6 @@ public class Multipart implements HttpFunction {
           writer.printf(
               "part %s type %s length %d\n",
               name, contents.getContentType().get(), contents.getContentLength());
-        }
-    );
+        });
   }
 }

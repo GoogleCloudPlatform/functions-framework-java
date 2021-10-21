@@ -69,25 +69,33 @@ abstract class CloudFunctionsContext implements Context {
   @AutoValue.Builder
   abstract static class Builder {
     abstract Builder setEventId(String x);
+
     abstract Builder setTimestamp(String x);
+
     abstract Builder setEventType(String x);
+
     abstract Builder setResource(String x);
+
     abstract Builder setParams(Map<String, String> x);
+
     abstract Builder setAttributes(Map<String, String> value);
+
     abstract Builder setDomain(String x);
 
     abstract CloudFunctionsContext build();
   }
 
   /**
-   * Depending on the event type, the {@link Context#resource()} field is either a JSON string (complete
-   * with encosing quotes) or a JSON object. This class allows us to redeserialize that JSON representation
-   * into its components.
+   * Depending on the event type, the {@link Context#resource()} field is either a JSON string
+   * (complete with encosing quotes) or a JSON object. This class allows us to redeserialize that
+   * JSON representation into its components.
    */
   @AutoValue
   abstract static class Resource {
     abstract @Nullable String service();
+
     abstract String name();
+
     abstract @Nullable String type();
 
     static TypeAdapter<Resource> typeAdapter(Gson gson) {
@@ -115,8 +123,11 @@ abstract class CloudFunctionsContext implements Context {
     @AutoValue.Builder
     abstract static class Builder {
       abstract Builder setService(String x);
+
       abstract Builder setName(String x);
+
       abstract Builder setType(String x);
+
       abstract Resource build();
     }
   }

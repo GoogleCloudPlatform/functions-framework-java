@@ -28,16 +28,12 @@ import io.cloudevents.core.builder.CloudEventBuilder;
 import java.net.URI;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Conversions from GCF events to CloudEvents.
- */
+/** Conversions from GCF events to CloudEvents. */
 class GcfEvents {
   private static final String FIREBASE_SERVICE = "firebase.googleapis.com";
   private static final String FIREBASE_AUTH_SERVICE = "firebaseauth.googleapis.com";
@@ -46,56 +42,68 @@ class GcfEvents {
   private static final String PUB_SUB_SERVICE = "pubsub.googleapis.com";
   private static final String STORAGE_SERVICE = "storage.googleapis.com";
 
-  private static final String PUB_SUB_MESSAGE_PUBLISHED = "google.cloud.pubsub.topic.v1.messagePublished";
+  private static final String PUB_SUB_MESSAGE_PUBLISHED =
+      "google.cloud.pubsub.topic.v1.messagePublished";
 
-  private static final Map<String, EventAdapter> EVENT_TYPE_MAPPING = Map.ofEntries(
-      entry("google.pubsub.topic.publish", new PubSubEventAdapter(PUB_SUB_MESSAGE_PUBLISHED)),
-
-      entry("google.storage.object.finalize",
-          new StorageEventAdapter("google.cloud.storage.object.v1.finalized")),
-      entry("google.storage.object.delete",
-          new StorageEventAdapter("google.cloud.storage.object.v1.deleted")),
-      entry("google.storage.object.archive",
-          new StorageEventAdapter("google.cloud.storage.object.v1.archived")),
-      entry("google.storage.object.metadataUpdate",
-          new StorageEventAdapter("google.cloud.storage.object.v1.metadataUpdated")),
-
-      entry("providers/cloud.firestore/eventTypes/document.write",
-          new FirestoreFirebaseEventAdapter("google.cloud.firestore.document.v1.written",
-              FIRESTORE_SERVICE)),
-      entry("providers/cloud.firestore/eventTypes/document.create",
-          new FirestoreFirebaseEventAdapter("google.cloud.firestore.document.v1.created",
-              FIRESTORE_SERVICE)),
-      entry("providers/cloud.firestore/eventTypes/document.update",
-          new FirestoreFirebaseEventAdapter("google.cloud.firestore.document.v1.updated",
-              FIRESTORE_SERVICE)),
-      entry("providers/cloud.firestore/eventTypes/document.delete",
-          new FirestoreFirebaseEventAdapter("google.cloud.firestore.document.v1.deleted",
-              FIRESTORE_SERVICE)),
-
-      entry("providers/firebase.auth/eventTypes/user.create",
-          new FirebaseAuthEventAdapter("google.firebase.auth.user.v1.created")),
-      entry("providers/firebase.auth/eventTypes/user.delete",
-          new FirebaseAuthEventAdapter("google.firebase.auth.user.v1.deleted")),
-
-      entry("providers/google.firebase.analytics/eventTypes/event.log",
-          new FirestoreFirebaseEventAdapter("google.firebase.analytics.log.v1.written", FIREBASE_SERVICE)),
-
-      entry("providers/google.firebase.database/eventTypes/ref.create",
-          new FirebaseDatabaseEventAdapter("google.firebase.database.ref.v1.created")),
-      entry("providers/google.firebase.database/eventTypes/ref.write",
-          new FirebaseDatabaseEventAdapter("google.firebase.database.ref.v1.written")),
-      entry("providers/google.firebase.database/eventTypes/ref.update",
-          new FirebaseDatabaseEventAdapter("google.firebase.database.ref.v1.updated")),
-      entry("providers/google.firebase.database/eventTypes/ref.delete",
-          new FirebaseDatabaseEventAdapter("google.firebase.database.ref.v1.deleted")),
-
-      entry("providers/cloud.pubsub/eventTypes/topic.publish",
-          new PubSubEventAdapter(PUB_SUB_MESSAGE_PUBLISHED)),
-
-      entry("providers/cloud.storage/eventTypes/object.change",
-          new StorageEventAdapter("google.cloud.storage.object.v1.changed"))
-  );
+  private static final Map<String, EventAdapter> EVENT_TYPE_MAPPING =
+      Map.ofEntries(
+          entry("google.pubsub.topic.publish", new PubSubEventAdapter(PUB_SUB_MESSAGE_PUBLISHED)),
+          entry(
+              "google.storage.object.finalize",
+              new StorageEventAdapter("google.cloud.storage.object.v1.finalized")),
+          entry(
+              "google.storage.object.delete",
+              new StorageEventAdapter("google.cloud.storage.object.v1.deleted")),
+          entry(
+              "google.storage.object.archive",
+              new StorageEventAdapter("google.cloud.storage.object.v1.archived")),
+          entry(
+              "google.storage.object.metadataUpdate",
+              new StorageEventAdapter("google.cloud.storage.object.v1.metadataUpdated")),
+          entry(
+              "providers/cloud.firestore/eventTypes/document.write",
+              new FirestoreFirebaseEventAdapter(
+                  "google.cloud.firestore.document.v1.written", FIRESTORE_SERVICE)),
+          entry(
+              "providers/cloud.firestore/eventTypes/document.create",
+              new FirestoreFirebaseEventAdapter(
+                  "google.cloud.firestore.document.v1.created", FIRESTORE_SERVICE)),
+          entry(
+              "providers/cloud.firestore/eventTypes/document.update",
+              new FirestoreFirebaseEventAdapter(
+                  "google.cloud.firestore.document.v1.updated", FIRESTORE_SERVICE)),
+          entry(
+              "providers/cloud.firestore/eventTypes/document.delete",
+              new FirestoreFirebaseEventAdapter(
+                  "google.cloud.firestore.document.v1.deleted", FIRESTORE_SERVICE)),
+          entry(
+              "providers/firebase.auth/eventTypes/user.create",
+              new FirebaseAuthEventAdapter("google.firebase.auth.user.v1.created")),
+          entry(
+              "providers/firebase.auth/eventTypes/user.delete",
+              new FirebaseAuthEventAdapter("google.firebase.auth.user.v1.deleted")),
+          entry(
+              "providers/google.firebase.analytics/eventTypes/event.log",
+              new FirestoreFirebaseEventAdapter(
+                  "google.firebase.analytics.log.v1.written", FIREBASE_SERVICE)),
+          entry(
+              "providers/google.firebase.database/eventTypes/ref.create",
+              new FirebaseDatabaseEventAdapter("google.firebase.database.ref.v1.created")),
+          entry(
+              "providers/google.firebase.database/eventTypes/ref.write",
+              new FirebaseDatabaseEventAdapter("google.firebase.database.ref.v1.written")),
+          entry(
+              "providers/google.firebase.database/eventTypes/ref.update",
+              new FirebaseDatabaseEventAdapter("google.firebase.database.ref.v1.updated")),
+          entry(
+              "providers/google.firebase.database/eventTypes/ref.delete",
+              new FirebaseDatabaseEventAdapter("google.firebase.database.ref.v1.deleted")),
+          entry(
+              "providers/cloud.pubsub/eventTypes/topic.publish",
+              new PubSubEventAdapter(PUB_SUB_MESSAGE_PUBLISHED)),
+          entry(
+              "providers/cloud.storage/eventTypes/object.change",
+              new StorageEventAdapter("google.cloud.storage.object.v1.changed")));
 
   private static final Gson GSON = new GsonBuilder().serializeNulls().create();
 
@@ -112,6 +120,7 @@ class GcfEvents {
   abstract static class SourceAndSubject {
     /** The source URI, without the initial {@code //<service>/}. */
     abstract String source();
+
     abstract @Nullable String subject();
 
     static SourceAndSubject of(String source, String subject) {
@@ -134,7 +143,8 @@ class GcfEvents {
       Resource resource = Resource.from(legacyEvent.getContext().resource());
       String service = Optional.ofNullable(resource.service()).orElse(defaultService);
       String resourceName = resource.name();
-      SourceAndSubject sourceAndSubject = convertResourceToSourceAndSubject(resourceName, legacyEvent);
+      SourceAndSubject sourceAndSubject =
+          convertResourceToSourceAndSubject(resourceName, legacyEvent);
       URI source = URI.create("//" + service + "/" + sourceAndSubject.source());
       OffsetDateTime timestamp =
           Optional.ofNullable(legacyEvent.getContext().timestamp())
@@ -217,7 +227,8 @@ class GcfEvents {
 
     @Override
     String maybeReshapeData(Event legacyEvent, String jsonData) {
-      // The reshaping code is disabled for now, because the specification for how the legacy "params"
+      // The reshaping code is disabled for now, because the specification for how the legacy
+      // "params"
       // field should be represented in a CloudEvent is in flux.
       if (true || legacyEvent.getContext().params().isEmpty()) {
         return jsonData;

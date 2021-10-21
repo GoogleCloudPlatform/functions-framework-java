@@ -18,9 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Represents the contents of an HTTP request that is being serviced by a Cloud Function.
- */
+/** Represents the contents of an HTTP request that is being serviced by a Cloud Function. */
 public interface HttpRequest extends HttpMessage {
   /**
    * The HTTP method of this request, such as {@code "POST"} or {@code "GET"}.
@@ -37,39 +35,39 @@ public interface HttpRequest extends HttpMessage {
   String getUri();
 
   /**
-   * The path part of the URI for this request, without any query. If the full URI is
-   * {@code http://foo.com/bar/baz?this=that}, then this method will return {@code /bar/baz}.
+   * The path part of the URI for this request, without any query. If the full URI is {@code
+   * http://foo.com/bar/baz?this=that}, then this method will return {@code /bar/baz}.
    *
    * @return the path part of the URI for this request.
    */
   String getPath();
 
   /**
-   * The query part of the URI for this request. If the full URI is
-   * {@code http://foo.com/bar/baz?this=that}, then this method will return {@code this=that}.
-   * If there is no query part, the returned {@code Optional} is empty.
+   * The query part of the URI for this request. If the full URI is {@code
+   * http://foo.com/bar/baz?this=that}, then this method will return {@code this=that}. If there is
+   * no query part, the returned {@code Optional} is empty.
    *
    * @return the query part of the URI, if any.
    */
   Optional<String> getQuery();
 
   /**
-   * The query parameters of this request. If the full URI is
-   * {@code http://foo.com/bar?thing=thing1&thing=thing2&cat=hat}, then the returned map will map
-   * {@code thing} to the list {@code ["thing1", "thing2"]} and {@code cat} to the list with the
-   * single element {@code "hat"}.
+   * The query parameters of this request. If the full URI is {@code
+   * http://foo.com/bar?thing=thing1&thing=thing2&cat=hat}, then the returned map will map {@code
+   * thing} to the list {@code ["thing1", "thing2"]} and {@code cat} to the list with the single
+   * element {@code "hat"}.
    *
-   * @return a map where each key is the name of a query parameter and the corresponding
-   *     {@code List} value indicates every value that was associated with that name.
+   * @return a map where each key is the name of a query parameter and the corresponding {@code
+   *     List} value indicates every value that was associated with that name.
    */
   Map<String, List<String>> getQueryParameters();
 
   /**
-   * The first query parameter with the given name, if any. If the full URI is
-   * {@code http://foo.com/bar?thing=thing1&thing=thing2&cat=hat}, then
-   * {@code getFirstQueryParameter("thing")} will return {@code Optional.of("thing1")} and
-   * {@code getFirstQueryParameter("something")} will return {@code Optional.empty()}. This is a
-   * more convenient alternative to {@link #getQueryParameters}.
+   * The first query parameter with the given name, if any. If the full URI is {@code
+   * http://foo.com/bar?thing=thing1&thing=thing2&cat=hat}, then {@code
+   * getFirstQueryParameter("thing")} will return {@code Optional.of("thing1")} and {@code
+   * getFirstQueryParameter("something")} will return {@code Optional.empty()}. This is a more
+   * convenient alternative to {@link #getQueryParameters}.
    *
    * @param name a query parameter name.
    * @return the first query parameter value with the given name, if any.
@@ -102,8 +100,8 @@ public interface HttpRequest extends HttpMessage {
    * value.
    *
    * @return a map from part names to part contents.
-   * @throws IllegalStateException if the {@link #getContentType() content type} is not
-   *     {@code multipart/form-data}.
+   * @throws IllegalStateException if the {@link #getContentType() content type} is not {@code
+   *     multipart/form-data}.
    */
   Map<String, HttpPart> getParts();
 }

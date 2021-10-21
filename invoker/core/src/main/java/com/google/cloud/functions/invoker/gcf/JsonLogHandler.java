@@ -10,9 +10,8 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
 /**
- * A log handler that publishes log messages in a json format. This is StackDriver's
- * <a href="https://cloud.google.com/logging/docs/structured-logging">"structured
- * logging" format</a>.
+ * A log handler that publishes log messages in a json format. This is StackDriver's <a
+ * href="https://cloud.google.com/logging/docs/structured-logging">"structured logging" format</a>.
  */
 public final class JsonLogHandler extends Handler {
   private static final String SOURCE_LOCATION_KEY = "\"logging.googleapis.com/sourceLocation\": ";
@@ -50,8 +49,7 @@ public final class JsonLogHandler extends Handler {
     // unforgiving about commas and you can't have one just before }.
     json.append("\"message\": \"").append(escapeString(record.getMessage()));
     if (record.getThrown() != null) {
-      json.append("\\n")
-          .append(escapeString(getStackTraceAsString(record.getThrown())));
+      json.append("\\n").append(escapeString(getStackTraceAsString(record.getThrown())));
     }
     json.append("\"");
   }
