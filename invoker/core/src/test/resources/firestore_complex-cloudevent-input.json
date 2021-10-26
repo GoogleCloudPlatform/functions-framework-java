@@ -1,0 +1,80 @@
+{
+  "specversion": "1.0",
+  "type": "google.cloud.firestore.document.v1.written",
+  "source": "//firestore.googleapis.com/projects/project-id/databases/(default)",
+  "subject": "documents/gcf-test/IH75dRdeYJKd4uuQiqch",
+  "id": "aaaaaa-1111-bbbb-2222-cccccccccccc",
+  "time": "2020-09-29T11:32:00.123Z",
+  "datacontenttype": "application/json",
+  "data": {
+    "oldValue": {},
+    "updateMask": {},
+    "value": {
+      "createTime": "2020-04-23T14:25:05.349632Z",
+      "fields": {
+        "arrayValue": {
+          "arrayValue": {
+            "values": [
+              {
+                "integerValue": "1"
+              },
+              {
+                "integerValue": "2"
+              }
+            ]
+          }
+        },
+        "booleanValue": {
+          "booleanValue": true
+        },
+        "doubleValue": {
+          "doubleValue": 5.5
+        },
+        "geoPointValue": {
+          "geoPointValue": {
+            "latitude": 51.4543,
+            "longitude": -0.9781
+          }
+        },
+        "intValue": {
+          "integerValue": "50"
+        },
+        "mapValue": {
+          "mapValue": {
+            "fields": {
+              "field1": {
+                "stringValue": "x"
+              },
+              "field2": {
+                "arrayValue": {
+                  "values": [
+                    {
+                      "stringValue": "x"
+                    },
+                    {
+                      "integerValue": "1"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "nullValue": {
+          "nullValue": null
+        },
+        "referenceValue": {
+          "referenceValue": "projects/project-id/databases/(default)/documents/foo/bar/baz/qux"
+        },
+        "stringValue": {
+          "stringValue": "text"
+        },
+        "timestampValue": {
+          "timestampValue": "2020-04-23T14:23:53.241Z"
+        }
+      },
+      "name": "projects/project-id/databases/(default)/documents/gcf-test/IH75dRdeYJKd4uuQiqch",
+      "updateTime": "2020-04-23T14:25:05.349632Z"
+    }
+  }
+}

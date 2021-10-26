@@ -34,25 +34,28 @@ jobs:
       run: (cd invoker/ && mvn install)
 
     - name: Run HTTP conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@v1.0.0
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@v1.2.1
       with:
+        version: 'v1.2.1'
         functionType: 'http'
         useBuildpacks: false
         cmd: "'mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.HttpConformanceFunction'"
         startDelay: 10
 
     - name: Run background event conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@v1.0.0
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@v1.2.1
       with:
+        version: 'v1.2.1'
         functionType: 'legacyevent'
         useBuildpacks: false
-        validateMapping: false
+        validateMapping: true
         cmd: "'mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.BackgroundEventConformanceFunction'"
         startDelay: 10
 
     - name: Run cloudevent conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@v1.0.0
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@v1.2.1
       with:
+        version: 'v1.2.1'
         functionType: 'cloudevent'
         useBuildpacks: false
         validateMapping: true

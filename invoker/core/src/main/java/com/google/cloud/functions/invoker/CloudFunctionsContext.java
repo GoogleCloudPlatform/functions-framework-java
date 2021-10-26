@@ -103,17 +103,12 @@ abstract class CloudFunctionsContext implements Context {
     }
 
     static Resource from(String s) {
-      Gson baseGson = new Gson();
-      if (s.startsWith("\"") && s.endsWith("\"")) {
-        String name = baseGson.fromJson(s, String.class);
-        return builder().setName(name).build();
-      }
       if (s.startsWith("{") && (s.endsWith("}") || s.endsWith("}\n"))) {
-        TypeAdapter<Resource> typeAdapter = typeAdapter(baseGson);
+        TypeAdapter<Resource> typeAdapter = typeAdapter(new Gson());
         Gson gson = new GsonBuilder().registerTypeAdapter(Resource.class, typeAdapter).create();
         return gson.fromJson(s, Resource.class);
       }
-      throw new IllegalArgumentException("Unexpected resource syntax: " + s);
+      return builder().setName(s).build();
     }
 
     static Builder builder() {

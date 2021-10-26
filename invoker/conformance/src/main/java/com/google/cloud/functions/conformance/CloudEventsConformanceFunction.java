@@ -17,13 +17,12 @@ package com.google.cloud.functions.conformance;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.cloud.functions.CloudEventsFunction;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
 import io.cloudevents.CloudEvent;
+import io.cloudevents.core.format.EventFormat;
+import io.cloudevents.core.provider.EventFormatProvider;
+import io.cloudevents.jackson.JsonFormat;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
-import java.time.format.DateTimeFormatter;
 
 /**
  * This class is used by the Functions Framework Conformance Tools to validate the framework's Cloud
@@ -40,33 +39,11 @@ import java.time.format.DateTimeFormatter;
  */
 public class CloudEventsConformanceFunction implements CloudEventsFunction {
 
-  private static final Gson gson = new GsonBuilder().serializeNulls().setPrettyPrinting().create();
-
   @Override
   public void accept(CloudEvent event) throws Exception {
     try (BufferedWriter writer = new BufferedWriter(new FileWriter("function_output.json"))) {
-      writer.write(serialize(event));
+      EventFormat format = EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE);
+      writer.write(new String(format.serialize(event), UTF_8));
     }
-  }
-
-  /** Create a structured JSON representation of a cloud event */
-  private String serialize(CloudEvent event) {
-    JsonObject jsonEvent = new JsonObject();
-
-    jsonEvent.addProperty("id", event.getId());
-    jsonEvent.addProperty("source", event.getSource().toString());
-    jsonEvent.addProperty("type", event.getType());
-    jsonEvent.addProperty("datacontenttype", event.getDataContentType());
-    jsonEvent.addProperty("subject", event.getSubject());
-    jsonEvent.addProperty("specversion", event.getSpecVersion().toString());
-
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
-    jsonEvent.addProperty("time", event.getTime().format(formatter));
-
-    String payloadJson = new String(event.getData().toBytes(), UTF_8);
-    JsonObject jsonObject = new Gson().fromJson(payloadJson, JsonObject.class);
-    jsonEvent.add("data", jsonObject);
-
-    return gson.toJson(jsonEvent);
   }
 }

@@ -103,11 +103,11 @@ public class IntegrationTest {
         + "  \"context\": {\n"
         + "    \"eventId\": \"B234-1234-1234\",\n"
         + "    \"timestamp\": \"2018-04-05T17:31:00Z\",\n"
-        + "    \"eventType\": \"com.example.someevent.new\",\n"
+        + "    \"eventType\": \"google.pubsub.topic.publish\",\n"
         + "    \"resource\": {\n"
-        + "      \"service\":\"test-service\",\n"
-        + "      \"name\":\"test-name\",\n"
-        + "      \"type\":\"test-type\"\n"
+        + "      \"service\":\"pubsub.googleapis.com\",\n"
+        + "      \"name\":\"projects/sample-project/topics/gcf-test\",\n"
+        + "      \"type\":\"type.googleapis.com/google.pubsub.v1.PubsubMessage\"\n"
         + "    }\n"
         + "  }\n"
         + "}";
@@ -116,8 +116,9 @@ public class IntegrationTest {
   private static CloudEvent sampleCloudEvent(File snoopFile) {
     return CloudEventBuilder.v1()
         .withId("B234-1234-1234")
-        .withSource(URI.create("/source"))
-        .withType("com.example.someevent.new")
+        .withSource(URI.create("//pubsub.googleapis.com/projects/sample-project/topics/gcf-test"))
+        .withSubject("documents/gcf-test/2Vm2mI1d0wIaK2Waj5to")
+        .withType("google.cloud.pubsub.topic.v1.messagePublished")
         .withDataSchema(URI.create("/schema"))
         .withDataContentType("application/json")
         .withData(("{\"a\": 2, \"b\": 3, \"targetFile\": \"" + snoopFile + "\"}").getBytes(UTF_8))
@@ -386,8 +387,6 @@ public class IntegrationTest {
     File snoopFile = snoopFile();
     String gcfRequestText = sampleLegacyEvent(snoopFile);
     JsonObject expectedJson = new Gson().fromJson(gcfRequestText, JsonObject.class);
-    // We don't currently put anything in the attributes() map for legacy events.
-    expectedJson.add("attributes", new JsonObject());
     TestCase gcfTestCase =
         TestCase.builder()
             .setRequestText(gcfRequestText)
@@ -404,8 +403,6 @@ public class IntegrationTest {
     // For CloudEvents, we don't currently populate Context#getResource with anything interesting,
     // so we excise that from the expected text we would have with legacy events.
     JsonObject cloudEventExpectedJson = new Gson().fromJson(gcfRequestText, JsonObject.class);
-    cloudEventExpectedJson.getAsJsonObject("context").add("resource", new JsonObject());
-    cloudEventExpectedJson.add("attributes", expectedCloudEventAttributes());
     TestCase cloudEventsStructuredTestCase =
         TestCase.builder()
             .setSnoopFile(snoopFile)

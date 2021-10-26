@@ -107,10 +107,12 @@ abstract class Event {
      * to be a string.
      */
     private JsonObject adjustContextResource(JsonObject contextObject) {
-      String resourceValue =
-          contextObject.has("resource") ? contextObject.get("resource").toString() : "";
-      contextObject.remove("resource");
-      contextObject.addProperty("resource", resourceValue);
+      if (contextObject.has("resource")) {
+        JsonElement resourceElement = contextObject.get("resource");
+        if (resourceElement.isJsonObject()) {
+          contextObject.addProperty("resource", resourceElement.toString());
+        }
+      }
       return contextObject;
     }
   }

@@ -14,7 +14,6 @@
 
 package com.google.cloud.functions.invoker;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
@@ -263,10 +262,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
 
     @Override
     void serviceCloudEvent(CloudEvent cloudEvent) throws Exception {
-      Context context = contextFromCloudEvent(cloudEvent);
-      String jsonData =
-          (cloudEvent.getData() == null) ? "{}" : new String(cloudEvent.getData().toBytes(), UTF_8);
-      function.accept(jsonData, context);
+      serviceLegacyEvent(CloudEvents.convertToLegacyEvent(cloudEvent));
     }
   }
 
@@ -295,10 +291,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     @Override
     void serviceCloudEvent(CloudEvent cloudEvent) throws Exception {
       if (cloudEvent.getData() != null) {
-        String data = new String(cloudEvent.getData().toBytes(), UTF_8);
-        T payload = new Gson().fromJson(data, type);
-        Context context = contextFromCloudEvent(cloudEvent);
-        function.accept(payload, context);
+        serviceLegacyEvent(CloudEvents.convertToLegacyEvent(cloudEvent));
       } else {
         throw new IllegalStateException("Event has no \"data\" component");
       }

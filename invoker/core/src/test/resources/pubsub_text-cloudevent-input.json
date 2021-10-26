@@ -1,0 +1,20 @@
+{
+  "specversion": "1.0",
+  "type": "google.cloud.pubsub.topic.v1.messagePublished",
+  "source": "//pubsub.googleapis.com/projects/sample-project/topics/gcf-test",
+  "id": "aaaaaa-1111-bbbb-2222-cccccccccccc",
+  "time": "2020-09-29T11:32:00.123Z",
+  "datacontenttype": "application/json",
+  "data": {
+    "subscription": "projects/sample-project/subscriptions/sample-subscription",
+    "message": {
+      "@type": "type.googleapis.com/google.pubsub.v1.PubsubMessage",
+      "messageId": "aaaaaa-1111-bbbb-2222-cccccccccccc",
+      "publishTime": "2020-09-29T11:32:00.123Z",
+      "attributes": {
+         "attr1":"attr1-value"
+      },
+      "data": "dGVzdCBtZXNzYWdlIDM="
+    }
+  }
+}

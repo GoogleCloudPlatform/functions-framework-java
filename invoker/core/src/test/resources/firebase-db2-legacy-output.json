@@ -1,0 +1,16 @@
+{
+  "data": {
+    "data": {
+      "grandchild": "other"
+    },
+    "delta": {
+      "grandchild": "other changed"
+    }
+  },
+  "context": {
+    "resource": "projects/_/instances/my-project-id/refs/gcf-test/xyz",
+    "timestamp": "2020-09-29T11:32:00.123Z",
+    "eventType": "providers/google.firebase.database/eventTypes/ref.write",
+    "eventId": "aaaaaa-1111-bbbb-2222-cccccccccccc"
+  }
+}
