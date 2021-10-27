@@ -61,9 +61,17 @@ Install `mvn`:
 
 https://maven.apache.org/install.html
 
-## Install and Run Invoker Tests Locally
+### Install and Run Invoker Tests Locally
 
 ```
 cd invoker;
 mvn test;
+```
+
+### Running Conformance Tests Locally
+
+First, install Go 1.16+:
+
+```
+./run_conformance_tests.sh
 ```
