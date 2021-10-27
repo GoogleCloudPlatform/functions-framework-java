@@ -31,12 +31,12 @@ Guidelines](https://opensource.google.com/conduct/).
 
 This project is divided into multiple packages, primarily:
 
-- [`functions-framework-api`](./functions-framework-api)
-  - `core`
-  - `testfunction`
-  - `function-maven-plugin`
-  - `conformance`
+- [`functions-framework-api`](./functions-framework-api) – The interfaces for functions.
 - [`java-function-invoker`](./invoker)
+  - `core` - The function invoker
+  - `testfunction` - A set of test functions
+  - `function-maven-plugin` - The Maven plugin for building functions
+  - `conformance` - A set of functions used for conformance testing
 
 ### Setup JDK 11 / 17
 
@@ -44,8 +44,8 @@ Install JDK 11 and 17. One way to install these is through [SDK man](https://sdk
 
 ```sh
 sdk install java 11.0.2-open
-sdk install java 17
-sdk use java 17
+sdk install java 17-open
+sdk use java 17-open
 sdk use java 11.0.2-open
 ```
 
@@ -70,7 +70,7 @@ mvn test;
 
 ### Running Conformance Tests Locally
 
-First, install Go 1.16+:
+First, install Go 1.16+, then run the conformance tests with this script:
 
 ```
 ./run_conformance_tests.sh
