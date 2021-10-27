@@ -13,7 +13,6 @@
 # Defaults to the latest version of the repo, which may be ahead of the
 # latest release.
 
-# TODO: Update confomance tests to use the latest version of the client, beyond v1.0.0.
 CLIENT_VERSION=$1
 if [ $CLIENT_VERSION ]; then
     CLIENT_VERSION="@$CLIENT_VERSION"
@@ -39,11 +38,11 @@ echo "Note: only works with Go 1.16+ by default, see run_conformance_tests.sh fo
 go install github.com/GoogleCloudPlatform/functions-framework-conformance/client$CLIENT_VERSION
 echo "Done installing client$CLIENT_VERSION"
 
-# print_header "HTTP CONFORMANCE TESTS"
+print_header "HTTP CONFORMANCE TESTS"
 client -buildpacks=false -type=http -cmd='mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.HttpConformanceFunction' -start-delay 5
 
 print_header "BACKGROUND EVENT CONFORMANCE TESTS"
 client -buildpacks=false -type=legacyevent -cmd='mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.BackgroundEventConformanceFunction' -start-delay 5 -validate-mapping=false
 
-# print_header "CLOUDEVENT CONFORMANCE TESTS"
+print_header "CLOUDEVENT CONFORMANCE TESTS"
 client -buildpacks=false -type=cloudevent -cmd='mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.CloudEventsConformanceFunction' -start-delay 5 -validate-mapping=false
