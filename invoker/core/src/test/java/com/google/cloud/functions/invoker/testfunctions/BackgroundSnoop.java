@@ -34,7 +34,6 @@ public class BackgroundSnoop implements RawBackgroundFunction {
     JsonObject contextAndPayloadJson = new JsonObject();
     contextAndPayloadJson.add("data", jsonObject);
     contextAndPayloadJson.add("context", contextJson);
-    contextAndPayloadJson.add("attributes", gson.toJsonTree(context.attributes()));
     try (FileWriter fileWriter = new FileWriter(targetFile);
         PrintWriter writer = new PrintWriter(fileWriter)) {
       writer.println(contextAndPayloadJson);

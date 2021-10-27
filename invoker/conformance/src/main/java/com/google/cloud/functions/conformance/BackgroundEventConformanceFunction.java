@@ -40,8 +40,12 @@ public class BackgroundEventConformanceFunction implements RawBackgroundFunction
     contextJson.addProperty("timestamp", context.timestamp());
     contextJson.addProperty("eventType", context.eventType());
 
-    JsonElement resource = gson.fromJson(context.resource(), JsonElement.class);
-    contextJson.add("resource", resource);
+    if (context.resource().startsWith("{")) {
+      JsonElement resource = gson.fromJson(context.resource(), JsonElement.class);
+      contextJson.add("resource", resource);
+    } else {
+      contextJson.addProperty("resource", context.resource());
+    }
 
     JsonObject dataJson = gson.fromJson(data, JsonObject.class);
 
