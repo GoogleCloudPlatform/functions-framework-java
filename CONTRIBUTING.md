@@ -61,7 +61,12 @@ Install `mvn`:
 
 https://maven.apache.org/install.html
 
-### Install and Run Invoker Tests Locally
+### Formatting
+This repo follows the Google Java Style guide for formatting. You can setup the
+formatting tool locally using one of the options provided at
+[google/google-java-format](https://github.com/google/google-java-format#google-java-format).
+
+## Install and Run Invoker Tests Locally
 
 ```
 cd invoker;

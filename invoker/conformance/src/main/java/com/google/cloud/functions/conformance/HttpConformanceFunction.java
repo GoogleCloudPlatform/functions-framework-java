@@ -23,8 +23,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 /**
- * This class is used by the Functions Framework Conformance Tools to validate
- * the framework's HTTP API. It can be run with the following command:
+ * This class is used by the Functions Framework Conformance Tools to validate the framework's HTTP
+ * API. It can be run with the following command:
  *
  * <pre>{@code
  * $ functions-framework-conformance-client \
@@ -38,8 +38,7 @@ import java.io.IOException;
 public class HttpConformanceFunction implements HttpFunction {
 
   @Override
-  public void service(HttpRequest request, HttpResponse response)
-      throws IOException {
+  public void service(HttpRequest request, HttpResponse response) throws IOException {
     try (BufferedReader reader = request.getReader();
         BufferedWriter writer = new BufferedWriter(new FileWriter("function_output.json"))) {
       int c;

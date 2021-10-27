@@ -20,9 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-/**
- * @author emcmanus@google.com (Éamonn McManus)
- */
+/** @author emcmanus@google.com (Éamonn McManus) */
 public class Background implements RawBackgroundFunction {
   @Override
   public void accept(String json, Context context) {

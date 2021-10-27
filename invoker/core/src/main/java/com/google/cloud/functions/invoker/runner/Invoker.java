@@ -89,35 +89,29 @@ public class Invoker {
   }
 
   private static class Options {
-    @Parameter(
-        description = "Port on which to listen for HTTP requests.",
-        names = "--port"
-    )
+    @Parameter(description = "Port on which to listen for HTTP requests.", names = "--port")
     private String port = System.getenv().getOrDefault("PORT", "8080");
 
     @Parameter(
         description = "Name of function class to execute when servicing incoming requests.",
-        names = "--target"
-    )
+        names = "--target")
     private String target = System.getenv().getOrDefault("FUNCTION_TARGET", "Function");
 
     @Parameter(
-        description = "List of files or directories where the compiled Java classes making up"
-            + " the function will be found. This functions like the -classpath option to the"
-            + " java command. It is a list of filenames separated by '${path.separator}'."
-            + " If an entry in the list names a directory then the class foo.bar.Baz will be looked"
-            + " for in foo${file.separator}bar${file.separator}Baz.class under that"
-            + " directory. If an entry in the list names a file and that file is a jar file then"
-            + " class foo.bar.Baz will be looked for in an entry foo/bar/Baz.class in that jar"
-            + " file. If an entry is a directory followed by '${file.separator}*' then every file"
-            + " in the directory whose name ends with '.jar' will be searched for classes.",
-        names = "--classpath"
-    )
+        description =
+            "List of files or directories where the compiled Java classes making up the function"
+                + " will be found. This functions like the -classpath option to the java command."
+                + " It is a list of filenames separated by '${path.separator}'. If an entry in the"
+                + " list names a directory then the class foo.bar.Baz will be looked for in"
+                + " foo${file.separator}bar${file.separator}Baz.class under that directory. If an"
+                + " entry in the list names a file and that file is a jar file then class"
+                + " foo.bar.Baz will be looked for in an entry foo/bar/Baz.class in that jar file."
+                + " If an entry is a directory followed by '${file.separator}*' then every file in"
+                + " the directory whose name ends with '.jar' will be searched for classes.",
+        names = "--classpath")
     private String classPath = null;
 
-    @Parameter(
-        names = "--help", help = true
-    )
+    @Parameter(names = "--help", help = true)
     private boolean help = false;
   }
 
@@ -134,9 +128,7 @@ public class Invoker {
 
   static Optional<Invoker> makeInvoker(Map<String, String> environment, String... args) {
     Options options = new Options();
-    JCommander jCommander = JCommander.newBuilder()
-        .addObject(options)
-        .build();
+    JCommander jCommander = JCommander.newBuilder().addObject(options).build();
     try {
       jCommander.parse(args);
     } catch (ParameterException e) {
@@ -161,28 +153,27 @@ public class Invoker {
     Path standardFunctionJarPath = Paths.get("function/function.jar");
     Optional<String> functionClasspath =
         Arrays.asList(
-            options.classPath,
-            environment.get("FUNCTION_CLASSPATH"),
-            Files.exists(standardFunctionJarPath) ? standardFunctionJarPath.toString() : null)
+                options.classPath,
+                environment.get("FUNCTION_CLASSPATH"),
+                Files.exists(standardFunctionJarPath) ? standardFunctionJarPath.toString() : null)
             .stream()
             .filter(Objects::nonNull)
             .findFirst();
     ClassLoader functionClassLoader = makeClassLoader(functionClasspath);
     Invoker invoker =
         new Invoker(
-            port,
-            functionTarget,
-            environment.get("FUNCTION_SIGNATURE_TYPE"),
-            functionClassLoader);
+            port, functionTarget, environment.get("FUNCTION_SIGNATURE_TYPE"), functionClassLoader);
     return Optional.of(invoker);
   }
 
   private static void usage(JCommander jCommander) {
     StringBuilder usageBuilder = new StringBuilder();
     jCommander.getUsageFormatter().usage(usageBuilder);
-    String usage = usageBuilder.toString()
-        .replace("${file.separator}", File.separator)
-        .replace("${path.separator}", File.pathSeparator);
+    String usage =
+        usageBuilder
+            .toString()
+            .replace("${file.separator}", File.separator)
+            .replace("${path.separator}", File.pathSeparator);
     jCommander.getConsole().println(usage);
   }
 
@@ -256,10 +247,11 @@ public class Invoker {
           servlet = BackgroundFunctionExecutor.forClass(functionClass);
           break;
         default:
-          String error = String.format(
-              "Function signature type %s is unknown; should be \"http\", \"event\","
-                  + " or \"cloudevent\"",
-              functionSignatureType);
+          String error =
+              String.format(
+                  "Function signature type %s is unknown; should be \"http\", \"event\","
+                      + " or \"cloudevent\"",
+                  functionSignatureType);
           throw new RuntimeException(error);
       }
     }
@@ -303,12 +295,13 @@ public class Invoker {
     if (maybeExecutor.isPresent()) {
       return maybeExecutor.get();
     }
-    String error = String.format(
-        "Could not determine function signature type from target %s. Either this should be"
-            + " a class implementing one of the interfaces in com.google.cloud.functions, or the"
-            + " environment variable FUNCTION_SIGNATURE_TYPE should be set to \"http\" or"
-            + " \"event\".",
-        functionTarget);
+    String error =
+        String.format(
+            "Could not determine function signature type from target %s. Either this should be a"
+                + " class implementing one of the interfaces in com.google.cloud.functions, or the"
+                + " environment variable FUNCTION_SIGNATURE_TYPE should be set to \"http\" or"
+                + " \"event\".",
+            functionTarget);
     throw new RuntimeException(error);
   }
 
@@ -343,13 +336,14 @@ public class Invoker {
     }
     return stream
         .filter(p -> p.getFileName().toString().endsWith(".jar"))
-        .map(p -> {
-          try {
-            return p.toUri().toURL();
-          } catch (MalformedURLException e) {
-            throw new UncheckedIOException(e);
-          }
-        })
+        .map(
+            p -> {
+              try {
+                return p.toUri().toURL();
+              } catch (MalformedURLException e) {
+                throw new UncheckedIOException(e);
+              }
+            })
         .collect(toList());
   }
 
@@ -369,9 +363,9 @@ public class Invoker {
 
   /**
    * Wrapper that intercepts requests for {@code /favicon.ico} and {@code /robots.txt} and causes
-   * them to produce a 404 status. Otherwise they would be sent to the function code, like any
-   * other URL, meaning that someone testing their function by using a browser as an HTTP client
-   * can see two requests, one for {@code /favicon.ico} and one for {@code /} (or whatever).
+   * them to produce a 404 status. Otherwise they would be sent to the function code, like any other
+   * URL, meaning that someone testing their function by using a browser as an HTTP client can see
+   * two requests, one for {@code /favicon.ico} and one for {@code /} (or whatever).
    */
   private static class NotFoundHandler extends HandlerWrapper {
     static NotFoundHandler forServlet(ServletContextHandler servletHandler) {
@@ -384,8 +378,12 @@ public class Invoker {
         new HashSet<>(Arrays.asList("/favicon.ico", "/robots.txt"));
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request,
-        HttpServletResponse response) throws IOException, ServletException {
+    public void handle(
+        String target,
+        Request baseRequest,
+        HttpServletRequest request,
+        HttpServletResponse response)
+        throws IOException, ServletException {
       if (NOT_FOUND_PATHS.contains(request.getRequestURI())) {
         response.sendError(HttpStatus.NOT_FOUND_404, "Not Found");
       }
@@ -394,17 +392,17 @@ public class Invoker {
   }
 
   /**
-   * A loader that only loads GCF API classes. Those are classes whose package is exactly
-   * {@code com.google.cloud.functions}. The package can't be a subpackage, such as
-   * {@code com.google.cloud.functions.invoker}.
+   * A loader that only loads GCF API classes. Those are classes whose package is exactly {@code
+   * com.google.cloud.functions}. The package can't be a subpackage, such as {@code
+   * com.google.cloud.functions.invoker}.
    *
-   * <p>This loader allows us to load the classes from a user function, without making the
-   * runtime classes visible to them.  We will make this loader the parent of the
-   * {@link URLClassLoader} that loads the user code in order to filter out those runtime classes.
+   * <p>This loader allows us to load the classes from a user function, without making the runtime
+   * classes visible to them. We will make this loader the parent of the {@link URLClassLoader} that
+   * loads the user code in order to filter out those runtime classes.
    *
    * <p>The reason we do need to share the API classes between the runtime and the user function is
-   * so that the runtime can instantiate the function class and cast it to
-   * {@link com.google.cloud.functions.HttpFunction} or whatever.
+   * so that the runtime can instantiate the function class and cast it to {@link
+   * com.google.cloud.functions.HttpFunction} or whatever.
    */
   private static class OnlyApiClassLoader extends ClassLoader {
     private final ClassLoader runtimeClassLoader;
@@ -418,8 +416,8 @@ public class Invoker {
     protected Class<?> findClass(String name) throws ClassNotFoundException {
       String prefix = "com.google.cloud.functions.";
       if ((name.startsWith(prefix) && Character.isUpperCase(name.charAt(prefix.length())))
-              || name.startsWith("javax.servlet.")
-              || isCloudEventsApiClass(name)) {
+          || name.startsWith("javax.servlet.")
+          || isCloudEventsApiClass(name)) {
         return runtimeClassLoader.loadClass(name);
       }
       return super.findClass(name); // should throw ClassNotFoundException

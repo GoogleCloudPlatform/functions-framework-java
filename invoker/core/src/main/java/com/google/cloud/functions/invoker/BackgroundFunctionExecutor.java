@@ -72,18 +72,20 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
 
     /** Returns the {@link FunctionKind} that the given class implements, if any. */
     static Optional<FunctionKind> forClass(Class<?> functionClass) {
-      return VALUES.stream().filter(v -> v.functionClass.isAssignableFrom(functionClass)).findFirst();
+      return VALUES.stream()
+          .filter(v -> v.functionClass.isAssignableFrom(functionClass))
+          .findFirst();
     }
   }
 
   /**
    * Optionally makes a {@link BackgroundFunctionExecutor} for the given class, if it implements one
-   * of {@link BackgroundFunction}, {@link RawBackgroundFunction}, or
-   * {@link CloudEventsFunction}. Otherwise returns {@link Optional#empty()}.
+   * of {@link BackgroundFunction}, {@link RawBackgroundFunction}, or {@link CloudEventsFunction}.
+   * Otherwise returns {@link Optional#empty()}.
    *
    * @param functionClass the class of a possible background function implementation.
-   * @throws RuntimeException if the given class does implement one of the required interfaces, but we are
-   *     unable to construct an instance using its no-arg constructor.
+   * @throws RuntimeException if the given class does implement one of the required interfaces, but
+   *     we are unable to construct an instance using its no-arg constructor.
    */
   public static Optional<BackgroundFunctionExecutor> maybeForClass(Class<?> functionClass) {
     Optional<FunctionKind> maybeFunctionKind = FunctionKind.forClass(functionClass);
@@ -96,10 +98,9 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
   /**
    * Makes a {@link BackgroundFunctionExecutor} for the given class.
    *
-   * @throws RuntimeException if either the class does not implement one of
-   *    {@link BackgroundFunction}, {@link RawBackgroundFunction}, or
-   *    {@link CloudEventsFunction}; or we are unable to construct an instance using its no-arg
-   *     constructor.
+   * @throws RuntimeException if either the class does not implement one of {@link
+   *     BackgroundFunction}, {@link RawBackgroundFunction}, or {@link CloudEventsFunction}; or we
+   *     are unable to construct an instance using its no-arg constructor.
    */
   public static BackgroundFunctionExecutor forClass(Class<?> functionClass) {
     Optional<FunctionKind> maybeFunctionKind = FunctionKind.forClass(functionClass);
@@ -107,13 +108,16 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
       List<String> classNames =
           FunctionKind.VALUES.stream().map(v -> v.functionClass.getName()).collect(toList());
       throw new RuntimeException(
-          "Class " + functionClass.getName() + " must implement one of these interfaces: "
+          "Class "
+              + functionClass.getName()
+              + " must implement one of these interfaces: "
               + String.join(", ", classNames));
     }
     return forClass(functionClass, maybeFunctionKind.get());
   }
 
-  private static BackgroundFunctionExecutor forClass(Class<?> functionClass, FunctionKind functionKind) {
+  private static BackgroundFunctionExecutor forClass(
+      Class<?> functionClass, FunctionKind functionKind) {
     Object instance;
     try {
       instance = functionClass.getConstructor().newInstance();
@@ -152,9 +156,8 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
   }
 
   /**
-   * Returns the {@code T} of a concrete class that implements
-   * {@link BackgroundFunction BackgroundFunction<T>}. Returns an empty {@link Optional} if
-   * {@code T} can't be determined.
+   * Returns the {@code T} of a concrete class that implements {@link BackgroundFunction
+   * BackgroundFunction<T>}. Returns an empty {@link Optional} if {@code T} can't be determined.
    */
   static Optional<Type> backgroundFunctionTypeArgument(
       Class<? extends BackgroundFunction<?>> functionClass) {
@@ -163,9 +166,12 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     // We must be careful because the compiler will also have added a synthetic method
     // accept(Object, Context).
     return Arrays.stream(functionClass.getMethods())
-        .filter(m -> m.getName().equals("accept") && m.getParameterCount() == 2
-            && m.getParameterTypes()[1] == Context.class
-            && m.getParameterTypes()[0] != Object.class)
+        .filter(
+            m ->
+                m.getName().equals("accept")
+                    && m.getParameterCount() == 2
+                    && m.getParameterTypes()[1] == Context.class
+                    && m.getParameterTypes()[0] != Object.class)
         .map(m -> m.getGenericParameterTypes()[0])
         .findFirst();
   }
@@ -175,21 +181,22 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
       return parseLegacyEvent(bodyReader);
     }
   }
-  
+
   static Event parseLegacyEvent(Reader reader) throws IOException {
     // A Type Adapter is required to set the type of the JsonObject because CloudFunctionsContext
     // is abstract and Gson default behavior instantiates the type provided.
-    TypeAdapter<CloudFunctionsContext> typeAdapter =
-        CloudFunctionsContext.typeAdapter(new Gson());
-    Gson gson = new GsonBuilder()
-        .registerTypeAdapter(CloudFunctionsContext.class, typeAdapter)
-        .registerTypeAdapter(Event.class, new Event.EventDeserializer())
-        .create();
+    TypeAdapter<CloudFunctionsContext> typeAdapter = CloudFunctionsContext.typeAdapter(new Gson());
+    Gson gson =
+        new GsonBuilder()
+            .registerTypeAdapter(CloudFunctionsContext.class, typeAdapter)
+            .registerTypeAdapter(Event.class, new Event.EventDeserializer())
+            .create();
     return gson.fromJson(reader, Event.class);
   }
 
   private static Context contextFromCloudEvent(CloudEvent cloudEvent) {
-    OffsetDateTime timestamp = Optional.ofNullable(cloudEvent.getTime()).orElse(OffsetDateTime.now());
+    OffsetDateTime timestamp =
+        Optional.ofNullable(cloudEvent.getTime()).orElse(OffsetDateTime.now());
     String timestampString = DateTimeFormatter.ISO_INSTANT.format(timestamp);
     // We don't have an obvious replacement for the Context.resource field, which with legacy events
     // corresponded to a value present for some proprietary Google event types.
@@ -214,8 +221,8 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
    *
    * <p>In addition to these two flavours, events can be either "legacy events" or "CloudEvents".
    * Legacy events are the only kind that GCF originally supported, and use proprietary encodings
-   * for the various triggers. CloudEvents are ones that follow the standards defined by
-   * <a href="https://cloudevents.io">cloudevents.io</a>.
+   * for the various triggers. CloudEvents are ones that follow the standards defined by <a
+   * href="https://cloudevents.io">cloudevents.io</a>.
    *
    * @param <CloudEventDataT> the type to be used in the {@link Unmarshallers} call when
    *     unmarshalling this event, if it is a CloudEvent.
@@ -257,9 +264,8 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     @Override
     void serviceCloudEvent(CloudEvent cloudEvent) throws Exception {
       Context context = contextFromCloudEvent(cloudEvent);
-      String jsonData = (cloudEvent.getData() == null)
-          ? "{}"
-          : new String(cloudEvent.getData().toBytes(), UTF_8);
+      String jsonData =
+          (cloudEvent.getData() == null) ? "{}" : new String(cloudEvent.getData().toBytes(), UTF_8);
       function.accept(jsonData, context);
     }
   }
@@ -337,13 +343,16 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     }
   }
 
-  private enum CloudEventKind {BINARY, STRUCTURED}
+  private enum CloudEventKind {
+    BINARY,
+    STRUCTURED
+  }
 
   /**
    * Service a CloudEvent.
    *
-   * @param <CloudEventT> a fake type parameter, which corresponds to the type parameter of
-   *     {@link FunctionExecutor}.
+   * @param <CloudEventT> a fake type parameter, which corresponds to the type parameter of {@link
+   *     FunctionExecutor}.
    */
   private <CloudEventT> void serviceCloudEvent(HttpServletRequest req) throws Exception {
     @SuppressWarnings("unchecked")
@@ -353,7 +362,8 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     // It's important not to set the context ClassLoader earlier, because MessageUtils will use
     // ServiceLoader.load(EventFormat.class) to find a handler to deserialize a binary CloudEvent
     // and if it finds something from the function ClassLoader then that something will implement
-    // the EventFormat interface as defined by that ClassLoader rather than ours. Then ServiceLoader.load
+    // the EventFormat interface as defined by that ClassLoader rather than ours. Then
+    // ServiceLoader.load
     // will throw ServiceConfigurationError. At this point we're still running with the default
     // context ClassLoader, which is the system ClassLoader that has loaded the code here.
     runWithContextClassLoader(() -> executor.serviceCloudEvent(reader.toEvent(data -> data)));

@@ -96,7 +96,9 @@ public class IntegrationTest {
         + "  \"data\": {\n"
         + "    \"a\": 2,\n"
         + "    \"b\": 3,\n"
-        + "    \"targetFile\": \"" + snoopFile + "\""
+        + "    \"targetFile\": \""
+        + snoopFile
+        + "\""
         + "  },\n"
         + "  \"context\": {\n"
         + "    \"eventId\": \"B234-1234-1234\",\n"
@@ -241,7 +243,8 @@ public class IntegrationTest {
 
   @Test
   public void helloWorld() throws Exception {
-    testHttpFunction(fullTarget("HelloWorld"),
+    testHttpFunction(
+        fullTarget("HelloWorld"),
         ImmutableList.of(
             TestCase.builder().setExpectedResponseText("hello\n").build(),
             FAVICON_TEST_CASE,
@@ -264,7 +267,6 @@ public class IntegrationTest {
                 .setExpectedOutput(exceptionExpectedOutput)
                 .build()));
   }
-
 
   @Test
   public void exceptionBackground() throws Exception {
@@ -312,9 +314,10 @@ public class IntegrationTest {
   @Test
   public void echoUrl() throws Exception {
     String[] testUrls = {"/", "/foo/bar", "/?foo=bar&baz=buh", "/foo?bar=baz"};
-    List<TestCase> testCases = Arrays.stream(testUrls)
-        .map(url -> TestCase.builder().setUrl(url).setExpectedResponseText(url + "\n").build())
-        .collect(toList());
+    List<TestCase> testCases =
+        Arrays.stream(testUrls)
+            .map(url -> TestCase.builder().setUrl(url).setExpectedResponseText(url + "\n").build())
+            .collect(toList());
     testHttpFunction(fullTarget("EchoUrl"), testCases);
   }
 
@@ -327,10 +330,7 @@ public class IntegrationTest {
             + " \"method\": \"service\"},"
             + " \"message\": \"blim\"}";
     TestCase simpleTestCase =
-        TestCase.builder()
-            .setUrl("/?message=blim")
-            .setExpectedOutput(simpleExpectedOutput)
-            .build();
+        TestCase.builder().setUrl("/?message=blim").setExpectedOutput(simpleExpectedOutput).build();
     String quotingExpectedOutput = "\"message\": \"foo\\nbar\\\"";
     TestCase quotingTestCase =
         TestCase.builder()
@@ -362,7 +362,8 @@ public class IntegrationTest {
       if (dot != -1) {
         version = version.substring(0, dot);
       }
-    } return Integer.parseInt(version);
+    }
+    return Integer.parseInt(version);
   }
 
   @Test
@@ -387,27 +388,31 @@ public class IntegrationTest {
     JsonObject expectedJson = new Gson().fromJson(gcfRequestText, JsonObject.class);
     // We don't currently put anything in the attributes() map for legacy events.
     expectedJson.add("attributes", new JsonObject());
-    TestCase gcfTestCase = TestCase.builder()
-        .setRequestText(gcfRequestText)
-        .setSnoopFile(snoopFile)
-        .setExpectedJson(expectedJson)
-        .build();
+    TestCase gcfTestCase =
+        TestCase.builder()
+            .setRequestText(gcfRequestText)
+            .setSnoopFile(snoopFile)
+            .setExpectedJson(expectedJson)
+            .build();
 
     // A CloudEvent using the "structured content mode", where both the metadata and the payload
     // are in the body of the HTTP request.
-    EventFormat jsonFormat = EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE);
-    String cloudEventRequestText = new String(jsonFormat.serialize(sampleCloudEvent(snoopFile)), UTF_8);
+    EventFormat jsonFormat =
+        EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE);
+    String cloudEventRequestText =
+        new String(jsonFormat.serialize(sampleCloudEvent(snoopFile)), UTF_8);
     // For CloudEvents, we don't currently populate Context#getResource with anything interesting,
     // so we excise that from the expected text we would have with legacy events.
     JsonObject cloudEventExpectedJson = new Gson().fromJson(gcfRequestText, JsonObject.class);
     cloudEventExpectedJson.getAsJsonObject("context").add("resource", new JsonObject());
     cloudEventExpectedJson.add("attributes", expectedCloudEventAttributes());
-    TestCase cloudEventsStructuredTestCase = TestCase.builder()
-        .setSnoopFile(snoopFile)
-        .setRequestText(cloudEventRequestText)
-        .setHttpContentType("application/cloudevents+json; charset=utf-8")
-        .setExpectedJson(cloudEventExpectedJson)
-        .build();
+    TestCase cloudEventsStructuredTestCase =
+        TestCase.builder()
+            .setSnoopFile(snoopFile)
+            .setRequestText(cloudEventRequestText)
+            .setHttpContentType("application/cloudevents+json; charset=utf-8")
+            .setExpectedJson(cloudEventExpectedJson)
+            .build();
 
     // A CloudEvent using the "binary content mode", where the metadata is in HTTP headers and the
     // payload is the body of the HTTP request.
@@ -415,13 +420,14 @@ public class IntegrationTest {
     AtomicReference<byte[]> bodyRef = new AtomicReference<>();
     HttpMessageFactory.createWriter(headers::put, bodyRef::set)
         .writeBinary(sampleCloudEvent(snoopFile));
-    TestCase cloudEventsBinaryTestCase = TestCase.builder()
-        .setSnoopFile(snoopFile)
-        .setRequestText(new String(bodyRef.get(), UTF_8))
-        .setHttpContentType(headers.get("Content-Type"))
-        .setHttpHeaders(ImmutableMap.copyOf(headers))
-        .setExpectedJson(cloudEventExpectedJson)
-        .build();
+    TestCase cloudEventsBinaryTestCase =
+        TestCase.builder()
+            .setSnoopFile(snoopFile)
+            .setRequestText(new String(bodyRef.get(), UTF_8))
+            .setHttpContentType(headers.get("Content-Type"))
+            .setHttpHeaders(ImmutableMap.copyOf(headers))
+            .setExpectedJson(cloudEventExpectedJson)
+            .build();
 
     backgroundTest(
         SignatureType.BACKGROUND,
@@ -429,23 +435,27 @@ public class IntegrationTest {
         ImmutableList.of(gcfTestCase, cloudEventsStructuredTestCase, cloudEventsBinaryTestCase));
   }
 
-  /** Tests a CloudEvent being handled by a CloudEvent handler (no translation to or from legacy). */
+  /**
+   * Tests a CloudEvent being handled by a CloudEvent handler (no translation to or from legacy).
+   */
   @Test
   public void nativeCloudEvent() throws Exception {
     File snoopFile = snoopFile();
     CloudEvent cloudEvent = sampleCloudEvent(snoopFile);
-    EventFormat jsonFormat = EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE);
+    EventFormat jsonFormat =
+        EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE);
     String cloudEventJson = new String(jsonFormat.serialize(cloudEvent), UTF_8);
 
     // A CloudEvent using the "structured content mode", where both the metadata and the payload
     // are in the body of the HTTP request.
     JsonObject cloudEventJsonObject = new Gson().fromJson(cloudEventJson, JsonObject.class);
-    TestCase cloudEventsStructuredTestCase = TestCase.builder()
-        .setSnoopFile(snoopFile)
-        .setRequestText(cloudEventJson)
-        .setHttpContentType("application/cloudevents+json; charset=utf-8")
-        .setExpectedJson(cloudEventJsonObject)
-        .build();
+    TestCase cloudEventsStructuredTestCase =
+        TestCase.builder()
+            .setSnoopFile(snoopFile)
+            .setRequestText(cloudEventJson)
+            .setHttpContentType("application/cloudevents+json; charset=utf-8")
+            .setExpectedJson(cloudEventJsonObject)
+            .build();
 
     // A CloudEvent using the "binary content mode", where the metadata is in HTTP headers and the
     // payload is the body of the HTTP request.
@@ -453,13 +463,14 @@ public class IntegrationTest {
     AtomicReference<byte[]> bodyRef = new AtomicReference<>();
     HttpMessageFactory.createWriter(headers::put, bodyRef::set)
         .writeBinary(sampleCloudEvent(snoopFile));
-    TestCase cloudEventsBinaryTestCase = TestCase.builder()
-        .setSnoopFile(snoopFile)
-        .setRequestText(new String(bodyRef.get(), UTF_8))
-        .setHttpContentType(headers.get("Content-Type"))
-        .setHttpHeaders(ImmutableMap.copyOf(headers))
-        .setExpectedJson(cloudEventJsonObject)
-        .build();
+    TestCase cloudEventsBinaryTestCase =
+        TestCase.builder()
+            .setSnoopFile(snoopFile)
+            .setRequestText(new String(bodyRef.get(), UTF_8))
+            .setHttpContentType(headers.get("Content-Type"))
+            .setHttpHeaders(ImmutableMap.copyOf(headers))
+            .setExpectedJson(cloudEventJsonObject)
+            .build();
 
     backgroundTest(
         SignatureType.CLOUD_EVENT,
@@ -478,7 +489,8 @@ public class IntegrationTest {
 
   @Test
   public void packageless() throws Exception {
-    testHttpFunction("PackagelessHelloWorld",
+    testHttpFunction(
+        "PackagelessHelloWorld",
         ImmutableList.of(TestCase.builder().setExpectedResponseText("hello, world\n").build()));
   }
 
@@ -489,8 +501,9 @@ public class IntegrationTest {
     multiPartProvider.addFieldPart("bytes", new BytesContentProvider(bytes), new HttpFields());
     String string = "1234567890";
     multiPartProvider.addFieldPart("string", new StringContentProvider(string), new HttpFields());
-    String expectedResponse = "part bytes type application/octet-stream length 17\n"
-        + "part string type text/plain;charset=UTF-8 length 10\n";
+    String expectedResponse =
+        "part bytes type application/octet-stream length 17\n"
+            + "part string type text/plain;charset=UTF-8 length 10\n";
     testHttpFunction(
         fullTarget("Multipart"),
         ImmutableList.of(
@@ -512,13 +525,15 @@ public class IntegrationTest {
     Path functionJarTargetDir = Paths.get("../testfunction/target");
     Pattern functionJarPattern =
         Pattern.compile("java-function-invoker-testfunction-.*-tests\\.jar");
-    List<Path> functionJars = Files.list(functionJarTargetDir)
-        .map(path -> path.getFileName().toString())
-        .filter(s -> functionJarPattern.matcher(s).matches())
-        .map(s -> functionJarTargetDir.resolve(s))
-        .collect(toList());
+    List<Path> functionJars =
+        Files.list(functionJarTargetDir)
+            .map(path -> path.getFileName().toString())
+            .filter(s -> functionJarPattern.matcher(s).matches())
+            .map(s -> functionJarTargetDir.resolve(s))
+            .collect(toList());
     assertWithMessage("Number of jars in %s matching %s", functionJarTargetDir, functionJarPattern)
-        .that(functionJars).hasSize(1);
+        .that(functionJars)
+        .hasSize(1);
     return Iterables.getOnlyElement(functionJars).toString();
   }
 
@@ -530,10 +545,11 @@ public class IntegrationTest {
    */
   @Test
   public void classpathOptionHttp() throws Exception {
-    TestCase testCase = TestCase.builder()
-        .setUrl("/?class=" + INTERNAL_CLASS.getName())
-        .setExpectedResponseText("OK")
-        .build();
+    TestCase testCase =
+        TestCase.builder()
+            .setUrl("/?class=" + INTERNAL_CLASS.getName())
+            .setExpectedResponseText("OK")
+            .build();
     testFunction(
         SignatureType.HTTP,
         "com.example.functionjar.Foreground",
@@ -574,9 +590,12 @@ public class IntegrationTest {
       Gson gson = new Gson();
       JsonObject snoopedJson = gson.fromJson(snooped, JsonObject.class);
       JsonObject expectedJson = testCase.expectedJson().get();
-      expect.withMessage(
-              "Testing %s with %s\nGOT %s\nNOT %s", functionTarget, testCase, snoopedJson, expectedJson)
-          .that(snoopedJson).isEqualTo(expectedJson);
+      expect
+          .withMessage(
+              "Testing %s with %s\nGOT %s\nNOT %s",
+              functionTarget, testCase, snoopedJson, expectedJson)
+          .that(snoopedJson)
+          .isEqualTo(expectedJson);
     }
   }
 
@@ -597,7 +616,8 @@ public class IntegrationTest {
       SignatureType signatureType,
       String target,
       ImmutableList<String> extraArgs,
-      List<TestCase> testCases) throws Exception {
+      List<TestCase> testCases)
+      throws Exception {
     ServerProcess serverProcess = startServer(signatureType, target, extraArgs);
     try {
       HttpClient httpClient = new HttpClient();
@@ -606,17 +626,21 @@ public class IntegrationTest {
         testCase.snoopFile().ifPresent(File::delete);
         String uri = "http://localhost:" + serverPort + testCase.url();
         Request request = httpClient.POST(uri);
-        testCase.httpContentType().ifPresent(
-            contentType -> request.header(HttpHeader.CONTENT_TYPE, contentType));
+        testCase
+            .httpContentType()
+            .ifPresent(contentType -> request.header(HttpHeader.CONTENT_TYPE, contentType));
         testCase.httpHeaders().forEach((header, value) -> request.header(header, value));
         request.content(testCase.requestContent());
         ContentResponse response = request.send();
         expect
             .withMessage("Response to %s is %s %s", uri, response.getStatus(), response.getReason())
-            .that(response.getStatus()).isEqualTo(testCase.expectedResponseCode());
-        testCase.expectedResponseText()
+            .that(response.getStatus())
+            .isEqualTo(testCase.expectedResponseCode());
+        testCase
+            .expectedResponseText()
             .ifPresent(text -> expect.that(response.getContentAsString()).isEqualTo(text));
-        testCase.expectedContentType()
+        testCase
+            .expectedContentType()
             .ifPresent(type -> expect.that(response.getMediaType()).isEqualTo(type));
         if (testCase.snoopFile().isPresent()) {
           checkSnoopFile(testCase);
@@ -626,7 +650,8 @@ public class IntegrationTest {
       serverProcess.close();
     }
     for (TestCase testCase : testCases) {
-      testCase.expectedOutput()
+      testCase
+          .expectedOutput()
           .ifPresent(output -> expect.that(serverProcess.output()).contains(output));
     }
     // Wait for the output monitor task to terminate. If it threw an exception, we will get an
@@ -697,23 +722,28 @@ public class IntegrationTest {
     assertThat(javaCommand.exists()).isTrue();
     String myClassPath = System.getProperty("java.class.path");
     assertThat(myClassPath).isNotNull();
-    ImmutableList<String> command = ImmutableList.<String>builder()
-        .add(javaCommand.toString(), "-classpath", myClassPath, Invoker.class.getName())
-        .addAll(extraArgs)
-        .build();
-    ProcessBuilder processBuilder = new ProcessBuilder()
-        .command(command)
-        .redirectErrorStream(true);
-    Map<String, String> environment = ImmutableMap.of("PORT", String.valueOf(serverPort),
-        "K_SERVICE", "test-function",
-        "FUNCTION_SIGNATURE_TYPE", signatureType.toString(),
-        "FUNCTION_TARGET", target);
+    ImmutableList<String> command =
+        ImmutableList.<String>builder()
+            .add(javaCommand.toString(), "-classpath", myClassPath, Invoker.class.getName())
+            .addAll(extraArgs)
+            .build();
+    ProcessBuilder processBuilder = new ProcessBuilder().command(command).redirectErrorStream(true);
+    Map<String, String> environment =
+        ImmutableMap.of(
+            "PORT",
+            String.valueOf(serverPort),
+            "K_SERVICE",
+            "test-function",
+            "FUNCTION_SIGNATURE_TYPE",
+            signatureType.toString(),
+            "FUNCTION_TARGET",
+            target);
     processBuilder.environment().putAll(environment);
     Process serverProcess = processBuilder.start();
     CountDownLatch ready = new CountDownLatch(1);
     StringBuilder output = new StringBuilder();
-    Future<?> outputMonitorResult = EXECUTOR.submit(
-        () -> monitorOutput(serverProcess.getInputStream(), ready, output));
+    Future<?> outputMonitorResult =
+        EXECUTOR.submit(() -> monitorOutput(serverProcess.getInputStream(), ready, output));
     boolean serverReady = ready.await(5, TimeUnit.SECONDS);
     if (!serverReady) {
       serverProcess.destroy();

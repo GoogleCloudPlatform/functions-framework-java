@@ -22,30 +22,29 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Represents the contents of an HTTP response that is being sent by a Cloud Function in response
- * to an HTTP request.
+ * Represents the contents of an HTTP response that is being sent by a Cloud Function in response to
+ * an HTTP request.
  */
 public interface HttpResponse {
   /**
-   * Sets the numeric HTTP
-   * <a href="https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml">status
-   * code</a> to use in the response. Most often this will be 200, which is the OK status. The
-   * named constants in {@link java.net.HttpURLConnection}, such as
-   * {@link java.net.HttpURLConnection#HTTP_OK HTTP_OK}, can be used as an alternative to writing
-   * numbers in your source code.
+   * Sets the numeric HTTP <a
+   * href="https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml">status
+   * code</a> to use in the response. Most often this will be 200, which is the OK status. The named
+   * constants in {@link java.net.HttpURLConnection}, such as {@link
+   * java.net.HttpURLConnection#HTTP_OK HTTP_OK}, can be used as an alternative to writing numbers
+   * in your source code.
    *
    * @param code the status code.
    */
   void setStatusCode(int code);
 
   /**
-   * Sets the numeric HTTP
-   * <a href="https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml">status
+   * Sets the numeric HTTP <a
+   * href="https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml">status
    * code</a> and reason message to use in the response. For example<br>
-   * {@code setStatusCode(400, "Something went wrong")}. The
-   * named constants in {@link java.net.HttpURLConnection}, such as
-   * {@link java.net.HttpURLConnection#HTTP_BAD_REQUEST HTTP_BAD_REQUEST}, can be used as an
-   * alternative to writing numbers in your source code.
+   * {@code setStatusCode(400, "Something went wrong")}. The named constants in {@link
+   * java.net.HttpURLConnection}, such as {@link java.net.HttpURLConnection#HTTP_BAD_REQUEST
+   * HTTP_BAD_REQUEST}, can be used as an alternative to writing numbers in your source code.
    *
    * @param code the status code.
    * @param message the status message.
@@ -53,8 +52,8 @@ public interface HttpResponse {
   void setStatusCode(int code, String message);
 
   /**
-   * Sets the value to use for the {@code Content-Type} header in the response. This may include
-   * a character encoding, for example {@code setContentType("text/plain; charset=utf-8")}.
+   * Sets the value to use for the {@code Content-Type} header in the response. This may include a
+   * character encoding, for example {@code setContentType("text/plain; charset=utf-8")}.
    *
    * @param contentType the content type.
    */
@@ -90,9 +89,9 @@ public interface HttpResponse {
   Map<String, List<String>> getHeaders();
 
   /**
-   * Returns an {@link OutputStream} that can be used to write the body of the response.
-   * This method is typically used to write binary data. If the body is text, the
-   * {@link #getWriter()} method is more appropriate.
+   * Returns an {@link OutputStream} that can be used to write the body of the response. This method
+   * is typically used to write binary data. If the body is text, the {@link #getWriter()} method is
+   * more appropriate.
    *
    * @return the output stream.
    * @throws IOException if a valid {@link OutputStream} cannot be returned for some reason.
@@ -101,11 +100,10 @@ public interface HttpResponse {
   OutputStream getOutputStream() throws IOException;
 
   /**
-   * Returns a {@link BufferedWriter} that can be used to write the text body of the response.
-   * If the written text will not be US-ASCII, you should specify a character encoding by calling
-   * {@link #setContentType setContentType("text/foo; charset=bar")} or
-   * {@link #appendHeader appendHeader("Content-Type", "text/foo; charset=bar")}
-   * before calling this method.
+   * Returns a {@link BufferedWriter} that can be used to write the text body of the response. If
+   * the written text will not be US-ASCII, you should specify a character encoding by calling
+   * {@link #setContentType setContentType("text/foo; charset=bar")} or {@link #appendHeader
+   * appendHeader("Content-Type", "text/foo; charset=bar")} before calling this method.
    *
    * @return the writer.
    * @throws IOException if a valid {@link BufferedWriter} cannot be returned for some reason.
