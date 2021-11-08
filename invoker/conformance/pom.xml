@@ -4,12 +4,12 @@
   <parent>
     <artifactId>java-function-invoker-parent</artifactId>
     <groupId>com.google.cloud.functions.invoker</groupId>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>1.1.0</version>
   </parent>
 
   <groupId>com.google.cloud.functions.invoker</groupId>
   <artifactId>conformance</artifactId>
-  <version>1.0.1-SNAPSHOT</version>
+  <version>1.1.0</version>
 
   <name>GCF Confromance Tests</name>
   <description>
@@ -52,7 +52,7 @@
         <plugin>
           <groupId>com.google.cloud.functions</groupId>
           <artifactId>function-maven-plugin</artifactId>
-          <version>0.9.9-SNAPSHOT</version>
+          <version>0.10.0</version>
         </plugin>
       </plugins>
     </pluginManagement>
