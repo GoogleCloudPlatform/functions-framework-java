@@ -198,6 +198,8 @@ public class Invoker {
   private final String functionSignatureType;
   private final ClassLoader functionClassLoader;
 
+  private Server server;
+
   public Invoker(
       Integer port,
       String functionTarget,
@@ -225,8 +227,58 @@ public class Invoker {
     return functionClassLoader;
   }
 
+  /**
+   * This will start the server and wait (join) for function calls.
+   * To start the server inside a unit or integration test, use {@link #startTestServer()} instead.
+   *
+   * @see #stopServer()
+   * @throws Exception
+   */
   public void startServer() throws Exception {
-    Server server = new Server(port);
+    startServer(true);
+  }
+
+
+  /**
+   * This will start the server and return.
+   *
+   * This method is designed to be used for unit or integration testing only.
+   * For other use cases use {@link #startServer()}.
+   *
+   * Inside a test a typical usage will be:
+   * <pre>
+   * {@code
+   *         // Create an invoker
+   *         Invoker invoker = new Invoker(
+   *                 8081,
+   *                 "org.example.MyHttpFunction",
+   *                 "http",
+   *                 Thread.currentThread().getContextClassLoader()
+   *         );
+   *
+   *         // Start the test server
+   *         invoker.startTestServer();
+   *
+   *         // Test the function
+   *
+   *         // Stop the test server
+   *         invoker.stopServer();
+   * }
+   * </pre>
+   *
+   * @see #stopServer()
+   * @throws Exception
+   */
+  public void startTestServer() throws Exception {
+    startServer(false);
+  }
+
+  private void startServer(boolean join) throws Exception {
+    if (server != null) {
+      throw new IllegalStateException("Server already started");
+    }
+
+    server = new Server(port);
 
     ServletContextHandler servletContextHandler = new ServletContextHandler();
     servletContextHandler.setContextPath("/");
@@ -261,7 +313,27 @@ public class Invoker {
 
     server.start();
     logServerInfo();
-    server.join();
+    if (join) {
+      server.join();
+    }
+  }
+
+  /**
+   * Stop the server.
+   *
+   * @see #startServer()
+   * @see #startTestServer()
+   *
+   * @throws Exception
+   */
+  public void stopServer() throws Exception {
+    if (server == null) {
+      throw new IllegalStateException("Server not yet started");
+    }
+
+    server.stop();
+    // setting the server to null, so it can be started again
+    server = null;
   }
 
   private Class<?> loadFunctionClass() throws ClassNotFoundException {
