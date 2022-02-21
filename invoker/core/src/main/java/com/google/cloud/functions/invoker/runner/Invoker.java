@@ -228,8 +228,8 @@ public class Invoker {
   }
 
   /**
-   * This will start the server and wait (join) for function calls.
-   * To start the server inside a unit or integration test, use {@link #startTestServer()} instead.
+   * This will start the server and wait (join) for function calls. To start the server inside a
+   * unit or integration test, use {@link #startTestServer()} instead.
    *
    * @see #stopServer()
    * @throws Exception
@@ -238,33 +238,31 @@ public class Invoker {
     startServer(true);
   }
 
-
   /**
    * This will start the server and return.
    *
-   * This method is designed to be used for unit or integration testing only.
-   * For other use cases use {@link #startServer()}.
+   * <p>This method is designed to be used for unit or integration testing only. For other use cases
+   * use {@link #startServer()}.
    *
-   * Inside a test a typical usage will be:
-   * <pre>
-   * {@code
-   *         // Create an invoker
-   *         Invoker invoker = new Invoker(
-   *                 8081,
-   *                 "org.example.MyHttpFunction",
-   *                 "http",
-   *                 Thread.currentThread().getContextClassLoader()
-   *         );
+   * <p>Inside a test a typical usage will be:
    *
-   *         // Start the test server
-   *         invoker.startTestServer();
+   * <pre>{@code
+   * // Create an invoker
+   * Invoker invoker = new Invoker(
+   *         8081,
+   *         "org.example.MyHttpFunction",
+   *         "http",
+   *         Thread.currentThread().getContextClassLoader()
+   * );
    *
-   *         // Test the function
+   * // Start the test server
+   * invoker.startTestServer();
    *
-   *         // Stop the test server
-   *         invoker.stopServer();
-   * }
-   * </pre>
+   * // Test the function
+   *
+   * // Stop the test server
+   * invoker.stopServer();
+   * }</pre>
    *
    * @see #stopServer()
    * @throws Exception
@@ -323,7 +321,6 @@ public class Invoker {
    *
    * @see #startServer()
    * @see #startTestServer()
-   *
    * @throws Exception
    */
   public void stopServer() throws Exception {
