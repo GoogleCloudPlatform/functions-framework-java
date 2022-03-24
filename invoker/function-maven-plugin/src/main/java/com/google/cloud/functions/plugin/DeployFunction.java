@@ -207,7 +207,7 @@ public class DeployFunction extends CloudSdkMojo {
   @Parameter(alias = "deploy.setbuildenvvars", property = "function.deploy.setbuildenvvars")
   Map<String, String> buildEnvironmentVariables;
   /**
-   * Path to a local YAML file with definitions for all buildenvironment variables. All existing
+   * Path to a local YAML file with definitions for all build environment variables. All existing
    * environment variables will be removed before the new environment variables are added.
    */
   @Parameter(alias = "deploy.buildenvvarsfile", property = "function.deploy.buildenvvarsfile")
