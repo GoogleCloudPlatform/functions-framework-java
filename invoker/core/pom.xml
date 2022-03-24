@@ -97,17 +97,17 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
-      <version>9.4.26.v20200117</version>
+      <version>9.4.45.v20220203</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <version>9.4.26.v20200117</version>
+      <version>9.4.45.v20220203</version>
     </dependency>
     <dependency>
       <groupId>com.beust</groupId>
       <artifactId>jcommander</artifactId>
-      <version>1.78</version>
+      <version>1.82</version>
     </dependency>
 
     <!-- Test dependencies -->
