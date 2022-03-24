@@ -200,7 +200,6 @@ public class DeployFunction extends CloudSdkMojo {
    */
   @Parameter(alias = "deploy.envvarsfile", property = "function.deploy.envvarsfile")
   String envVarsFile;
-
   /**
    * List of key-value pairs to set as build environment variables. All existing environment variables
    * will be removed first.
@@ -217,7 +216,6 @@ public class DeployFunction extends CloudSdkMojo {
   boolean hasEnvVariables() {
     return (this.environmentVariables != null && !this.environmentVariables.isEmpty());
   }
-
 
   boolean hasBuildEnvVariables() {
     return (this.buildEnvironmentVariables != null && !this.buildEnvironmentVariables.isEmpty());
