@@ -201,8 +201,8 @@ public class DeployFunction extends CloudSdkMojo {
   @Parameter(alias = "deploy.envvarsfile", property = "function.deploy.envvarsfile")
   String envVarsFile;
   /**
-   * List of key-value pairs to set as build environment variables. All existing environment variables
-   * will be removed first.
+   * List of key-value pairs to set as build environment variables. All existing environment
+   * variables will be removed first.
    */
   @Parameter(alias = "deploy.setbuildenvvars", property = "function.deploy.setbuildenvvars")
   Map<String, String> buildEnvironmentVariables;
@@ -220,7 +220,7 @@ public class DeployFunction extends CloudSdkMojo {
   boolean hasBuildEnvVariables() {
     return (this.buildEnvironmentVariables != null && !this.buildEnvironmentVariables.isEmpty());
   }
-  
+
   // Select a downloaded Cloud SDK or a user defined Cloud SDK version.
   static Function<String, ManagedCloudSdk> newManagedSdkFactory() {
     return version -> {
