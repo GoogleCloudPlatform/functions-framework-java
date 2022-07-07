@@ -22,16 +22,18 @@
 set -e
 REPO_ROOT=$(git rev-parse --show-toplevel)
 
-rm -rf $REPO_ROOT/tmp
-mkdir $REPO_ROOT/tmp
+rm -rf $TMPDIR/tests
+mkdir $TMPDIR/tests
 
-cp -r $REPO_ROOT/invoker/conformance $REPO_ROOT/tmp
+cp -r $REPO_ROOT/invoker/conformance $TMPDIR/tests
 
 cd $REPO_ROOT/invoker
-mvn install -Dmaven.repo.local=$REPO_ROOT/tmp/conformance/artifacts
+mvn versions:set -DnewVersion=0.0.0-SNAPSHOT -DprocessAllModules=true
+mvn install -Dmaven.repo.local=$TMPDIR/tests/conformance/artifacts
 
 cd $REPO_ROOT/functions-framework-api 
-mvn install -Dmaven.repo.local=$REPO_ROOT/tmp/conformance/artifacts
+mvn versions:set -DnewVersion=0.0.0-SNAPSHOT -DprocessAllModules=true
+mvn install -Dmaven.repo.local=$TMPDIR/tests/conformance/artifacts
 
-rm $REPO_ROOT/tmp/conformance/pom.xml
-mv $REPO_ROOT/tmp/conformance/buildpack_pom.xml $REPO_ROOT/tmp/conformance/pom.xml
+rm $TMPDIR/tests/conformance/pom.xml
+mv $TMPDIR/tests/conformance/buildpack_pom.xml $TMPDIR/tests/conformance/pom.xml

@@ -3,9 +3,9 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.google.cloud.functions.invoker</groupId>
   <artifactId>conformance</artifactId>
-  <version>1.1.1-SNAPSHOT</version>
+  <version>0.0.0-SNAPSHOT</version>
 
-  <name>GCF Confromance Tests</name>
+  <name>GCF Conformance Tests</name>
   <description>
     A GCF project used to validate conformance to the Functions Framework contract
     using the Functions Framework Conformance tools.
@@ -26,12 +26,12 @@
     <dependency>
       <groupId>com.google.cloud.functions</groupId>
       <artifactId>functions-framework-api</artifactId>
-      <version>1.0.5-SNAPSHOT</version>
+      <version>0.0.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.functions.invoker</groupId>
       <artifactId>java-function-invoker</artifactId>
-      <version>1.1.1-SNAPSHOT</version>
+      <version>0.0.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
