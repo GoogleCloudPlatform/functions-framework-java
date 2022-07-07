@@ -10,9 +10,9 @@ jobs:
   java11-buildpack-test:
     uses: GoogleCloudPlatform/functions-framework-conformance/.github/workflows/buildpack-integration-test.yml@v1.4.1
     with:
-      http-builder-source: '${TMPDIR}/tests/conformance'
+      http-builder-source: '/tmp/tests/conformance'
       http-builder-target: 'com.google.cloud.functions.conformance.HttpConformanceFunction'
-      cloudevent-builder-source: '${TMPDIR}/conformance'
+      cloudevent-builder-source: '/tmp/conformance'
       cloudevent-builder-target: 'com.google.cloud.functions.conformance.CloudEventsConformanceFunction'
       prerun: 'invoker/conformance/prerun.sh'
       builder-runtime: 'java11'
@@ -21,9 +21,9 @@ jobs:
   java17-buildpack-test:
     uses: GoogleCloudPlatform/functions-framework-conformance/.github/workflows/buildpack-integration-test.yml@v1.4.1
     with:
-      http-builder-source: '${TMPDIR}/conformance'
+      http-builder-source: '/tmp/conformance'
       http-builder-target: 'com.google.cloud.functions.conformance.HttpConformanceFunction'
-      cloudevent-builder-source: '${TMPDIR}/conformance'
+      cloudevent-builder-source: '/tmp/conformance'
       cloudevent-builder-target: 'com.google.cloud.functions.conformance.CloudEventsConformanceFunction'
       prerun: 'invoker/conformance/prerun.sh'
       builder-runtime: 'java17'
