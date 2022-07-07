@@ -1,4 +1,3 @@
-
 # Validates Functions Framework with GCF buildpacks.
 name: Buildpack Integration Test
 on:

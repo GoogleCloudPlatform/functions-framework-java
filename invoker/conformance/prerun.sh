@@ -12,9 +12,9 @@
 #
 # - Clear out the temp directory
 # - Copy the conformance tests folder into temp
-# - Build java-function-invoker with version 1.1.1-SNAPSHOT into artifacts
+# - Build java-function-invoker with version 0.0.0-SNAPSHOT into artifacts
 #  folder
-# - Build functions-framework-api with version 1.0.5-SNAPSHOT into artifacts 
+# - Build functions-framework-api with version 0.0.0-SNAPSHOT into artifacts 
 # folder
 # - Ensure that we use the buildpack_pom.xml file by renaming it to pom.xml
 
