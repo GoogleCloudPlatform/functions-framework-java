@@ -52,11 +52,14 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
  * Java server that runs the user's code (a jar file) on HTTP request and an HTTP response is sent
@@ -276,8 +279,11 @@ public class Invoker {
       throw new IllegalStateException("Server already started");
     }
 
-    server = new Server(port);
-
+    QueuedThreadPool pool = new QueuedThreadPool(1000);
+    server = new Server(pool);
+    ServerConnector connector = new ServerConnector(server);
+    connector.setPort(port);
+    server.setConnectors(new Connector[] {connector});
     ServletContextHandler servletContextHandler = new ServletContextHandler();
     servletContextHandler.setContextPath("/");
     server.setHandler(NotFoundHandler.forServlet(servletContextHandler));
