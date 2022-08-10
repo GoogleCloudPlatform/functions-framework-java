@@ -39,10 +39,16 @@ go install github.com/GoogleCloudPlatform/functions-framework-conformance/client
 echo "Done installing client$CLIENT_VERSION"
 
 print_header "HTTP CONFORMANCE TESTS"
-client -buildpacks=false -type=http -cmd='mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.HttpConformanceFunction' -start-delay 5
+~/go/bin/client -buildpacks=false -type=http -cmd='mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.HttpConformanceFunction' -start-delay 5
 
 print_header "BACKGROUND EVENT CONFORMANCE TESTS"
-client -buildpacks=false -type=legacyevent -cmd='mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.BackgroundEventConformanceFunction' -start-delay 5 -validate-mapping=false
+~/go/bin/client -buildpacks=false -type=legacyevent -cmd='mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.BackgroundEventConformanceFunction' -start-delay 5 -validate-mapping=false
 
 print_header "CLOUDEVENT CONFORMANCE TESTS"
-client -buildpacks=false -type=cloudevent -cmd='mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.CloudEventsConformanceFunction' -start-delay 5 -validate-mapping=false
+~/go/bin/client -buildpacks=false -type=cloudevent -cmd='mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.CloudEventsConformanceFunction' -start-delay 5 -validate-mapping=false
+
+print_header "HTTP CONCURRENCY TESTS"
+~/go/bin/client -buildpacks=false -type=http -cmd='mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.ConcurrentHttpConformanceFunction' -start-delay 5 -validate-concurrency=true
+
+print_header "CLOUDEVENT CONCURRENCY TESTS"
+~/go/bin/client -buildpacks=false -type=cloudevent -cmd='mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.ConcurrentCloudEventsConformanceFunction' -start-delay 5 -validate-concurrency=true
