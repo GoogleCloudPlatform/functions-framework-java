@@ -71,13 +71,3 @@ jobs:
         validateConcurrency: true
         cmd: "'mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.ConcurrentHttpConformanceFunction'"
         startDelay: 10
-      
-    - name: Run cloudevent concurrency conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@v1.6.0
-      with:
-        version: 'v1.6.0'
-        functionType: 'cloudevent'
-        useBuildpacks: false
-        validateConcurrency: true
-        cmd: "'mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.ConcurrentCloudEventsConformanceFunction'"
-        startDelay: 10
