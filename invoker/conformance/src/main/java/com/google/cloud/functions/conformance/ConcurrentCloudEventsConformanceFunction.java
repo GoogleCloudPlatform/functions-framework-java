@@ -18,7 +18,8 @@ import com.google.cloud.functions.CloudEventsFunction;
 import io.cloudevents.CloudEvent;
 
 /**
- * This class is used by the Functions Framework Conformance Tools to validate concurrency for Cloud Events. It can be run with the following command:
+ * This class is used by the Functions Framework Conformance Tools to validate concurrency for Cloud
+ * Events. It can be run with the following command:
  *
  * <pre>{@code
  * $ functions-framework-conformance-client \
