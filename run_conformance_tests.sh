@@ -46,3 +46,6 @@ client -buildpacks=false -type=legacyevent -cmd='mvn -f invoker/conformance/pom.
 
 print_header "CLOUDEVENT CONFORMANCE TESTS"
 client -buildpacks=false -type=cloudevent -cmd='mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.CloudEventsConformanceFunction' -start-delay 5 -validate-mapping=false
+
+print_header "HTTP CONCURRENCY TESTS"
+client -buildpacks=false -type=http -cmd='mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.ConcurrentHttpConformanceFunction' -start-delay 5 -validate-concurrency=true
