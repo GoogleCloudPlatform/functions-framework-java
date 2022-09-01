@@ -30,6 +30,9 @@ jobs:
     - name: Build API with Maven
       run: (cd functions-framework-api/ && mvn install)
 
+    - name: Build function-maven-plugin with Maven
+      run: (cd function-maven-plugin/ && mvn install)
+
     - name: Build invoker with Maven
       run: (cd invoker/ && mvn install)
 
