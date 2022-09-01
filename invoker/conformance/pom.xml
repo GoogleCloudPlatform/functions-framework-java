@@ -52,7 +52,7 @@
         <plugin>
           <groupId>com.google.cloud.functions</groupId>
           <artifactId>function-maven-plugin</artifactId>
-          <version>0.10.2-SNAPSHOT</version>
+          <version>0.10.1</version>
         </plugin>
       </plugins>
     </pluginManagement>
