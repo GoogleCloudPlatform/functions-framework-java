@@ -6,6 +6,7 @@ setup_environment_secrets() {
   export SONATYPE_PASSWORD=$(cat ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-sonatype-password)
   export GPG_PASSPHRASE=$(cat ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-gpg-passphrase)
 
+  # Add the keybox file to $GNUPGHOME to verify the GPG credentials.
   export GNUPGHOME=/tmp/gpg
   mkdir $GNUPGHOME
   mv ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-gpg-pubring $GNUPGHOME/pubring.kbx
