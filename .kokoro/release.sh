@@ -51,6 +51,7 @@ elif [[ $KOKORO_JOB_NAME == *"functions-framework-api"* ]]; then
 else
   cd invoker
 fi
+echo "pwd=$(pwd)"
 
 # Make sure `JAVA_HOME` is set and using jdk11.
 sudo update-java-alternatives --set java-1.11.0-openjdk-amd64
