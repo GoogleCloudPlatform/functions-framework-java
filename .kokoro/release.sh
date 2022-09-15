@@ -40,10 +40,10 @@ create_settings_xml_file() {
 }
 
 setup_environment_secrets
-create_settings_xml_file "settings.xml"
 
 # Pick the right package to release based on the Kokoro job name.
 cd ${KOKORO_ARTIFACTS_DIR}/github/functions-framework-java
+create_settings_xml_file "settings.xml"
 echo "KOKORO_JOB_NAME=${KOKORO_JOB_NAME}"
 if [[ $KOKORO_JOB_NAME == *"function-maven-plugin"* ]]; then
   cd function-maven-plugin
@@ -57,4 +57,9 @@ echo "pwd=$(pwd)"
 # Make sure `JAVA_HOME` is set and using jdk11.
 sudo update-java-alternatives --set java-1.11.0-openjdk-amd64
 echo "JAVA_HOME=$JAVA_HOME"
-mvn clean deploy -P sonatype-oss-release
+mvn clean deploy -B \
+  -P sonatype-oss-release \
+  --settings=../settings.xml \
+  -Dgpg.executable=gpg \
+  -Dgpg.passphrase=${GPG_PASSPHRASE} \
+  -Dgpg.homedir=${GNUPGHOME}
