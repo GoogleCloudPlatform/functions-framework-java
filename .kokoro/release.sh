@@ -55,7 +55,7 @@ fi
 echo "pwd=$(pwd)"
 
 # Make sure `JAVA_HOME` is set and using jdk11.
-sudo update-java-alternatives --set java-1.11.0-openjdk-amd64
+export JAVA_HOME=/usr/lib/jvm/java-1.11.0-openjdk-amd64
 echo "JAVA_HOME=$JAVA_HOME"
 mvn clean deploy -B \
   -P sonatype-oss-release \
