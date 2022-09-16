@@ -10,6 +10,8 @@ setup_environment_secrets() {
   export GNUPGHOME=/tmp/gpg
   mkdir $GNUPGHOME
   mv ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-gpg-pubring $GNUPGHOME/pubring.kbx
+  # Restart the gpg-agent to avoid the error of no default secret key.
+  gpg -k
 }
 
 create_settings_xml_file() {
