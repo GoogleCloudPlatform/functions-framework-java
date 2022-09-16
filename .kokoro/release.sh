@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Stop execution when any command fails.
+set -e
+
 # Get secrets from keystore and set and environment variables.
 setup_environment_secrets() {
   export SONATYPE_USERNAME=functions-framework-release-bot
@@ -11,7 +14,7 @@ setup_environment_secrets() {
   mkdir $GNUPGHOME
   mv ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-gpg-pubring $GNUPGHOME/pubring.kbx
   # Restart the gpg-agent to avoid the error of no default secret key.
-  gpg -k
+  gpg2 -k
 }
 
 create_settings_xml_file() {
@@ -62,6 +65,6 @@ echo "JAVA_HOME=$JAVA_HOME"
 mvn clean deploy -B \
   -P sonatype-oss-release \
   --settings=../settings.xml \
-  -Dgpg.executable=gpg \
+  -Dgpg.executable=gpg2 \
   -Dgpg.passphrase=${GPG_PASSPHRASE} \
   -Dgpg.homedir=${GNUPGHOME}
