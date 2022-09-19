@@ -7,12 +7,14 @@ set -e
 setup_environment_secrets() {
   export SONATYPE_USERNAME=functions-framework-release-bot
   export SONATYPE_PASSWORD=$(cat ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-sonatype-password)
-  export GPG_PASSPHRASE=$(cat ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-gpg-passphrase)
+  export GPG_PASSPHRASE=$(cat ${KOKORO_KEYSTORE_DIR}/70247_maven-gpg-passphrase)
 
-  # Add the keybox file to $GNUPGHOME to verify the GPG credentials.
+  # Add the key ring files to $GNUPGHOME to verify the GPG credentials.
   export GNUPGHOME=/tmp/gpg
   mkdir $GNUPGHOME
-  mv ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-gpg-pubring $GNUPGHOME/pubring.kbx
+  mv ${KOKORO_KEYSTORE_DIR}/70247_maven-gpg-pubkeyring $GNUPGHOME/pubring.gpg
+  mv ${KOKORO_KEYSTORE_DIR}/70247_maven-gpg-keyring $GNUPGHOME/secring.gpg
+  gpg -k
 }
 
 create_settings_xml_file() {
@@ -63,6 +65,6 @@ echo "JAVA_HOME=$JAVA_HOME"
 mvn clean deploy -B \
   -P sonatype-oss-release \
   --settings=../settings.xml \
-  -Dgpg.executable=gpg2 \
+  -Dgpg.executable=gpg \
   -Dgpg.passphrase=${GPG_PASSPHRASE} \
   -Dgpg.homedir=${GNUPGHOME}
