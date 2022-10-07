@@ -46,19 +46,24 @@ create_settings_xml_file() {
 
 setup_environment_secrets
 
-# Pick the right package to release and checkout the latest release tag
-# based on the Kokoro job name.
+# Checkout the release PR.
 cd ${KOKORO_ARTIFACTS_DIR}/github/functions-framework-java
+# AUTORELEASE_PR has the format of "https://github.com/GoogleCloudPlatform/functions-framework-java/pull/$NUMBER".
+echo "AUTORELEASE_PR=${AUTORELEASE_PR}"
+PR_NUMBER=$(echo $AUTORELEASE_PR | tr -dc '0-9')
+echo "PR_NUMBER=${PR_NUMBER}"
+git fetch origin pull/${PR_NUMBER}/head:MAIN
+git checkout MAIN
+
 create_settings_xml_file "settings.xml"
+
+# Pick the right package to release based on the Kokoro job name.
 echo "KOKORO_JOB_NAME=${KOKORO_JOB_NAME}"
 if [[ $KOKORO_JOB_NAME == *"function-maven-plugin"* ]]; then
-  git checkout $(git describe --tags `git rev-list --tags=function-maven-plugin-* --max-count=1`)
   cd function-maven-plugin
 elif [[ $KOKORO_JOB_NAME == *"functions-framework-api"* ]]; then
-  git checkout $(git describe --tags `git rev-list --tags=functions-framework-api-* --max-count=1`)
   cd functions-framework-api
 else
-  git checkout $(git describe --tags `git rev-list --tags=java-function-invoker-* --max-count=1`)
   cd invoker
 fi
 echo "pwd=$(pwd)"
