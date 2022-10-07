@@ -54,7 +54,7 @@ echo "KOKORO_JOB_NAME=${KOKORO_JOB_NAME}"
 if [[ $KOKORO_JOB_NAME == *"function-maven-plugin"* ]]; then
   git checkout $(git describe --tags `git rev-list --tags=function-maven-plugin-* --max-count=1`)
   cd function-maven-plugin
-elif [[ $KOKORO_JOB_NAME == *"functions-framework-api"* ]]; then 
+elif [[ $KOKORO_JOB_NAME == *"functions-framework-api"* ]]; then
   git checkout $(git describe --tags `git rev-list --tags=functions-framework-api* --max-count=1`)
   cd functions-framework-api
 else
