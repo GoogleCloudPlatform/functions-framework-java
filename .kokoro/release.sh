@@ -48,7 +48,8 @@ setup_environment_secrets
 
 # Checkout the release PR.
 cd ${KOKORO_ARTIFACTS_DIR}/github/functions-framework-java
-# AUTORELEASE_PR has the format of "https://github.com/GoogleCloudPlatform/functions-framework-java/pull/$NUMBER".
+# AUTORELEASE_PR is injected by release-trigger and has the format of
+# "https://github.com/GoogleCloudPlatform/functions-framework-java/pull/$NUMBER".
 echo "AUTORELEASE_PR=${AUTORELEASE_PR}"
 PR_NUMBER=$(echo $AUTORELEASE_PR | tr -dc '0-9')
 echo "PR_NUMBER=${PR_NUMBER}"
