@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 jobs:
   java11-buildpack-test:
-    uses: GoogleCloudPlatform/functions-framework-conformance/.github/workflows/buildpack-integration-test.yml@v1.4.1
+    uses: GoogleCloudPlatform/functions-framework-conformance/.github/workflows/buildpack-integration-test.yml@v1.8.0
     with:
       http-builder-source: '/tmp/tests/conformance'
       http-builder-target: 'com.google.cloud.functions.conformance.HttpConformanceFunction'
@@ -15,10 +15,8 @@ jobs:
       cloudevent-builder-target: 'com.google.cloud.functions.conformance.CloudEventsConformanceFunction'
       prerun: 'invoker/conformance/prerun.sh'
       builder-runtime: 'java11'
-      # Latest uploaded tag from us.gcr.io/fn-img/us/buildpacks/java11/builder
-      builder-tag: 'java11_20220620_11_0_RC00'
   java17-buildpack-test:
-    uses: GoogleCloudPlatform/functions-framework-conformance/.github/workflows/buildpack-integration-test.yml@v1.4.1
+    uses: GoogleCloudPlatform/functions-framework-conformance/.github/workflows/buildpack-integration-test.yml@v1.8.0
     with:
       http-builder-source: '/tmp/tests/conformance'
       http-builder-target: 'com.google.cloud.functions.conformance.HttpConformanceFunction'
@@ -26,5 +24,3 @@ jobs:
       cloudevent-builder-target: 'com.google.cloud.functions.conformance.CloudEventsConformanceFunction'
       prerun: 'invoker/conformance/prerun.sh'
       builder-runtime: 'java17'
-      # Latest uploaded tag from us.gcr.io/fn-img/us/buildpacks/java17/builder
-      builder-tag: 'java17_20220617_17_0_RC00'
