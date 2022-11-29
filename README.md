@@ -305,7 +305,7 @@ It is a list of entries separated by `:` (`;` on Windows), where each entry is:
   in that directory (file called `foo.jar`) is treated the same way as if it
   had been named explicitly.
 
-#### Simplifying the claspath
+#### Simplifying the classpath
 
 Specifying the right classpath can be tricky. A simpler alternative is to
 build the function as a "fat jar", where the function code and all its
