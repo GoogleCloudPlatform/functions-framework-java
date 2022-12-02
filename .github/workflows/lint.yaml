@@ -25,16 +25,18 @@ jobs:
   formatting:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2 # v2 minimum required
+      - uses: actions/checkout@v3 # v2 minimum required
       - name: Run formatter
         id: formatter
         uses: axel-op/googlejavaformat-action@v3
         with:
-          args: "--dry-run --set-exit-if-changed"
-        continue-on-error: true
+          args: "--replace"
+          skip-commit: true
+      - name: Print diffs
+        run: git --no-pager diff --exit-code
       - name: Check for failure
         if: steps.formatter.outcome != 'success'
         run: |
-          echo "Java format check failed, see 'Run formatter' step for more information."
+          echo "Java format check failed, see 'Print diffs' step for more information."
           echo "See https://github.com/google/google-java-format for options on running the formatter locally."
           exit 1
