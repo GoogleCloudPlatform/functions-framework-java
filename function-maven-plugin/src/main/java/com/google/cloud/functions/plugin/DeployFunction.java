@@ -212,12 +212,10 @@ public class DeployFunction extends CloudSdkMojo {
    */
   @Parameter(alias = "deploy.buildenvvarsfile", property = "function.deploy.buildenvvarsfile")
   String buildEnvVarsFile;
-  /**
-  * If true, deploys the function in the 2nd Generation Environment.
-  */
+  /** If true, deploys the function in the 2nd Generation Environment. */
   @Parameter(alias = "deploy.gen2", property = "function.deploy.gen2", defaultValue = "false")
   boolean gen2;
-    
+
   boolean hasEnvVariables() {
     return (this.environmentVariables != null && !this.environmentVariables.isEmpty());
   }
