@@ -34,9 +34,3 @@ jobs:
           skip-commit: true
       - name: Print diffs
         run: git --no-pager diff --exit-code
-      - name: Check for failure
-        if: steps.formatter.outcome != 'success'
-        run: |
-          echo "Java format check failed, see 'Print diffs' step for more information."
-          echo "See https://github.com/google/google-java-format for options on running the formatter locally."
-          exit 1
