@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-        working-directory: ['invoker', 'functions-framework-api', 'functions-maven-plugin']
+        working-directory: ['invoker', 'functions-framework-api', 'function-maven-plugin']
 
     steps:
     - name: Checkout repository
