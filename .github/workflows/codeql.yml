@@ -21,10 +21,6 @@ jobs:
       fail-fast: false
       matrix: 
         working-directory: ['invoker', 'functions-framework-api', 'functions-maven-plugin']
-        
-    defaults:
-      run:
-        working-directory: ${{ matrix.working-directory }}
 
     steps:
     - name: Checkout repository
@@ -48,6 +44,8 @@ jobs:
     # If this step fails, then you should remove it and run the build manually (see below)
     - name: Autobuild
       uses: github/codeql-action/autobuild@v2
+      with:
+        working-directory: ${{ matrix.working-directory }}
 
     # ℹ️ Command-line programs to run using the OS shell.
     # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
