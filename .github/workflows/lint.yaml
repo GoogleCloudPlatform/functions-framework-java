@@ -5,13 +5,21 @@ on:
     - master
   pull_request:
   workflow_dispatch:
+permissions:
+  contents: read
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - name: Harden Runner
+      uses: step-security/harden-runner@18bf8ad2ca49c14cbb28b91346d626ccfb00c518 # v2.1.0
+      with:
+        egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+    - uses: actions/checkout@dc323e67f16fb5f7663d20ff7941f27f5809e9b6 # v2.6.0
     - name: Set up JDK
-      uses: actions/setup-java@v1
+      uses: actions/setup-java@d202f5dbf7256730fb690ec59f6381650114feb2 # v1.4.3
       with:
         java-version: 11.x
     - name: Build API with Maven
@@ -25,10 +33,15 @@ jobs:
   formatting:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3 # v2 minimum required
+      - name: Harden Runner
+        uses: step-security/harden-runner@18bf8ad2ca49c14cbb28b91346d626ccfb00c518 # v2.1.0
+        with:
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0 # v2 minimum required
       - name: Run formatter
         id: formatter
-        uses: axel-op/googlejavaformat-action@v3
+        uses: axel-op/googlejavaformat-action@dbff853fb823671ec5781365233bf86543b13215 # v3
         with:
           args: "--replace"
           skip-commit: true
