@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.servlet.ServletException;
@@ -116,8 +117,12 @@ public class HttpRequestImpl implements HttpRequest {
   @Override
   public Map<String, List<String>> getHeaders() {
     return Collections.list(request.getHeaderNames()).stream()
-        .map(name -> new SimpleEntry<>(name, Collections.list(request.getHeaders(name))))
-        .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+        .collect(
+            toMap(
+                name -> name,
+                name -> Collections.list(request.getHeaders(name)),
+                (a, b) -> b,
+                () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
   }
 
   private static class HttpPartImpl implements HttpPart {
