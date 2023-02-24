@@ -181,6 +181,9 @@ public class HttpTest {
         assertThat(request.getHeaders()).containsAtLeastEntriesIn(expectedHeaders);
       },
       request -> assertThat(request.getFirstHeader("foo")).hasValue("bar"),
+      request -> assertThat(request.getFirstHeader("CaSe-SeNsItIvE")).hasValue("VaLuE"),
+      // This behavior is an atypical quirk of the case sensitive getFirstHeader() method
+      request -> assertThat(request.getFirstHeader("case-sensitive")).isEmpty(),
       request -> {
         try {
           request.getParts();
@@ -197,6 +200,7 @@ public class HttpTest {
               .header(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8")
               .header("foo", "bar")
               .header("foo", "baz")
+              .header("CaSe-SeNsItIvE", "VaLuE")
               .content(new StringContentProvider(TEST_BODY));
       ContentResponse response = request.send();
       assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
