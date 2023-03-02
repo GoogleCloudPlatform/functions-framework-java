@@ -181,6 +181,8 @@ public class HttpTest {
         assertThat(request.getHeaders()).containsAtLeastEntriesIn(expectedHeaders);
       },
       request -> assertThat(request.getFirstHeader("foo")).hasValue("bar"),
+      request -> assertThat(request.getFirstHeader("CaSe-SeNsItIvE")).hasValue("VaLuE"),
+      request -> assertThat(request.getFirstHeader("case-sensitive")).hasValue("VaLuE"),
       request -> {
         try {
           request.getParts();
@@ -197,6 +199,7 @@ public class HttpTest {
               .header(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8")
               .header("foo", "bar")
               .header("foo", "baz")
+              .header("CaSe-SeNsItIvE", "VaLuE")
               .content(new StringContentProvider(TEST_BODY));
       ContentResponse response = request.send();
       assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
@@ -352,11 +355,10 @@ public class HttpTest {
         // So we just check that we can add our own headers.
         response.appendHeader("foo", "bar");
         response.appendHeader("wibbly", "wobbly");
-        response.appendHeader("foo", "baz");
-        Map<String, List<String>> updatedHeaders = new TreeMap<>(response.getHeaders());
-        updatedHeaders.keySet().removeAll(initialHeaders.keySet());
+        response.appendHeader("FoO", "baz");
+        var updatedHeaders = response.getHeaders();
         assertThat(updatedHeaders)
-            .containsExactly("foo", Arrays.asList("bar", "baz"), "wibbly", Arrays.asList("wobbly"));
+            .containsAtLeast("foo", Arrays.asList("bar", "baz"), "wibbly", Arrays.asList("wobbly"));
       },
     };
     for (HttpResponseTest test : tests) {
