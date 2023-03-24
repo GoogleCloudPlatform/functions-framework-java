@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.2.0...java-function-invoker-v1.2.1) (2023-03-02)
+
+
+### Bug Fixes
+
+* retrieving http headers on request object should be case insenstive ([#178](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/178)) ([44da871](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/44da871e06e967ce132bea06c3b7c5d1b06ddd6b))
+
 ## [1.2.0](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.1.1...java-function-invoker-v1.2.0) (2022-10-05)
 
 
