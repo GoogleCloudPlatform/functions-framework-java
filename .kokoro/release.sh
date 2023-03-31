@@ -5,6 +5,7 @@ set -e
 
 # Get secrets from keystore and set and environment variables.
 setup_environment_secrets() {
+  export GPG_TTY=$(tty)
   export SONATYPE_USERNAME=functions-framework-release-bot
   export SONATYPE_PASSWORD=$(cat ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-sonatype-password)
   export GPG_PASSPHRASE=$(cat ${KOKORO_KEYSTORE_DIR}/70247_maven-gpg-passphrase)
