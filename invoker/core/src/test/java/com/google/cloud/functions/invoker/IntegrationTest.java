@@ -383,6 +383,32 @@ public class IntegrationTest {
     }
   }
 
+  @Test
+  public void typedFunction() throws Exception {
+    URL resourceUrl = getClass().getResource("/typed_nameconcat_request.json");
+    assertThat(resourceUrl).isNotNull();
+    String originalJson = Resources.toString(resourceUrl, StandardCharsets.UTF_8);
+    testFunction(
+        SignatureType.TYPED,
+        fullTarget("Typed"),
+        ImmutableList.of(),
+        ImmutableList.of(
+            TestCase.builder()
+                .setRequestText(originalJson)
+                .setExpectedResponseText("{\"fullName\":\"JohnDoe\"}")
+                .build()));
+  }
+
+  @Test
+  public void typedVoidFunction() throws Exception {
+    testFunction(
+        SignatureType.TYPED,
+        fullTarget("TypedVoid"),
+        ImmutableList.of(),
+        ImmutableList.of(
+            TestCase.builder().setRequestText("{}").setExpectedResponseText("null").build()));
+  }
+
   private void backgroundTest(String target) throws Exception {
     File snoopFile = snoopFile();
     String gcfRequestText = sampleLegacyEvent(snoopFile);
@@ -571,6 +597,23 @@ public class IntegrationTest {
         ImmutableList.of(TestCase.builder().setRequestText(json.toString()).build()));
   }
 
+  /** Like {@link #classpathOptionHttp} but for typed functions. */
+  @Test
+  public void classpathOptionTyped() throws Exception {
+    URL resourceUrl = getClass().getResource("/typed_nameconcat_request.json");
+    assertThat(resourceUrl).isNotNull();
+    String originalJson = Resources.toString(resourceUrl, StandardCharsets.UTF_8);
+    testFunction(
+        SignatureType.TYPED,
+        "com.example.functionjar.Typed",
+        ImmutableList.of("--classpath", functionJarString()),
+        ImmutableList.of(
+            TestCase.builder()
+                .setRequestText(originalJson)
+                .setExpectedResponseText("{\"fullName\":\"JohnDoe\"}")
+                .build()));
+  }
+
   // In these tests, we test a number of different functions that express the same functionality
   // in different ways. Each function is invoked with a complete HTTP body that looks like a real
   // event. We start with a fixed body and insert into its JSON an extra property that tells the
@@ -659,7 +702,8 @@ public class IntegrationTest {
   private enum SignatureType {
     HTTP("http"),
     BACKGROUND("event"),
-    CLOUD_EVENT("cloudevent");
+    CLOUD_EVENT("cloudevent"),
+    TYPED("typed");
 
     private final String name;
 

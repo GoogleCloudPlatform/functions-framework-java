@@ -20,8 +20,10 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.google.cloud.functions.HttpFunction;
+import com.google.cloud.functions.TypedFunction;
 import com.google.cloud.functions.invoker.BackgroundFunctionExecutor;
 import com.google.cloud.functions.invoker.HttpFunctionExecutor;
+import com.google.cloud.functions.invoker.TypedFunctionExecutor;
 import com.google.cloud.functions.invoker.gcf.JsonLogHandler;
 import java.io.File;
 import java.io.IOException;
@@ -81,9 +83,10 @@ public class Invoker {
 
   static {
     if (isGcf()) {
-      // If we're running with Google Cloud Functions, we'll get better-looking logs if we arrange
-      // for them to be formatted using StackDriver's "structured logging" JSON format. Remove the
-      // JDK's standard logger and replace it with the JSON one.
+      // If we're running with Google Cloud Functions, we'll get better-looking logs
+      // if we arrange for them to be formatted using StackDriver's "structured
+      // logging" JSON format. Remove the JDK's standard logger and replace it with
+      // the JSON one.
       for (Handler handler : rootLogger.getHandlers()) {
         rootLogger.removeHandler(handler);
       }
@@ -252,11 +255,10 @@ public class Invoker {
    * <pre>{@code
    * // Create an invoker
    * Invoker invoker = new Invoker(
-   *         8081,
-   *         "org.example.MyHttpFunction",
-   *         "http",
-   *         Thread.currentThread().getContextClassLoader()
-   * );
+   *     8081,
+   *     "org.example.MyHttpFunction",
+   *     "http",
+   *     Thread.currentThread().getContextClassLoader());
    *
    * // Start the test server
    * invoker.startTestServer();
@@ -302,6 +304,9 @@ public class Invoker {
         case "event":
         case "cloudevent":
           servlet = BackgroundFunctionExecutor.forClass(functionClass);
+          break;
+        case "typed":
+          servlet = TypedFunctionExecutor.forClass(functionClass);
           break;
         default:
           String error =
@@ -350,9 +355,9 @@ public class Invoker {
         if (firstException == null) {
           firstException = e;
         }
-        // This might be a nested class like com.example.Foo.Bar. That will actually appear as
-        // com.example.Foo$Bar as far as Class.forName is concerned. So we try to replace every dot
-        // from the last to the first with a $ in the hope of finding a class we can load.
+        // This might be a nested class like com.example.Foo.Bar. That will actually
+        // appear as com.example.Foo$Bar as far as Class.forName is concerned. So we try to replace
+        // every dot from the last to the first with a $ in the hope of finding a class we can load.
         int lastDot = target.lastIndexOf('.');
         if (lastDot < 0) {
           throw firstException;
@@ -365,6 +370,9 @@ public class Invoker {
   private HttpServlet servletForDeducedSignatureType(Class<?> functionClass) {
     if (HttpFunction.class.isAssignableFrom(functionClass)) {
       return HttpFunctionExecutor.forClass(functionClass);
+    }
+    if (TypedFunction.class.isAssignableFrom(functionClass)) {
+      return TypedFunctionExecutor.forClass(functionClass);
     }
     Optional<BackgroundFunctionExecutor> maybeExecutor =
         BackgroundFunctionExecutor.maybeForClass(functionClass);
@@ -432,8 +440,8 @@ public class Invoker {
   }
 
   private static boolean isGcf() {
-    // This environment variable is set in the GCF environment but won't be set when invoking
-    // the Functions Framework directly. We don't use its value, just whether it is set.
+    // This environment variable is set in the GCF environment but won't be set when invoking the
+    // Functions Framework directly. We don't use its value, just whether it is set.
     return System.getenv("K_SERVICE") != null;
   }
 
@@ -509,7 +517,8 @@ public class Invoker {
 
     private static ClassLoader getSystemOrBootstrapClassLoader() {
       try {
-        // We're still building against the Java 8 API, so we have to use reflection for now.
+        // We're still building against the Java 8 API, so we have to use reflection for
+        // now.
         Method getPlatformClassLoader = ClassLoader.class.getMethod("getPlatformClassLoader");
         return (ClassLoader) getPlatformClassLoader.invoke(null);
       } catch (ReflectiveOperationException e) {

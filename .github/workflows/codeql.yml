@@ -53,7 +53,8 @@ jobs:
     - name: Build
       run: |
         (cd functions-framework-api/ && mvn install)
-        (cd ${{ matrix.working-directory }} && mvn compile)
+        (cd invoker/ && mvn clean install)
+        (cd function-maven-plugin && mvn install)
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@29b1f65c5e92e24fe6b6647da1eaabe529cec70f # v2.3.3
