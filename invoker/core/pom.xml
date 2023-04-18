@@ -102,7 +102,7 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <version>9.4.49.v20220914</version>
+      <version>11.0.14</version>
     </dependency>
     <dependency>
       <groupId>com.beust</groupId>
