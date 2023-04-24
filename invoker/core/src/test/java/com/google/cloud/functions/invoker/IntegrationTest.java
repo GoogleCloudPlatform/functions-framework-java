@@ -406,7 +406,7 @@ public class IntegrationTest {
         fullTarget("TypedVoid"),
         ImmutableList.of(),
         ImmutableList.of(
-            TestCase.builder().setRequestText("{}").setExpectedResponseText("null").build()));
+            TestCase.builder().setRequestText("{}").setExpectedResponseCode(204).build()));
   }
 
   private void backgroundTest(String target) throws Exception {

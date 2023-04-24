@@ -5,7 +5,7 @@ import com.google.cloud.functions.TypedFunction;
 public class Typed implements TypedFunction<NameConcatRequest, NameConcatResponse> {
 
   @Override
-  public NameConcatResponse handle(NameConcatRequest arg) throws Exception {
+  public NameConcatResponse apply(NameConcatRequest arg) throws Exception {
     return new NameConcatResponse().setFullName(arg.firstName + arg.lastName);
   }
 }

@@ -17,7 +17,7 @@ package com.google.cloud.functions;
 import java.lang.reflect.Type;
 
 @FunctionalInterface
-public interface TypedFunction<ReqT, RetT> {
+public interface TypedFunction<RequestT, ResponseT> {
   /**
    * Called to service an incoming event. This interface is implemented by user code to provide the
    * action for a given background function. If this method throws any exception (including any
@@ -26,7 +26,7 @@ public interface TypedFunction<ReqT, RetT> {
    * @param arg the payload of the event, deserialized from the original JSON string.
    * @throws Exception to produce a 500 status code in the HTTP response.
    */
-  RetT handle(ReqT arg) throws Exception;
+  ResponseT apply(RequestT arg) throws Exception;
 
   /**
    * Override configure to set configuration options for the function.

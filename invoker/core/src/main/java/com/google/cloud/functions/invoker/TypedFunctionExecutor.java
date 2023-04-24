@@ -22,6 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 public class TypedFunctionExecutor extends HttpServlet {
+  private static final String APPLY_METHOD = "apply";
   private static final Logger logger = Logger.getLogger("com.google.cloud.functions.invoker");
 
   private final Type argType;
@@ -35,18 +36,17 @@ public class TypedFunctionExecutor extends HttpServlet {
     this.configuration = configuration;
   }
 
-  public static TypedFunctionExecutor forClass(Class<?> maybeFunctionClazz) {
-
-    if (!TypedFunction.class.isAssignableFrom(maybeFunctionClazz)) {
+  public static TypedFunctionExecutor forClass(Class<?> genericClass) {
+    if (!TypedFunction.class.isAssignableFrom(genericClass)) {
       throw new RuntimeException(
           "Class "
-              + maybeFunctionClazz.getName()
+              + genericClass.getName()
               + " does not implement "
               + TypedFunction.class.getName());
     }
     @SuppressWarnings("unchecked")
     Class<? extends TypedFunction<?, ?>> clazz =
-        (Class<? extends TypedFunction<?, ?>>) maybeFunctionClazz.asSubclass(TypedFunction.class);
+        (Class<? extends TypedFunction<?, ?>>) genericClass.asSubclass(TypedFunction.class);
 
     Optional<Type> argType = TypedFunctionExecutor.handlerTypeArgument(clazz);
     if (argType.isEmpty()) {
@@ -82,8 +82,8 @@ public class TypedFunctionExecutor extends HttpServlet {
    */
   static Optional<Type> handlerTypeArgument(Class<? extends TypedFunction<?, ?>> functionClass) {
     return Arrays.stream(functionClass.getMethods())
-        .filter(m -> m.getName().equals("handle") && m.getParameterCount() == 1)
-        .map(m -> m.getGenericParameterTypes()[0])
+        .filter(method -> method.getName().equals(APPLY_METHOD) && method.getParameterCount() == 1)
+        .map(method -> method.getGenericParameterTypes()[0])
         .findFirst();
   }
 
@@ -92,54 +92,60 @@ public class TypedFunctionExecutor extends HttpServlet {
   public void service(HttpServletRequest req, HttpServletResponse res) {
     HttpRequestImpl reqImpl = new HttpRequestImpl(req);
     HttpResponseImpl respImpl = new HttpResponseImpl(res);
-    ClassLoader oldContextLoader = Thread.currentThread().getContextClassLoader();
+    ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
     try {
       Thread.currentThread().setContextClassLoader(func.getClass().getClassLoader());
-
-      WireFormat format = configuration.getFormat();
-
-      Object reqObj = null;
-      try {
-        reqObj = format.deserialize(reqImpl, argType);
-      } catch (Exception e) {
-        logger.log(Level.SEVERE, "Failed to parse request for " + func.getClass().getName(), e);
-        res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        return;
-      }
-
-      Object respObj = null;
-      try {
-        respObj = this.func.handle(reqObj);
-      } catch (Throwable t) {
-        logger.log(Level.SEVERE, "Failed to execute " + func.getClass().getName(), t);
-        res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-      }
-
-      try {
-        format.serialize(respObj, respImpl);
-      } catch (Exception e) {
-        logger.log(
-            Level.SEVERE, "Failed to serialize response for " + func.getClass().getName(), e);
-        res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        return;
-      }
-
+      handleRequest(reqImpl, respImpl);
     } finally {
-      Thread.currentThread().setContextClassLoader(oldContextLoader);
+      Thread.currentThread().setContextClassLoader(oldContextClassLoader);
+      flushResponse(respImpl);
+    }
+  }
+
+  private void handleRequest(HttpRequest req, HttpResponse resp) {
+    WireFormat format = configuration.getFormat();
+
+    Object reqObj = null;
+    try {
+      reqObj = format.deserialize(req, argType);
+    } catch (Throwable t) {
+      logger.log(Level.SEVERE, "Failed to parse request for " + func.getClass().getName(), t);
+      resp.setStatusCode(HttpServletResponse.SC_BAD_REQUEST);
+      return;
+    }
+
+    Object respObj = null;
+    try {
+      respObj = this.func.apply(reqObj);
+    } catch (Throwable t) {
+      logger.log(Level.SEVERE, "Failed to execute " + func.getClass().getName(), t);
+      resp.setStatusCode(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      return;
+    }
+
+    try {
+      format.serialize(respObj, resp);
+    } catch (Throwable t) {
+      logger.log(Level.SEVERE, "Failed to serialize response for " + func.getClass().getName(), t);
+      resp.setStatusCode(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      return;
+    }
+  }
+
+  private void flushResponse(HttpResponseImpl respImpl) {
+    try {
+      // We can't use HttpServletResponse.flushBuffer() because we wrap the
+      // PrintWriter returned by HttpServletResponse in our own BufferedWriter
+      // to match our API. So we have to flush whichever of getWriter() or
+      // getOutputStream() works.
       try {
-        // We can't use HttpServletResponse.flushBuffer() because we wrap the
-        // PrintWriter
-        // returned by HttpServletResponse in our own BufferedWriter to match our API.
-        // So we have to flush whichever of getWriter() or getOutputStream() works.
-        try {
-          respImpl.getOutputStream().flush();
-        } catch (IllegalStateException e) {
-          respImpl.getWriter().flush();
-        }
-      } catch (IOException e) {
-        // Too bad, can't flush.
+        respImpl.getOutputStream().flush();
+      } catch (IllegalStateException e) {
+        respImpl.getWriter().flush();
       }
+    } catch (IOException e) {
+      // Too bad, can't flush.
     }
   }
 
@@ -170,6 +176,10 @@ public class TypedFunctionExecutor extends HttpServlet {
 
     @Override
     public void serialize(Object object, HttpResponse response) throws Exception {
+      if (object == null) {
+        response.setStatusCode(204);
+        return;
+      }
       try (BufferedWriter bodyWriter = response.getWriter()) {
         gson.toJson(object, bodyWriter);
       }

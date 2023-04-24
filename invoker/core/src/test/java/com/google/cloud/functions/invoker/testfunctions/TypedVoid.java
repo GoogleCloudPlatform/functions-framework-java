@@ -4,7 +4,7 @@ import com.google.cloud.functions.TypedFunction;
 
 public class TypedVoid implements TypedFunction<Request, Void> {
   @Override
-  public Void handle(Request arg) throws Exception {
+  public Void apply(Request arg) throws Exception {
     return null;
   }
 }

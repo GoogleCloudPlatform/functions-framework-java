@@ -22,7 +22,7 @@ public class TypedFunctionExecutorTest {
   private static class NameConcatFunction
       implements TypedFunction<NameConcatRequest, NameConcatResponse> {
     @Override
-    public NameConcatResponse handle(NameConcatRequest arg) throws Exception {
+    public NameConcatResponse apply(NameConcatRequest arg) throws Exception {
       NameConcatResponse resp = new NameConcatResponse();
       resp.fullName = arg.firstName + arg.lastName;
       return resp;
