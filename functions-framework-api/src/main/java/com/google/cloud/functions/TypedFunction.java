@@ -16,6 +16,9 @@ package com.google.cloud.functions;
 
 import java.lang.reflect.Type;
 
+/**
+ * Represents a Cloud Function with a strongly typed interface that is activated by an HTTP request.
+ */
 @FunctionalInterface
 public interface TypedFunction<RequestT, ResponseT> {
   /**
@@ -24,16 +27,17 @@ public interface TypedFunction<RequestT, ResponseT> {
    * {@link Error}) then the HTTP response will have a 500 status code.
    *
    * @param arg the payload of the event, deserialized from the original JSON string.
+   * @return invocation result or null to indicate the body of the response should be empty.
    * @throws Exception to produce a 500 status code in the HTTP response.
    */
-  ResponseT apply(RequestT arg) throws Exception;
+  public ResponseT apply(RequestT arg) throws Exception;
 
   /**
    * Override configure to set configuration options for the function.
    *
    * @param config mutable configuration object.
    */
-  default void configure(Configuration config) {}
+  public default void configure(Configuration config) {}
 
   /** Configures the function contract. */
   public static interface Configuration {
@@ -41,10 +45,17 @@ public interface TypedFunction<RequestT, ResponseT> {
      * Registers a {@code WireFormat} responsible for decoding the request and encoding the
      * response. By default, the function framework provides a an implementation for JSON
      * encoding/decoding.
+     *
+     * @param format to use with function invocations..
+     * @return this
      */
     Configuration setWireFormat(WireFormat format);
   }
 
+  /**
+   * Describes how to deserialize request object and serialize response objects for an HTTP
+   * invocation.
+   */
   public static interface WireFormat {
     /** Serialize is expected to encode the object to the provided HttpResponse. */
     void serialize(Object object, HttpResponse response) throws Exception;

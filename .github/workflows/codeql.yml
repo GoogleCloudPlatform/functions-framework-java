@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix: 
         # Autobuild each of these seperate maven projects
-        working-directory: ['functions-framework-api', 'invoker', 'function-maven-plugin']
+        working-directory: ['invoker', 'functions-framework-api', 'function-maven-plugin']
 
     steps:
     - name: Harden Runner

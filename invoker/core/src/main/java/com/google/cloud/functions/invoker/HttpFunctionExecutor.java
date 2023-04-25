@@ -17,7 +17,6 @@ package com.google.cloud.functions.invoker;
 import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.invoker.http.HttpRequestImpl;
 import com.google.cloud.functions.invoker.http.HttpResponseImpl;
-import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.http.HttpServlet;
@@ -72,18 +71,7 @@ public class HttpFunctionExecutor extends HttpServlet {
       res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     } finally {
       Thread.currentThread().setContextClassLoader(oldContextLoader);
-      try {
-        // We can't use HttpServletResponse.flushBuffer() because we wrap the PrintWriter
-        // returned by HttpServletResponse in our own BufferedWriter to match our API.
-        // So we have to flush whichever of getWriter() or getOutputStream() works.
-        try {
-          respImpl.getOutputStream().flush();
-        } catch (IllegalStateException e) {
-          respImpl.getWriter().flush();
-        }
-      } catch (IOException e) {
-        // Too bad, can't flush.
-      }
+      respImpl.flush();
     }
   }
 }

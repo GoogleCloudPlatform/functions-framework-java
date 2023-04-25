@@ -11,7 +11,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Optional;
@@ -26,27 +25,27 @@ public class TypedFunctionExecutor extends HttpServlet {
   private static final Logger logger = Logger.getLogger("com.google.cloud.functions.invoker");
 
   private final Type argType;
-  private final TypedFunction<Object, Object> func;
+  private final TypedFunction<Object, Object> function;
   private final ConfigurationImpl configuration;
 
   private TypedFunctionExecutor(
       Type argType, TypedFunction<Object, Object> func, ConfigurationImpl configuration) {
     this.argType = argType;
-    this.func = func;
+    this.function = func;
     this.configuration = configuration;
   }
 
-  public static TypedFunctionExecutor forClass(Class<?> genericClass) {
-    if (!TypedFunction.class.isAssignableFrom(genericClass)) {
+  public static TypedFunctionExecutor forClass(Class<?> functionClass) {
+    if (!TypedFunction.class.isAssignableFrom(functionClass)) {
       throw new RuntimeException(
           "Class "
-              + genericClass.getName()
+              + functionClass.getName()
               + " does not implement "
               + TypedFunction.class.getName());
     }
     @SuppressWarnings("unchecked")
     Class<? extends TypedFunction<?, ?>> clazz =
-        (Class<? extends TypedFunction<?, ?>>) genericClass.asSubclass(TypedFunction.class);
+        (Class<? extends TypedFunction<?, ?>>) functionClass.asSubclass(TypedFunction.class);
 
     Optional<Type> argType = TypedFunctionExecutor.handlerTypeArgument(clazz);
     if (argType.isEmpty()) {
@@ -54,9 +53,9 @@ public class TypedFunctionExecutor extends HttpServlet {
           "Class " + clazz.getName() + " does not implement " + TypedFunction.class.getName());
     }
 
-    TypedFunction<?, ?> funcInstance;
+    TypedFunction<?, ?> typedFunction;
     try {
-      funcInstance = clazz.getDeclaredConstructor().newInstance();
+      typedFunction = clazz.getDeclaredConstructor().newInstance();
     } catch (Exception e) {
       throw new RuntimeException(
           "Class "
@@ -67,12 +66,12 @@ public class TypedFunctionExecutor extends HttpServlet {
     }
 
     ConfigurationImpl configuration = new ConfigurationImpl();
-    funcInstance.configure(configuration);
+    typedFunction.configure(configuration);
 
     @SuppressWarnings("unchecked")
     TypedFunctionExecutor executor =
         new TypedFunctionExecutor(
-            argType.orElseThrow(), (TypedFunction<Object, Object>) funcInstance, configuration);
+            argType.orElseThrow(), (TypedFunction<Object, Object>) typedFunction, configuration);
     return executor;
   }
 
@@ -91,61 +90,46 @@ public class TypedFunctionExecutor extends HttpServlet {
   @Override
   public void service(HttpServletRequest req, HttpServletResponse res) {
     HttpRequestImpl reqImpl = new HttpRequestImpl(req);
-    HttpResponseImpl respImpl = new HttpResponseImpl(res);
+    HttpResponseImpl resImpl = new HttpResponseImpl(res);
     ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
 
     try {
-      Thread.currentThread().setContextClassLoader(func.getClass().getClassLoader());
-      handleRequest(reqImpl, respImpl);
+      Thread.currentThread().setContextClassLoader(function.getClass().getClassLoader());
+      handleRequest(reqImpl, resImpl);
     } finally {
       Thread.currentThread().setContextClassLoader(oldContextClassLoader);
-      flushResponse(respImpl);
+      resImpl.flush();
     }
   }
 
-  private void handleRequest(HttpRequest req, HttpResponse resp) {
+  private void handleRequest(HttpRequest req, HttpResponse res) {
     WireFormat format = configuration.getFormat();
 
     Object reqObj = null;
     try {
       reqObj = format.deserialize(req, argType);
     } catch (Throwable t) {
-      logger.log(Level.SEVERE, "Failed to parse request for " + func.getClass().getName(), t);
-      resp.setStatusCode(HttpServletResponse.SC_BAD_REQUEST);
+      logger.log(Level.SEVERE, "Failed to parse request for " + function.getClass().getName(), t);
+      res.setStatusCode(HttpServletResponse.SC_BAD_REQUEST);
       return;
     }
 
-    Object respObj = null;
+    Object resObj = null;
     try {
-      respObj = this.func.apply(reqObj);
+      resObj = function.apply(reqObj);
     } catch (Throwable t) {
-      logger.log(Level.SEVERE, "Failed to execute " + func.getClass().getName(), t);
-      resp.setStatusCode(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      logger.log(Level.SEVERE, "Failed to execute " + function.getClass().getName(), t);
+      res.setStatusCode(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
       return;
     }
 
     try {
-      format.serialize(respObj, resp);
+      format.serialize(resObj, res);
     } catch (Throwable t) {
-      logger.log(Level.SEVERE, "Failed to serialize response for " + func.getClass().getName(), t);
-      resp.setStatusCode(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      logger.log(
+          Level.SEVERE, "Failed to serialize response for " + function.getClass().getName(), t);
+      res.setStatusCode(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
       return;
-    }
-  }
-
-  private void flushResponse(HttpResponseImpl respImpl) {
-    try {
-      // We can't use HttpServletResponse.flushBuffer() because we wrap the
-      // PrintWriter returned by HttpServletResponse in our own BufferedWriter
-      // to match our API. So we have to flush whichever of getWriter() or
-      // getOutputStream() works.
-      try {
-        respImpl.getOutputStream().flush();
-      } catch (IllegalStateException e) {
-        respImpl.getWriter().flush();
-      }
-    } catch (IOException e) {
-      // Too bad, can't flush.
     }
   }
 
