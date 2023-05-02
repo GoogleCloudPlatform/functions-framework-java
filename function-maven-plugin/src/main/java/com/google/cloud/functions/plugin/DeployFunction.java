@@ -182,36 +182,42 @@ public class DeployFunction extends CloudSdkMojo {
    */
   @Parameter(alias = "deploy.vpcconnector", property = "function.deploy.vpcconnector")
   String vpcConnector;
+
   /**
    * Sets the maximum number of instances for the function. A function execution that would exceed
    * max-instances times out.
    */
   @Parameter(alias = "deploy.maxinstances", property = "function.deploy.maxinstances")
   Integer maxInstances;
+
   /**
    * List of key-value pairs to set as environment variables. All existing environment variables
    * will be removed first.
    */
   @Parameter(alias = "deploy.setenvvars", property = "function.deploy.setenvvars")
   Map<String, String> environmentVariables;
+
   /**
    * Path to a local YAML file with definitions for all environment variables. All existing
    * environment variables will be removed before the new environment variables are added.
    */
   @Parameter(alias = "deploy.envvarsfile", property = "function.deploy.envvarsfile")
   String envVarsFile;
+
   /**
    * List of key-value pairs to set as build environment variables. All existing environment
    * variables will be removed first.
    */
   @Parameter(alias = "deploy.setbuildenvvars", property = "function.deploy.setbuildenvvars")
   Map<String, String> buildEnvironmentVariables;
+
   /**
    * Path to a local YAML file with definitions for all build environment variables. All existing
    * environment variables will be removed before the new environment variables are added.
    */
   @Parameter(alias = "deploy.buildenvvarsfile", property = "function.deploy.buildenvvarsfile")
   String buildEnvVarsFile;
+
   /** If true, deploys the function in the 2nd Generation Environment. */
   @Parameter(alias = "deploy.gen2", property = "function.deploy.gen2", defaultValue = "false")
   boolean gen2;
