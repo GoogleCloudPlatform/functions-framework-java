@@ -3,7 +3,6 @@ package com.google.cloud.functions.invoker;
 import com.google.cloud.functions.HttpRequest;
 import com.google.cloud.functions.HttpResponse;
 import com.google.cloud.functions.TypedFunction;
-import com.google.cloud.functions.TypedFunction.Configuration;
 import com.google.cloud.functions.TypedFunction.WireFormat;
 import com.google.cloud.functions.invoker.http.HttpRequestImpl;
 import com.google.cloud.functions.invoker.http.HttpResponseImpl;
@@ -26,13 +25,13 @@ public class TypedFunctionExecutor extends HttpServlet {
 
   private final Type argType;
   private final TypedFunction<Object, Object> function;
-  private final ConfigurationImpl configuration;
+  private final WireFormat format;
 
   private TypedFunctionExecutor(
-      Type argType, TypedFunction<Object, Object> func, ConfigurationImpl configuration) {
+      Type argType, TypedFunction<Object, Object> func, WireFormat format) {
     this.argType = argType;
     this.function = func;
-    this.configuration = configuration;
+    this.format = format;
   }
 
   public static TypedFunctionExecutor forClass(Class<?> functionClass) {
@@ -47,7 +46,7 @@ public class TypedFunctionExecutor extends HttpServlet {
     Class<? extends TypedFunction<?, ?>> clazz =
         (Class<? extends TypedFunction<?, ?>>) functionClass.asSubclass(TypedFunction.class);
 
-    Optional<Type> argType = TypedFunctionExecutor.handlerTypeArgument(clazz);
+    Optional<Type> argType = handlerTypeArgument(clazz);
     if (argType.isEmpty()) {
       throw new RuntimeException(
           "Class " + clazz.getName() + " does not implement " + TypedFunction.class.getName());
@@ -65,13 +64,15 @@ public class TypedFunctionExecutor extends HttpServlet {
               + e.toString());
     }
 
-    ConfigurationImpl configuration = new ConfigurationImpl();
-    typedFunction.configure(configuration);
+    WireFormat format = typedFunction.getWireFormat();
+    if (format == null) {
+      format = LazyDefaultFormatHolder.defaultFormat;
+    }
 
     @SuppressWarnings("unchecked")
     TypedFunctionExecutor executor =
         new TypedFunctionExecutor(
-            argType.orElseThrow(), (TypedFunction<Object, Object>) typedFunction, configuration);
+            argType.orElseThrow(), (TypedFunction<Object, Object>) typedFunction, format);
     return executor;
   }
 
@@ -103,9 +104,7 @@ public class TypedFunctionExecutor extends HttpServlet {
   }
 
   private void handleRequest(HttpRequest req, HttpResponse res) {
-    WireFormat format = configuration.getFormat();
-
-    Object reqObj = null;
+    Object reqObj;
     try {
       reqObj = format.deserialize(req, argType);
     } catch (Throwable t) {
@@ -114,7 +113,7 @@ public class TypedFunctionExecutor extends HttpServlet {
       return;
     }
 
-    Object resObj = null;
+    Object resObj;
     try {
       resObj = function.apply(reqObj);
     } catch (Throwable t) {
@@ -133,26 +132,8 @@ public class TypedFunctionExecutor extends HttpServlet {
     }
   }
 
-  private static class ConfigurationImpl implements TypedFunction.Configuration {
-    private WireFormat format = null;
-
-    WireFormat getFormat() {
-      if (format == null) {
-        synchronized (this) {
-          if (format == null) {
-            format = new GsonWireFormat();
-          }
-        }
-      }
-
-      return format;
-    }
-
-    @Override
-    public Configuration setWireFormat(WireFormat format) {
-      this.format = format;
-      return null;
-    }
+  private static class LazyDefaultFormatHolder {
+    static final WireFormat defaultFormat = new GsonWireFormat();
   }
 
   private static class GsonWireFormat implements TypedFunction.WireFormat {
@@ -161,7 +142,7 @@ public class TypedFunctionExecutor extends HttpServlet {
     @Override
     public void serialize(Object object, HttpResponse response) throws Exception {
       if (object == null) {
-        response.setStatusCode(204);
+        response.setStatusCode(HttpServletResponse.SC_NO_CONTENT);
         return;
       }
       try (BufferedWriter bodyWriter = response.getWriter()) {

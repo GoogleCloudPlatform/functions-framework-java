@@ -92,7 +92,8 @@ public class HttpResponseImpl implements HttpResponse {
       // platform classes is now frowned on and may draw warnings or even fail in subsequent
       // versions. We could instead wrap the OutputStream, but that would require us to deduce the
       // appropriate Charset, using logic like this:
-      // https://github.com/eclipse/jetty.project/blob/923ec38adf/jetty-server/src/main/java/org/eclipse/jetty/server/Response.java#L731 We may end up doing that if performance is an issue.
+      // https://github.com/eclipse/jetty.project/blob/923ec38adf/jetty-server/src/main/java/org/eclipse/jetty/server/Response.java#L731
+      // We may end up doing that if performance is an issue.
       writer = new BufferedWriter(response.getWriter());
     }
     return writer;

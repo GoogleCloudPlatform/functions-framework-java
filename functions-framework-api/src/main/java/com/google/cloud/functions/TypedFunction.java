@@ -22,9 +22,9 @@ import java.lang.reflect.Type;
 @FunctionalInterface
 public interface TypedFunction<RequestT, ResponseT> {
   /**
-   * Called to service an incoming event. This interface is implemented by user code to provide the
-   * action for a given background function. If this method throws any exception (including any
-   * {@link Error}) then the HTTP response will have a 500 status code.
+   * Called to service an incoming HTTP request. This interface is implemented by user code to
+   * provide the action for a given HTTP function. If this method throws any exception (including
+   * any {@link Error}) then the HTTP response will have a 500 status code.
    *
    * @param arg the payload of the event, deserialized from the original JSON string.
    * @return invocation result or null to indicate the body of the response should be empty.
@@ -33,30 +33,20 @@ public interface TypedFunction<RequestT, ResponseT> {
   public ResponseT apply(RequestT arg) throws Exception;
 
   /**
-   * Override configure to set configuration options for the function.
+   * Called to get the the format object that handles request decoding and response encoding. If
+   * null is returned a default JSON format is used.
    *
-   * @param config mutable configuration object.
+   * @return the {@link WireFormat} to use for serialization
    */
-  public default void configure(Configuration config) {}
-
-  /** Configures the function contract. */
-  public static interface Configuration {
-    /**
-     * Registers a {@code WireFormat} responsible for decoding the request and encoding the
-     * response. By default, the function framework provides a an implementation for JSON
-     * encoding/decoding.
-     *
-     * @param format to use with function invocations..
-     * @return this
-     */
-    Configuration setWireFormat(WireFormat format);
+  public default WireFormat getWireFormat() {
+    return null;
   }
 
   /**
    * Describes how to deserialize request object and serialize response objects for an HTTP
    * invocation.
    */
-  public static interface WireFormat {
+  public interface WireFormat {
     /** Serialize is expected to encode the object to the provided HttpResponse. */
     void serialize(Object object, HttpResponse response) throws Exception;
 
