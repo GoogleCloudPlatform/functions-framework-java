@@ -46,7 +46,7 @@
     <dependency>
       <groupId>com.google.cloud.functions.invoker</groupId>
       <artifactId>java-function-invoker</artifactId>
-      <version>1.2.2-SNAPSHOT</version>
+      <version>1.2.3-SNAPSHOT</version>
     </dependency>
 
     <dependency>

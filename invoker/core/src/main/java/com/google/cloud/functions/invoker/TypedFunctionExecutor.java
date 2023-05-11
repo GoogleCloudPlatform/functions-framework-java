@@ -43,22 +43,25 @@ public class TypedFunctionExecutor extends HttpServlet {
               + TypedFunction.class.getName());
     }
     @SuppressWarnings("unchecked")
-    Class<? extends TypedFunction<?, ?>> clazz =
+    Class<? extends TypedFunction<?, ?>> typedFunctionClass =
         (Class<? extends TypedFunction<?, ?>>) functionClass.asSubclass(TypedFunction.class);
 
-    Optional<Type> argType = handlerTypeArgument(clazz);
+    Optional<Type> argType = handlerTypeArgument(typedFunctionClass);
     if (argType.isEmpty()) {
       throw new RuntimeException(
-          "Class " + clazz.getName() + " does not implement " + TypedFunction.class.getName());
+          "Class "
+              + typedFunctionClass.getName()
+              + " does not implement "
+              + TypedFunction.class.getName());
     }
 
     TypedFunction<?, ?> typedFunction;
     try {
-      typedFunction = clazz.getDeclaredConstructor().newInstance();
+      typedFunction = typedFunctionClass.getDeclaredConstructor().newInstance();
     } catch (Exception e) {
       throw new RuntimeException(
           "Class "
-              + clazz.getName()
+              + typedFunctionClass.getName()
               + " must declare a valid default constructor to be usable as a strongly typed"
               + " function. Could not use constructor: "
               + e.toString());
@@ -77,13 +80,15 @@ public class TypedFunctionExecutor extends HttpServlet {
   }
 
   /**
-   * Returns the {@code T} of a concrete class that implements {@link BackgroundFunction
-   * BackgroundFunction<T>}. Returns an empty {@link Optional} if {@code T} can't be determined.
+   * Returns the {@code ReqT} of a concrete class that implements {@link TypedFunction
+   * TypedFunction<ReqT, RespT>}. Returns an empty {@link Optional} if {@code ReqT} can't be
+   * determined.
    */
   static Optional<Type> handlerTypeArgument(Class<? extends TypedFunction<?, ?>> functionClass) {
     return Arrays.stream(functionClass.getMethods())
         .filter(method -> method.getName().equals(APPLY_METHOD) && method.getParameterCount() == 1)
         .map(method -> method.getGenericParameterTypes()[0])
+        .filter(type -> type != Object.class)
         .findFirst();
   }
 

@@ -33,6 +33,6 @@ class CustomFormat implements TypedFunction.WireFormat {
 
   @Override
   public void serialize(Object object, HttpResponse response) throws Exception {
-    response.getWriter().write((String)object);
+    response.getWriter().write((String) object);
   }
 }
