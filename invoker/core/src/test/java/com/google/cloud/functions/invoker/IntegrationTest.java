@@ -409,6 +409,20 @@ public class IntegrationTest {
             TestCase.builder().setRequestText("{}").setExpectedResponseCode(204).build()));
   }
 
+  @Test
+  public void typedCustomFormat() throws Exception {
+    testFunction(
+        SignatureType.TYPED,
+        fullTarget("TypedCustomFormat"),
+        ImmutableList.of(),
+        ImmutableList.of(
+            TestCase.builder()
+                .setRequestText("abc\n123\n$#@\n")
+                .setExpectedResponseText("abc123$#@")
+                .setExpectedResponseCode(200)
+                .build()));
+  }
+
   private void backgroundTest(String target) throws Exception {
     File snoopFile = snoopFile();
     String gcfRequestText = sampleLegacyEvent(snoopFile);
