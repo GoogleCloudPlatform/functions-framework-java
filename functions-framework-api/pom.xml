@@ -30,8 +30,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven-compiler-plugin.version>3.8.0</maven-compiler-plugin.version>
-    <maven-javadoc-plugin.version>3.1.0</maven-javadoc-plugin.version>
+    <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
+    <maven-javadoc-plugin.version>3.5.0</maven-javadoc-plugin.version>
     <junit.jupiter.version>5.3.2</junit.jupiter.version>
   </properties>
 
@@ -54,7 +54,7 @@
     <dependency>
       <groupId>io.cloudevents</groupId>
       <artifactId>cloudevents-api</artifactId>
-      <version>2.0.0.RC2</version>
+      <version>2.5.0</version>
     </dependency>
   </dependencies>
 
@@ -179,7 +179,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
-            <version>3.0.1</version>
+            <version>3.1.0</version>
             <executions>
               <execution>
                 <id>sign-artifacts</id>
