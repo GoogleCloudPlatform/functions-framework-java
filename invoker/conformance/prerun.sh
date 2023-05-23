@@ -27,13 +27,26 @@ mkdir /tmp/tests
 
 cp -r $REPO_ROOT/invoker/conformance /tmp/tests
 
-cd $REPO_ROOT/invoker
-mvn versions:set -DnewVersion=0.0.0-SNAPSHOT -DprocessAllModules=true
-mvn install -Dmaven.repo.local=/tmp/tests/conformance/artifacts
+function get_mvn_version() {
+  mvn -q \
+    -Dexec.executable=echo \
+    -Dexec.args='${project.version}' \
+    --non-recursive \
+    exec:exec
+}
 
+# Must first install a local version of the API package
 cd $REPO_ROOT/functions-framework-api 
-mvn versions:set -DnewVersion=0.0.0-SNAPSHOT -DprocessAllModules=true
 mvn install -Dmaven.repo.local=/tmp/tests/conformance/artifacts
+FRAMEWORK_API_VERSION=$(get_mvn_version)
+
+# Build invoker packages against the latest API package
+cd $REPO_ROOT/invoker
+mvn install -Dmaven.repo.local=/tmp/tests/conformance/artifacts
+INVOKER_VERSION=$(get_mvn_version)
 
 rm /tmp/tests/conformance/pom.xml
 mv /tmp/tests/conformance/buildpack_pom.xml /tmp/tests/conformance/pom.xml
+
+sed -i "s/FRAMEWORK-API-VERSION/${FRAMEWORK_API_VERSION}/g" /tmp/tests/conformance/pom.xml
+sed -i "s/INVOKER-VERSION/${INVOKER_VERSION}/g" /tmp/tests/conformance/pom.xml
