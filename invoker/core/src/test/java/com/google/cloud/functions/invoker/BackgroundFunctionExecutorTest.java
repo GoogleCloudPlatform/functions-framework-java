@@ -100,7 +100,6 @@ public class BackgroundFunctionExecutorTest {
       assertThat(context.eventType()).isEqualTo("google.pubsub.topic.publish");
       assertThat(context.eventId()).isEqualTo("1");
       assertThat(context.timestamp()).isNotNull();
-      ;
 
       JsonObject data = event.getData().getAsJsonObject();
       assertThat(data.get("data").getAsString()).isEqualTo("eyJmb28iOiJiYXIifQ==");

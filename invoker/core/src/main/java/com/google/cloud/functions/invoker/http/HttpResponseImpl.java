@@ -86,22 +86,32 @@ public class HttpResponseImpl implements HttpResponse {
   @Override
   public synchronized BufferedWriter getWriter() throws IOException {
     if (writer == null) {
-      // Unfortunately this means that we get two intermediate objects between the
-      // object we return
-      // and the underlying Writer that response.getWriter() wraps. We could try
-      // accessing the
-      // PrintWriter.out field via reflection, but that sort of access to non-public
-      // fields of
-      // platform classes is now frowned on and may draw warnings or even fail in
-      // subsequent
-      // versions.
-      // We could instead wrap the OutputStream, but that would require us to deduce
-      // the appropriate
-      // Charset, using logic like this:
+      // Unfortunately this means that we get two intermediate objects between the object we return
+      // and the underlying Writer that response.getWriter() wraps. We could try accessing the
+      // PrintWriter.out field via reflection, but that sort of access to non-public fields of
+      // platform classes is now frowned on and may draw warnings or even fail in subsequent
+      // versions. We could instead wrap the OutputStream, but that would require us to deduce the
+      // appropriate Charset, using logic like this:
       // https://github.com/eclipse/jetty.project/blob/923ec38adf/jetty-server/src/main/java/org/eclipse/jetty/server/Response.java#L731
       // We may end up doing that if performance is an issue.
       writer = new BufferedWriter(response.getWriter());
     }
     return writer;
+  }
+
+  public void flush() {
+    try {
+      // We can't use HttpServletResponse.flushBuffer() because we wrap the
+      // PrintWriter returned by HttpServletResponse in our own BufferedWriter
+      // to match our API. So we have to flush whichever of getWriter() or
+      // getOutputStream() works.
+      try {
+        getOutputStream().flush();
+      } catch (IllegalStateException e) {
+        getWriter().flush();
+      }
+    } catch (IOException e) {
+      // Too bad, can't flush.
+    }
   }
 }

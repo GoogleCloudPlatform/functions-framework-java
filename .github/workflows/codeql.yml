@@ -49,12 +49,12 @@ jobs:
         # queries: security-extended,security-and-quality
 
 
-    # Autobuild attempts to build any compiled languages  (C/C++, C#, Go, or Java).
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@29b1f65c5e92e24fe6b6647da1eaabe529cec70f # v2.3.3
-      with:
-        working-directory: ${{ matrix.working-directory }}
-        
+    
+    - name: Build
+      run: |
+        (cd functions-framework-api/ && mvn install)
+        (cd invoker/ && mvn clean install)
+        (cd function-maven-plugin && mvn install)
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@29b1f65c5e92e24fe6b6647da1eaabe529cec70f # v2.3.3
