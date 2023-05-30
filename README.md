@@ -7,6 +7,7 @@
 [![Java Unit CI](https://github.com/GoogleCloudPlatform/functions-framework-java/actions/workflows/unit.yaml/badge.svg)](https://github.com/GoogleCloudPlatform/functions-framework-java/actions/workflows/unit.yaml)
 [![Java Lint CI](https://github.com/GoogleCloudPlatform/functions-framework-java/actions/workflows/lint.yaml/badge.svg)](https://github.com/GoogleCloudPlatform/functions-framework-java/actions/workflows/lint.yaml)
 [![Java Conformance CI](https://github.com/GoogleCloudPlatform/functions-framework-java/actions/workflows/conformance.yaml/badge.svg)](https://github.com/GoogleCloudPlatform/functions-framework-java/actions/workflows/conformance.yaml)
+![Security Scorecard](https://api.securityscorecards.dev/projects/github.com/GoogleCloudPlatform/functions-framework-java/badge)
 
 An open source FaaS (Function as a service) framework for writing portable
 Java functions -- brought to you by the Google Cloud Functions team.
