@@ -15,8 +15,11 @@ jobs:
     - name: Harden Runner
       uses: step-security/harden-runner@128a63446a954579617e875aaab7d2978154e969 # v2.4.0
       with:
-        egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
-
+        disable-sudo: true
+        egress-policy: block
+        allowed-endpoints: >
+          github.com:443
+          repo.maven.apache.org:443
     - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
     - name: Set up JDK
       uses: actions/setup-java@5ffc13f4174014e2d4d4572b3d74c3fa61aeb2c2 # v3.11.0
