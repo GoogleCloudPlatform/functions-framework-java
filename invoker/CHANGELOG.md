@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.2.1...java-function-invoker-v1.3.0) (2023-06-01)
+
+
+### Features
+
+* Define strongly typed function interface ([#186](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/186)) ([5264e35](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/5264e35b2522a789d65f0e0fd9bb5584694529eb))
+
+
+### Bug Fixes
+
+* bump org.eclipse.jetty dependency to 9.4.51 ([#201](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/201)) ([0102c8f](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/0102c8f543280ff5ba5727508f87083a9f54ef74))
+
 ## [1.2.1](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.2.0...java-function-invoker-v1.2.1) (2023-03-02)
 
 
