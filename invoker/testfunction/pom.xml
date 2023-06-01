@@ -19,7 +19,7 @@
     <dependency>
       <groupId>com.google.cloud.functions</groupId>
       <artifactId>functions-framework-api</artifactId>
-      <version>1.0.6-SNAPSHOT</version>
+      <version>1.1.0</version>
     </dependency>
     <dependency>
       <!-- We don't actually use this; we just check that its classes can be
