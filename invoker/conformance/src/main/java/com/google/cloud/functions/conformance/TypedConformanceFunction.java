@@ -3,7 +3,8 @@ package com.google.cloud.functions.conformance;
 import com.google.cloud.functions.TypedFunction;
 import com.google.gson.annotations.SerializedName;
 
-public class TypedConformanceFunction implements TypedFunction<ConformanceRequest, ConformanceResponse> {
+public class TypedConformanceFunction
+    implements TypedFunction<ConformanceRequest, ConformanceResponse> {
   @Override
   public ConformanceResponse apply(ConformanceRequest req) throws Exception {
     return new ConformanceResponse(req);
