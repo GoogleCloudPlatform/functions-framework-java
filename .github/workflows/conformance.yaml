@@ -51,6 +51,9 @@ jobs:
     - name: Build invoker with Maven
       run: (cd invoker/ && mvn install)
 
+    - name: Build invoker Maven Plugin
+      run: (cd function-maven-plugin/ && mvn install)
+
     - name: Run HTTP conformance tests
       uses: GoogleCloudPlatform/functions-framework-conformance/action@2f5f319c06a3531be7f75dc5acf6bd00417ff76e # v1.8.2
       with:
