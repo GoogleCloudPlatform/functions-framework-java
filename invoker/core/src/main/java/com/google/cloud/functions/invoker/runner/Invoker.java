@@ -299,7 +299,11 @@ public class Invoker {
     } else {
       switch (functionSignatureType) {
         case "http":
-          servlet = HttpFunctionExecutor.forClass(functionClass);
+          if (TypedFunction.class.isAssignableFrom(functionClass)) {
+            servlet = TypedFunctionExecutor.forClass(functionClass);
+          } else {
+            servlet = HttpFunctionExecutor.forClass(functionClass);
+          }
           break;
         case "event":
         case "cloudevent":
