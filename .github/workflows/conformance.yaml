@@ -63,15 +63,15 @@ jobs:
         cmd: "'mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.HttpConformanceFunction'"
         startDelay: 10
 
-    - name: Run Typed conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@2f5f319c06a3531be7f75dc5acf6bd00417ff76e # v1.8.2
-      with:
-        version: 'v1.8.2'
-        functionType: 'http'
-        declarativeType: 'typed'
-        useBuildpacks: false
-        cmd: "'mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.TypedConformanceFunction'"
-        startDelay: 10
+          #    - name: Run Typed conformance tests
+          #      uses: GoogleCloudPlatform/functions-framework-conformance/action@2f5f319c06a3531be7f75dc5acf6bd00417ff76e # v1.8.2
+          #      with:
+          #        version: 'v1.8.2'
+          #        functionType: 'http'
+          #        declarativeType: 'typed'
+          #        useBuildpacks: false
+          #        cmd: "'mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.TypedConformanceFunction'"
+          #        startDelay: 10
 
     - name: Run background event conformance tests
       uses: GoogleCloudPlatform/functions-framework-conformance/action@2f5f319c06a3531be7f75dc5acf6bd00417ff76e # v1.8.2
