@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.3.0...java-function-invoker-v1.3.1) (2023-07-07)
+
+
+### Bug Fixes
+
+* typed declaration works correctly with http trigger ([#212](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/212)) ([b3045ad](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/b3045ad380cd23e37f5edec0d758031438bcb568))
+
 ## [1.3.0](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.2.1...java-function-invoker-v1.3.0) (2023-06-01)
 
 
