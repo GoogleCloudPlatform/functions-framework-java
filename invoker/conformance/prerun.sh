@@ -14,10 +14,9 @@
 # - Copy the conformance tests folder into temp
 # - Build java-function-invoker with version 0.0.0-SNAPSHOT into artifacts
 #  folder
-# - Build functions-framework-api with version 0.0.0-SNAPSHOT into artifacts 
+# - Build functions-framework-api with version 0.0.0-SNAPSHOT into artifacts
 # folder
 # - Ensure that we use the buildpack_pom.xml file by renaming it to pom.xml
-
 
 set -e
 REPO_ROOT=$(git rev-parse --show-toplevel)
@@ -36,7 +35,7 @@ function get_mvn_version() {
 }
 
 # Must first install a local version of the API package
-cd $REPO_ROOT/functions-framework-api 
+cd $REPO_ROOT/functions-framework-api
 mvn install -Dmaven.repo.local=/tmp/tests/conformance/artifacts
 FRAMEWORK_API_VERSION=$(get_mvn_version)
 
@@ -50,3 +49,5 @@ mv /tmp/tests/conformance/buildpack_pom.xml /tmp/tests/conformance/pom.xml
 
 sed -i "s/FRAMEWORK-API-VERSION/${FRAMEWORK_API_VERSION}/g" /tmp/tests/conformance/pom.xml
 sed -i "s/INVOKER-VERSION/${INVOKER_VERSION}/g" /tmp/tests/conformance/pom.xml
+
+cat /tmp/tests/conformance/pom.xml
