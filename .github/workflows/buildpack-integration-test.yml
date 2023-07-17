@@ -3,7 +3,7 @@ name: Buildpack Integration Test
 on:
   push:
     branches:
-      - master
+      - main
   workflow_dispatch:
 
 # Declare default permissions as read only.

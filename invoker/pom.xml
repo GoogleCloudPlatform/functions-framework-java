@@ -15,7 +15,7 @@
     Parent POM for the GCF Java Invoker. The project is structured like this so
     that we can have modules that build jar files for use in tests.
   </description>
-  <url>https://github.com/GoogleCloudPlatform/functions-framework-java/tree/master/invoker</url>
+  <url>https://github.com/GoogleCloudPlatform/functions-framework-java/tree/main/invoker</url>
 
   <scm>
     <url>http://github.com/GoogleCloudPlatform/functions-framework-java</url>

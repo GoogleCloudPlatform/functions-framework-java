@@ -17,7 +17,7 @@ package com.google.cloud.functions;
 /**
  * Represents a Cloud Function that is activated by an event. The payload of the event is a JSON
  * object, which can be parsed using a JSON package such as <a
- * href="https://github.com/google/gson/blob/master/UserGuide.md">GSON</a>.
+ * href="https://github.com/google/gson/blob/main/UserGuide.md">GSON</a>.
  *
  * <p>Here is an example of an implementation that parses the JSON payload using Gson, to access its
  * {@code messageId} property:

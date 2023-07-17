@@ -18,7 +18,7 @@ package com.google.cloud.functions;
  * Represents a Cloud Function that is activated by an event and parsed into a user-supplied class.
  * The payload of the event is a JSON object, which is deserialized into a user-defined class as
  * described for <a
- * href="https://github.com/google/gson/blob/master/UserGuide.md#TOC-Object-Examples">Gson</a>.
+ * href="https://github.com/google/gson/blob/main/UserGuide.md#TOC-Object-Examples">Gson</a>.
  *
  * <p>Here is an example of an implementation that accesses the {@code messageId} property from a
  * payload that matches a user-defined {@code PubSubMessage} class:
