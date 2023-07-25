@@ -165,6 +165,8 @@
           <archive>
             <manifest>
               <mainClass>com.google.cloud.functions.invoker.runner.Invoker</mainClass>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
             </manifest>
           </archive>
         </configuration>
