@@ -77,7 +77,7 @@ jobs:
       uses: GoogleCloudPlatform/functions-framework-conformance/action@64d4646c26d11281faf5e8813dd0fc8a9551cac3 # v1.8.5
       with:
         version: 'v1.8.5'
-        functionType: 'event'
+        functionType: 'legacyevent'
         useBuildpacks: false
         validateMapping: true
         cmd: "'mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.BackgroundEventConformanceFunction'"
