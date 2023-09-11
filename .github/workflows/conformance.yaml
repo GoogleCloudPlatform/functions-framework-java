@@ -20,7 +20,7 @@ jobs:
         ]
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@128a63446a954579617e875aaab7d2978154e969 # v2.4.0
+      uses: step-security/harden-runner@8ca2b8b2ece13480cda6dacd3511b49857a23c09 # v2.5.1
       with:
         disable-sudo: true
         egress-policy: block
@@ -32,16 +32,16 @@ jobs:
           repo.maven.apache.org:443
           storage.googleapis.com:443
 
-    - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+    - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
 
     - name: Set up JDK ${{ matrix.java }}
-      uses: actions/setup-java@5ffc13f4174014e2d4d4572b3d74c3fa61aeb2c2 # v3.11.0
+      uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # v3.12.0
       with:
         java-version: ${{ matrix.java }}
         distribution: temurin
 
     - name: Setup Go
-      uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753 # v4.0.1
+      uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
       with:
         go-version: '1.16'
 
@@ -55,7 +55,7 @@ jobs:
       run: (cd function-maven-plugin/ && mvn install)
 
     - name: Run HTTP conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@2f5f319c06a3531be7f75dc5acf6bd00417ff76e # v1.8.2
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@64d4646c26d11281faf5e8813dd0fc8a9551cac3 # v1.8.5
       with:
         version: 'v1.8.2'
         functionType: 'http'
@@ -64,7 +64,7 @@ jobs:
         startDelay: 10
 
     - name: Run Typed conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@2f5f319c06a3531be7f75dc5acf6bd00417ff76e # v1.8.2
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@64d4646c26d11281faf5e8813dd0fc8a9551cac3 # v1.8.5
       with:
         version: 'v1.8.2'
         functionType: 'http'
@@ -74,7 +74,7 @@ jobs:
         startDelay: 10
 
     - name: Run background event conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@2f5f319c06a3531be7f75dc5acf6bd00417ff76e # v1.8.2
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@64d4646c26d11281faf5e8813dd0fc8a9551cac3 # v1.8.5
       with:
         version: 'v1.8.2'
         functionType: 'legacyevent'
@@ -84,7 +84,7 @@ jobs:
         startDelay: 10
 
     - name: Run cloudevent conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@2f5f319c06a3531be7f75dc5acf6bd00417ff76e # v1.8.2
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@64d4646c26d11281faf5e8813dd0fc8a9551cac3 # v1.8.5
       with:
         version: 'v1.8.2'
         functionType: 'cloudevent'
@@ -94,7 +94,7 @@ jobs:
         startDelay: 10
 
     - name: Run HTTP concurrency conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@2f5f319c06a3531be7f75dc5acf6bd00417ff76e # v1.8.2
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@64d4646c26d11281faf5e8813dd0fc8a9551cac3 # v1.8.5
       with:
         version: 'v1.8.2'
         functionType: 'http'
