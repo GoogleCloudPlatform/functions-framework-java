@@ -57,7 +57,7 @@ jobs:
     - name: Run HTTP conformance tests
       uses: GoogleCloudPlatform/functions-framework-conformance/action@64d4646c26d11281faf5e8813dd0fc8a9551cac3 # v1.8.5
       with:
-        version: 'v1.8.2'
+        version: 'v1.8.5'
         functionType: 'http'
         useBuildpacks: false
         cmd: "'mvn -f invoker/conformance/pom.xml function:run -Drun.functionTarget=com.google.cloud.functions.conformance.HttpConformanceFunction'"
@@ -66,7 +66,7 @@ jobs:
     - name: Run Typed conformance tests
       uses: GoogleCloudPlatform/functions-framework-conformance/action@64d4646c26d11281faf5e8813dd0fc8a9551cac3 # v1.8.5
       with:
-        version: 'v1.8.2'
+        version: 'v1.8.5'
         functionType: 'http'
         declarativeType: 'typed'
         useBuildpacks: false
@@ -76,7 +76,7 @@ jobs:
     - name: Run background event conformance tests
       uses: GoogleCloudPlatform/functions-framework-conformance/action@64d4646c26d11281faf5e8813dd0fc8a9551cac3 # v1.8.5
       with:
-        version: 'v1.8.2'
+        version: 'v1.8.5'
         functionType: 'legacyevent'
         useBuildpacks: false
         validateMapping: true
@@ -86,7 +86,7 @@ jobs:
     - name: Run cloudevent conformance tests
       uses: GoogleCloudPlatform/functions-framework-conformance/action@64d4646c26d11281faf5e8813dd0fc8a9551cac3 # v1.8.5
       with:
-        version: 'v1.8.2'
+        version: 'v1.8.5'
         functionType: 'cloudevent'
         useBuildpacks: false
         validateMapping: true
@@ -96,7 +96,7 @@ jobs:
     - name: Run HTTP concurrency conformance tests
       uses: GoogleCloudPlatform/functions-framework-conformance/action@64d4646c26d11281faf5e8813dd0fc8a9551cac3 # v1.8.5
       with:
-        version: 'v1.8.2'
+        version: 'v1.8.5'
         functionType: 'http'
         useBuildpacks: false
         validateConcurrency: true
