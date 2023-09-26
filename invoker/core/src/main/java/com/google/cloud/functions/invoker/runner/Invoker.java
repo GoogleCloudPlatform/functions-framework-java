@@ -54,7 +54,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -234,7 +233,7 @@ public class Invoker {
    * unit or integration test, use {@link #startTestServer()} instead.
    *
    * @see #stopServer()
-   * @throws Exception
+   * @throws Exception If there was a problem starting the server
    */
   public void startServer() throws Exception {
     startServer(true);
@@ -266,7 +265,7 @@ public class Invoker {
    * }</pre>
    *
    * @see #stopServer()
-   * @throws Exception
+   * @throws Exception If there was a problem starting the server
    */
   public void startTestServer() throws Exception {
     startServer(false);
@@ -292,15 +291,13 @@ public class Invoker {
     connector.setReuseAddress(true);
     connector.setReusePort(true);
     server.setConnectors(new Connector[] {connector});
-
-    ContextHandler contextHandler = new ContextHandler("/");
-    server.setHandler(NotFoundHandler.forServlet(contextHandler));
+    server.setHandler(new NotFoundHandler());
 
     Class<?> functionClass = loadFunctionClass();
 
     Handler handler;
     if (functionSignatureType == null) {
-      handler = servletForDeducedSignatureType(functionClass);
+      handler = handlerForDeducedSignatureType(functionClass);
     } else {
       switch (functionSignatureType) {
         case "http":
@@ -326,8 +323,6 @@ public class Invoker {
           throw new RuntimeException(error);
       }
     }
-
-    // TODO servletHolder.getRegistration().setMultipartConfig(new MultipartConfigElement(""));
 
     server.getTail().setHandler(handler);
     server.start();
@@ -376,7 +371,7 @@ public class Invoker {
     }
   }
 
-  private Handler servletForDeducedSignatureType(Class<?> functionClass) {
+  private Handler handlerForDeducedSignatureType(Class<?> functionClass) {
     if (HttpFunction.class.isAssignableFrom(functionClass)) {
       return HttpFunctionExecutor.forClass(functionClass);
     }
@@ -456,16 +451,11 @@ public class Invoker {
 
   /**
    * Wrapper that intercepts requests for {@code /favicon.ico} and {@code /robots.txt} and causes
-   * them to produce a 404 status. Otherwise they would be sent to the function code, like any other
+   * them to produce a 404 status. Otherwise, they would be sent to the function code, like any other
    * URL, meaning that someone testing their function by using a browser as an HTTP client can see
    * two requests, one for {@code /favicon.ico} and one for {@code /} (or whatever).
    */
   private static class NotFoundHandler extends Handler.Wrapper {
-    static NotFoundHandler forServlet(ContextHandler servletHandler) {
-      NotFoundHandler handler = new NotFoundHandler();
-      handler.setHandler(servletHandler);
-      return handler;
-    }
 
     private static final Set<String> NOT_FOUND_PATHS =
         new HashSet<>(Arrays.asList("/favicon.ico", "/robots.txt"));
@@ -507,7 +497,6 @@ public class Invoker {
     protected Class<?> findClass(String name) throws ClassNotFoundException {
       String prefix = "com.google.cloud.functions.";
       if ((name.startsWith(prefix) && Character.isUpperCase(name.charAt(prefix.length())))
-          || name.startsWith("javax.servlet.")
           || isCloudEventsApiClass(name)) {
         return runtimeClassLoader.loadClass(name);
       }

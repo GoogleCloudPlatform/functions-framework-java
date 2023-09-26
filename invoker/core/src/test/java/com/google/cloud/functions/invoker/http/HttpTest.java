@@ -93,7 +93,6 @@ public class HttpTest {
     SimpleServer(Handler handler) throws Exception {
       this.server = new Server(serverPort);
       server.setHandler(handler);
-      // TODO servletHolder.getRegistration().setMultipartConfig(new MultipartConfigElement("tiddly"));
       server.start();
     }
 

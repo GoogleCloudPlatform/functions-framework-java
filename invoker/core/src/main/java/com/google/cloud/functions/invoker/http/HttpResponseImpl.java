@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,6 +32,8 @@ import org.eclipse.jetty.server.Response;
 
 public class HttpResponseImpl implements HttpResponse {
   private final Response response;
+  private OutputStream outputStream;
+  private BufferedWriter writer;
 
   public HttpResponseImpl(Response response) {
     this.response = response;
@@ -69,13 +69,6 @@ public class HttpResponseImpl implements HttpResponse {
   public Map<String, List<String>> getHeaders() {
     return HttpRequestImpl.toStringListMap(response.getHeaders());
   }
-
-  private static <T> List<T> list(Collection<T> collection) {
-    return (collection instanceof List<?>) ? (List<T>) collection : new ArrayList<>(collection);
-  }
-
-  private OutputStream outputStream;
-  private BufferedWriter writer;
 
   @Override
   public OutputStream getOutputStream() {

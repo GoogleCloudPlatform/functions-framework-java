@@ -14,8 +14,6 @@
 
 package com.google.cloud.functions.invoker.http;
 
-import static java.util.stream.Collectors.toMap;
-
 import com.google.cloud.functions.HttpRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,6 +23,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,7 +32,6 @@ import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.StreamSupport;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -41,10 +40,12 @@ import org.eclipse.jetty.http.MultiPart.Part;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.Fields.Field;
+import org.eclipse.jetty.util.Fields;
 
 public class HttpRequestImpl implements HttpRequest {
   private final Request request;
+  private InputStream inputStream;
+  private BufferedReader reader;
 
   public HttpRequestImpl(Request request) {
     this.request = request;
@@ -72,9 +73,15 @@ public class HttpRequestImpl implements HttpRequest {
 
   @Override
   public Map<String, List<String>> getQueryParameters() {
+    Fields fields = Request.extractQueryParameters(request);
+    if (fields.isEmpty()) {
+      return Collections.emptyMap();
+    }
 
-    return Request.extractQueryParameters(request).stream()
-        .collect(toMap(Field::getName, Field::getValues));
+    Map<String, List<String>> map = new HashMap<>();
+    fields.forEach(field -> map.put(field.getName(),
+        Collections.unmodifiableList(field.getValues())));
+    return Collections.unmodifiableMap(map);
   }
 
   @Override
@@ -94,9 +101,14 @@ public class HttpRequestImpl implements HttpRequest {
             parser.setMaxMemoryFileSize(-1);
             return parser.parse(request);
           }).get();
-      return StreamSupport.stream(parts.spliterator(), false)
-          .map(HttpPartImpl::new)
-          .collect(toMap(HttpPartImpl::getName, p -> p));
+
+      if (parts.size() == 0) {
+        return Collections.emptyMap();
+      }
+
+      Map<String, HttpPart> map = new HashMap<>();
+      parts.forEach(part -> map.put(part.getName(), new HttpPartImpl(part)));
+      return Collections.unmodifiableMap(map);
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
@@ -117,9 +129,6 @@ public class HttpRequestImpl implements HttpRequest {
     Charset charset = Request.getCharset(request);
     return Optional.ofNullable(charset == null ? null : charset.name());
   }
-
-  private InputStream inputStream;
-  private BufferedReader reader;
 
   @Override
   public InputStream getInputStream() throws IOException {
