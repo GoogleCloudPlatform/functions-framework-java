@@ -34,6 +34,7 @@ public class HttpResponseImpl implements HttpResponse {
   private final Response response;
   private OutputStream outputStream;
   private BufferedWriter writer;
+  private Charset charset;
 
   public HttpResponseImpl(Response response) {
     this.response = response;
@@ -53,6 +54,7 @@ public class HttpResponseImpl implements HttpResponse {
   @Override
   public void setContentType(String contentType) {
     response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
+    charset = response.getRequest().getContext().getMimeTypes().getCharset(contentType);
   }
 
   @Override
@@ -62,7 +64,11 @@ public class HttpResponseImpl implements HttpResponse {
 
   @Override
   public void appendHeader(String key, String value) {
-    response.getHeaders().add(key, value);
+    if (HttpHeader.CONTENT_TYPE.is(key)) {
+      setContentType(value);
+    } else {
+      response.getHeaders().add(key, value);
+    }
   }
 
   @Override
@@ -87,13 +93,10 @@ public class HttpResponseImpl implements HttpResponse {
       if (outputStream != null) {
         throw new IllegalStateException("getOutputStream called");
       }
-      String contentType = getContentType().orElse(null);
-      Charset charset = Objects.requireNonNullElse(
-          response.getRequest().getContext().getMimeTypes().getCharset(contentType),
-          StandardCharsets.UTF_8);
-      // TODO should we buffer in the input stream rather than as characters
       outputStream = Content.Sink.asOutputStream(response);
-      writer = new BufferedWriter(WriteThroughWriter.newWriter(getOutputStream(), charset));
+      // TODO extend close in such a way as to make the buffer flush the last write.
+      writer = new BufferedWriter(WriteThroughWriter.newWriter(getOutputStream(),
+          Objects.requireNonNullElse(charset, StandardCharsets.UTF_8)));
     }
     return writer;
   }

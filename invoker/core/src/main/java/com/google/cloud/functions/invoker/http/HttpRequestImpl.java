@@ -22,19 +22,18 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPart.Part;
 import org.eclipse.jetty.http.MultiPartFormData;
@@ -149,7 +148,7 @@ public class HttpRequestImpl implements HttpRequest {
       }
       inputStream = Content.Source.asInputStream(request);
       reader = new BufferedReader(new InputStreamReader(getInputStream(),
-          getCharacterEncoding().orElse(StandardCharsets.UTF_8.name())));
+          Objects.requireNonNullElse(Request.getCharset(request), StandardCharsets.UTF_8)));
     }
     return reader;
   }
@@ -169,9 +168,11 @@ public class HttpRequestImpl implements HttpRequest {
 
   private static class HttpPartImpl implements HttpPart {
     private final Part part;
+    private final String contentType;
 
     private HttpPartImpl(Part part) {
       this.part = part;
+      contentType = part.getHeaders().get(HttpHeader.CONTENT_TYPE);
     }
 
     public String getName() {
@@ -185,7 +186,7 @@ public class HttpRequestImpl implements HttpRequest {
 
     @Override
     public Optional<String> getContentType() {
-      return Optional.ofNullable(part.getHeaders().get(HttpHeader.CONTENT_TYPE));
+      return Optional.ofNullable(contentType);
     }
 
     @Override
@@ -195,13 +196,7 @@ public class HttpRequestImpl implements HttpRequest {
 
     @Override
     public Optional<String> getCharacterEncoding() {
-      String contentType = getContentType().orElse(null);
-      if (contentType == null) {
-        return Optional.empty();
-      }
-      Pattern charsetPattern = Pattern.compile("(?i).*;\\s*charset\\s*=([^;\\s]*)\\s*(;|$)");
-      Matcher matcher = charsetPattern.matcher(contentType);
-      return matcher.matches() ? Optional.of(matcher.group(1)) : Optional.empty();
+      return Optional.ofNullable(MimeTypes.getCharsetFromContentType(contentType));
     }
 
     @Override
@@ -211,17 +206,15 @@ public class HttpRequestImpl implements HttpRequest {
 
     @Override
     public BufferedReader getReader() throws IOException {
-      String encoding = getCharacterEncoding().orElse("utf-8");
-      return new BufferedReader(new InputStreamReader(getInputStream(), encoding));
+      return new BufferedReader(
+          new InputStreamReader(getInputStream(),
+              Objects.requireNonNullElse(MimeTypes.DEFAULTS.getCharset(contentType),
+                  StandardCharsets.UTF_8)));
     }
 
     @Override
     public Map<String, List<String>> getHeaders() {
       return HttpRequestImpl.toStringListMap(part.getHeaders());
-    }
-
-    private static <T> List<T> list(Collection<T> collection) {
-      return (collection instanceof List<?>) ? (List<T>) collection : new ArrayList<>(collection);
     }
 
     @Override
