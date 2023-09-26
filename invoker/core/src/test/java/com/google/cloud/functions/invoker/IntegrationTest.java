@@ -167,6 +167,8 @@ public class IntegrationTest {
 
     abstract int expectedResponseCode();
 
+    abstract Optional<Map<String, String>> expectedResponseHeaders();
+
     abstract Optional<String> expectedResponseText();
 
     abstract Optional<JsonObject> expectedJson();
@@ -186,6 +188,7 @@ public class IntegrationTest {
           .setUrl("/")
           .setRequestText("")
           .setExpectedResponseCode(HttpStatus.OK_200)
+          .setExpectedResponseHeaders(ImmutableMap.of())
           .setExpectedResponseText("")
           .setHttpContentType("text/plain")
           .setHttpHeaders(ImmutableMap.of());
@@ -203,6 +206,8 @@ public class IntegrationTest {
       }
 
       abstract Builder setExpectedResponseCode(int x);
+
+      abstract Builder setExpectedResponseHeaders(Map<String, String> x);
 
       abstract Builder setExpectedResponseText(String x);
 
@@ -249,9 +254,42 @@ public class IntegrationTest {
     testHttpFunction(
         fullTarget("HelloWorld"),
         ImmutableList.of(
-            TestCase.builder().setExpectedResponseText("hello\n").build(),
+            TestCase.builder()
+                .setExpectedResponseText("hello\n")
+                .setHttpHeaders(ImmutableMap.of(
+                    "Content-Length", "*"))
+                .build(),
             FAVICON_TEST_CASE,
             ROBOTS_TXT_TEST_CASE));
+  }
+
+  @Test
+  public void bufferedWrites() throws Exception {
+    // This test checks that writes are buffered and are written
+    // in an efficient way with known content-length if possible.
+    testHttpFunction(
+        fullTarget("BufferedWrites"),
+        ImmutableList.of(
+            TestCase.builder()
+                .setUrl("/target?writes=2")
+                .setExpectedResponseText("write 0\nwrite 1\n")
+                .setExpectedResponseHeaders(ImmutableMap.of(
+                    "x-write-0", "true",
+                    "x-write-1", "true",
+                    "x-written", "true",
+                    "Content-Length", "16"
+                ))
+                .build(),
+            TestCase.builder()
+                .setUrl("/target?writes=2&flush=true")
+                .setExpectedResponseText("write 0\nwrite 1\n")
+                .setExpectedResponseHeaders(ImmutableMap.of(
+                    "x-write-0", "true",
+                    "x-write-1", "true",
+                    "x-written", "-",
+                    "Transfer-Encoding", "chunked"))
+                .build()
+        ));
   }
 
   @Test
@@ -696,6 +734,17 @@ public class IntegrationTest {
             .withMessage("Response to %s is %s %s", uri, response.getStatus(), response.getReason())
             .that(response.getStatus())
             .isEqualTo(testCase.expectedResponseCode());
+        testCase.expectedResponseHeaders().ifPresent(map -> {
+          for (Map.Entry<String, String> entry : map.entrySet()) {
+            if ("*".equals(entry.getValue())) {
+              expect.that(response.getHeaders().getFieldNamesCollection()).contains(entry.getKey());
+            } else if ("-".equals(entry.getValue())) {
+              expect.that(response.getHeaders().getFieldNamesCollection()).doesNotContain(entry.getKey());
+            } else {
+              expect.that(response.getHeaders().getValuesList(entry.getKey())).contains(entry.getValue());
+            }
+          }
+        });
         testCase
             .expectedResponseText()
             .ifPresent(text -> expect.that(response.getContentAsString()).isEqualTo(text));

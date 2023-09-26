@@ -116,9 +116,7 @@ public class HttpResponseImpl implements HttpResponse {
    */
   public void close(Callback callback) {
     try {
-      if (writer != null) {
-        writer.flush();
-      }
+      // The writer has been constructed to do no buffering, so it does not need to be flushed
       if (contentSinkOutputStream != null) {
         // Do an asynchronous close, so large buffered content may be written without blocking
         contentSinkOutputStream.close(callback);
