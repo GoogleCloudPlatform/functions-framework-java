@@ -255,9 +255,9 @@ public class IntegrationTest {
         fullTarget("HelloWorld"),
         ImmutableList.of(
             TestCase.builder()
-                .setExpectedResponseText("hello\n")
-                .setHttpHeaders(ImmutableMap.of(
+                .setExpectedResponseHeaders(ImmutableMap.of(
                     "Content-Length", "*"))
+                .setExpectedResponseText("hello\n")
                 .build(),
             FAVICON_TEST_CASE,
             ROBOTS_TXT_TEST_CASE));
