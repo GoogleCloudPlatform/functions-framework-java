@@ -15,11 +15,13 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
-public class TypedFunctionExecutor extends HttpServlet {
+public class TypedFunctionExecutor extends Handler.Abstract {
   private static final String APPLY_METHOD = "apply";
   private static final Logger logger = Logger.getLogger("com.google.cloud.functions.invoker");
 
@@ -94,7 +96,7 @@ public class TypedFunctionExecutor extends HttpServlet {
 
   /** Executes the user's method, can handle all HTTP type methods. */
   @Override
-  public void service(HttpServletRequest req, HttpServletResponse res) {
+  public boolean handle(Request req, Response res, Callback callback) throws Exception {
     HttpRequestImpl reqImpl = new HttpRequestImpl(req);
     HttpResponseImpl resImpl = new HttpResponseImpl(res);
     ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
@@ -102,10 +104,20 @@ public class TypedFunctionExecutor extends HttpServlet {
     try {
       Thread.currentThread().setContextClassLoader(function.getClass().getClassLoader());
       handleRequest(reqImpl, resImpl);
+      resImpl.close();
+      callback.succeeded();
+    } catch (Throwable t) {
+      if (res.isCommitted()) {
+        callback.failed(t);
+      } else {
+        res.reset();
+        res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+        callback.succeeded();
+      }
     } finally {
       Thread.currentThread().setContextClassLoader(oldContextClassLoader);
-      resImpl.flush();
     }
+    return true;
   }
 
   private void handleRequest(HttpRequest req, HttpResponse res) {
@@ -114,7 +126,7 @@ public class TypedFunctionExecutor extends HttpServlet {
       reqObj = format.deserialize(req, argType);
     } catch (Throwable t) {
       logger.log(Level.SEVERE, "Failed to parse request for " + function.getClass().getName(), t);
-      res.setStatusCode(HttpServletResponse.SC_BAD_REQUEST);
+      res.setStatusCode(HttpStatus.BAD_REQUEST_400);
       return;
     }
 
@@ -123,7 +135,7 @@ public class TypedFunctionExecutor extends HttpServlet {
       resObj = function.apply(reqObj);
     } catch (Throwable t) {
       logger.log(Level.SEVERE, "Failed to execute " + function.getClass().getName(), t);
-      res.setStatusCode(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      res.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR_500);
       return;
     }
 
@@ -132,7 +144,7 @@ public class TypedFunctionExecutor extends HttpServlet {
     } catch (Throwable t) {
       logger.log(
           Level.SEVERE, "Failed to serialize response for " + function.getClass().getName(), t);
-      res.setStatusCode(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      res.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR_500);
       return;
     }
   }
@@ -147,7 +159,7 @@ public class TypedFunctionExecutor extends HttpServlet {
     @Override
     public void serialize(Object object, HttpResponse response) throws Exception {
       if (object == null) {
-        response.setStatusCode(HttpServletResponse.SC_NO_CONTENT);
+        response.setStatusCode(HttpStatus.NO_CONTENT_204);
         return;
       }
       try (BufferedWriter bodyWriter = response.getWriter()) {

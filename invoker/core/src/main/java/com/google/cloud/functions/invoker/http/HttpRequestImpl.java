@@ -21,26 +21,32 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
-import java.util.AbstractMap.SimpleEntry;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.Part;
+import java.util.stream.StreamSupport;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.http.MultiPart.Part;
+import org.eclipse.jetty.http.MultiPartFormData;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.Fields.Field;
 
 public class HttpRequestImpl implements HttpRequest {
-  private final HttpServletRequest request;
+  private final Request request;
 
-  public HttpRequestImpl(HttpServletRequest request) {
+  public HttpRequestImpl(Request request) {
     this.request = request;
   }
 
@@ -51,78 +57,105 @@ public class HttpRequestImpl implements HttpRequest {
 
   @Override
   public String getUri() {
-    String url = request.getRequestURL().toString();
-    if (request.getQueryString() != null) {
-      url += "?" + request.getQueryString();
-    }
-    return url;
+    return request.getHttpURI().asString();
   }
 
   @Override
   public String getPath() {
-    return request.getRequestURI();
+    return request.getHttpURI().getCanonicalPath();
   }
 
   @Override
   public Optional<String> getQuery() {
-    return Optional.ofNullable(request.getQueryString());
+    return Optional.ofNullable(request.getHttpURI().getQuery());
   }
 
   @Override
   public Map<String, List<String>> getQueryParameters() {
-    return request.getParameterMap().entrySet().stream()
-        .collect(toMap(Map.Entry::getKey, e -> Arrays.asList(e.getValue())));
+
+    return Request.extractQueryParameters(request).stream()
+        .collect(toMap(Field::getName, Field::getValues));
   }
 
   @Override
   public Map<String, HttpPart> getParts() {
-    String contentType = request.getContentType();
-    if (contentType == null || !request.getContentType().startsWith("multipart/form-data")) {
+    // TODO initiate reading the parts asynchronously before invocation
+    String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+    if (contentType == null || !contentType.startsWith("multipart/form-data")) {
       throw new IllegalStateException("Content-Type must be multipart/form-data: " + contentType);
     }
+    String boundary = MultiPart.extractBoundary(contentType);
+    if (boundary == null) {
+      throw new IllegalStateException("No boundary in content-type: " + contentType);
+    }
     try {
-      return request.getParts().stream().collect(toMap(Part::getName, HttpPartImpl::new));
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    } catch (ServletException e) {
-      throw new RuntimeException(e.getMessage(), e);
+      MultiPartFormData.Parts parts =
+          MultiPartFormData.from(request, boundary, parser -> {
+            parser.setMaxMemoryFileSize(-1);
+            return parser.parse(request);
+          }).get();
+      return StreamSupport.stream(parts.spliterator(), false)
+          .map(HttpPartImpl::new)
+          .collect(toMap(HttpPartImpl::getName, p -> p));
+    } catch (InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
     }
   }
 
   @Override
   public Optional<String> getContentType() {
-    return Optional.ofNullable(request.getContentType());
+    return Optional.ofNullable(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
   }
 
   @Override
   public long getContentLength() {
-    return request.getContentLength();
+    return request.getLength();
   }
 
   @Override
   public Optional<String> getCharacterEncoding() {
-    return Optional.ofNullable(request.getCharacterEncoding());
+    Charset charset = Request.getCharset(request);
+    return Optional.ofNullable(charset == null ? null : charset.name());
   }
+
+  private InputStream inputStream;
+  private BufferedReader reader;
 
   @Override
   public InputStream getInputStream() throws IOException {
-    return request.getInputStream();
+    if (reader != null) {
+      throw new IllegalStateException("getReader() already called");
+    }
+    if (inputStream == null) {
+      inputStream = Content.Source.asInputStream(request);
+    }
+    return inputStream;
   }
 
   @Override
   public BufferedReader getReader() throws IOException {
-    return request.getReader();
+    if (reader == null) {
+      if (inputStream != null) {
+        throw new IllegalStateException("getInputStream already called");
+      }
+      inputStream = Content.Source.asInputStream(request);
+      reader = new BufferedReader(new InputStreamReader(getInputStream(),
+          getCharacterEncoding().orElse(StandardCharsets.UTF_8.name())));
+    }
+    return reader;
   }
 
   @Override
   public Map<String, List<String>> getHeaders() {
-    return Collections.list(request.getHeaderNames()).stream()
-        .collect(
-            toMap(
-                name -> name,
-                name -> Collections.list(request.getHeaders(name)),
-                (a, b) -> b,
-                () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
+    return toStringListMap(request.getHeaders());
+  }
+
+  static Map<String, List<String>> toStringListMap(HttpFields headers) {
+    Map<String, List<String>> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    for (HttpField field : headers) {
+      map.computeIfAbsent(field.getName(), key -> new ArrayList<>()).add(field.getValue());
+    }
+    return map;
   }
 
   private static class HttpPartImpl implements HttpPart {
@@ -132,19 +165,23 @@ public class HttpRequestImpl implements HttpRequest {
       this.part = part;
     }
 
+    public String getName() {
+      return part.getName();
+    }
+
     @Override
     public Optional<String> getFileName() {
-      return Optional.ofNullable(part.getSubmittedFileName());
+      return Optional.ofNullable(part.getFileName());
     }
 
     @Override
     public Optional<String> getContentType() {
-      return Optional.ofNullable(part.getContentType());
+      return Optional.ofNullable(part.getHeaders().get(HttpHeader.CONTENT_TYPE));
     }
 
     @Override
     public long getContentLength() {
-      return part.getSize();
+      return part.getLength();
     }
 
     @Override
@@ -160,7 +197,7 @@ public class HttpRequestImpl implements HttpRequest {
 
     @Override
     public InputStream getInputStream() throws IOException {
-      return part.getInputStream();
+      return Content.Source.asInputStream(part.newContentSource());
     }
 
     @Override
@@ -171,13 +208,16 @@ public class HttpRequestImpl implements HttpRequest {
 
     @Override
     public Map<String, List<String>> getHeaders() {
-      return part.getHeaderNames().stream()
-          .map(name -> new SimpleEntry<>(name, list(part.getHeaders(name))))
-          .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+      return HttpRequestImpl.toStringListMap(part.getHeaders());
     }
 
     private static <T> List<T> list(Collection<T> collection) {
       return (collection instanceof List<?>) ? (List<T>) collection : new ArrayList<>(collection);
+    }
+
+    @Override
+    public String toString() {
+      return "%s{%s}".formatted(super.toString(), part);
     }
   }
 }

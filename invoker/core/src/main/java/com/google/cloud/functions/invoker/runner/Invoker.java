@@ -44,23 +44,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
@@ -87,7 +83,7 @@ public class Invoker {
       // if we arrange for them to be formatted using StackDriver's "structured
       // logging" JSON format. Remove the JDK's standard logger and replace it with
       // the JSON one.
-      for (Handler handler : rootLogger.getHandlers()) {
+      for (java.util.logging.Handler handler : rootLogger.getHandlers()) {
         rootLogger.removeHandler(handler);
       }
       rootLogger.addHandler(new JsonLogHandler(System.out, false));
@@ -283,34 +279,43 @@ public class Invoker {
 
     QueuedThreadPool pool = new QueuedThreadPool(1024);
     server = new Server(pool);
+    server.setErrorHandler(new ErrorHandler() {
+      @Override
+      public boolean handle(Request request, Response response, Callback callback) {
+        // Suppress error body
+        callback.succeeded();
+        return true;
+      }
+    });
     ServerConnector connector = new ServerConnector(server);
     connector.setPort(port);
+    connector.setReuseAddress(true);
+    connector.setReusePort(true);
     server.setConnectors(new Connector[] {connector});
 
-    ServletContextHandler servletContextHandler = new ServletContextHandler();
-    servletContextHandler.setContextPath("/");
-    server.setHandler(NotFoundHandler.forServlet(servletContextHandler));
+    ContextHandler contextHandler = new ContextHandler("/");
+    server.setHandler(NotFoundHandler.forServlet(contextHandler));
 
     Class<?> functionClass = loadFunctionClass();
 
-    HttpServlet servlet;
+    Handler handler;
     if (functionSignatureType == null) {
-      servlet = servletForDeducedSignatureType(functionClass);
+      handler = servletForDeducedSignatureType(functionClass);
     } else {
       switch (functionSignatureType) {
         case "http":
           if (TypedFunction.class.isAssignableFrom(functionClass)) {
-            servlet = TypedFunctionExecutor.forClass(functionClass);
+            handler = TypedFunctionExecutor.forClass(functionClass);
           } else {
-            servlet = HttpFunctionExecutor.forClass(functionClass);
+            handler = HttpFunctionExecutor.forClass(functionClass);
           }
           break;
         case "event":
         case "cloudevent":
-          servlet = BackgroundFunctionExecutor.forClass(functionClass);
+          handler = BackgroundFunctionExecutor.forClass(functionClass);
           break;
         case "typed":
-          servlet = TypedFunctionExecutor.forClass(functionClass);
+          handler = TypedFunctionExecutor.forClass(functionClass);
           break;
         default:
           String error =
@@ -321,10 +326,10 @@ public class Invoker {
           throw new RuntimeException(error);
       }
     }
-    ServletHolder servletHolder = new ServletHolder(servlet);
-    servletHolder.getRegistration().setMultipartConfig(new MultipartConfigElement(""));
-    servletContextHandler.addServlet(servletHolder, "/*");
 
+    // TODO servletHolder.getRegistration().setMultipartConfig(new MultipartConfigElement(""));
+
+    server.getTail().setHandler(handler);
     server.start();
     logServerInfo();
     if (join) {
@@ -371,7 +376,7 @@ public class Invoker {
     }
   }
 
-  private HttpServlet servletForDeducedSignatureType(Class<?> functionClass) {
+  private Handler servletForDeducedSignatureType(Class<?> functionClass) {
     if (HttpFunction.class.isAssignableFrom(functionClass)) {
       return HttpFunctionExecutor.forClass(functionClass);
     }
@@ -455,8 +460,8 @@ public class Invoker {
    * URL, meaning that someone testing their function by using a browser as an HTTP client can see
    * two requests, one for {@code /favicon.ico} and one for {@code /} (or whatever).
    */
-  private static class NotFoundHandler extends HandlerWrapper {
-    static NotFoundHandler forServlet(ServletContextHandler servletHandler) {
+  private static class NotFoundHandler extends Handler.Wrapper {
+    static NotFoundHandler forServlet(ContextHandler servletHandler) {
       NotFoundHandler handler = new NotFoundHandler();
       handler.setHandler(servletHandler);
       return handler;
@@ -466,16 +471,14 @@ public class Invoker {
         new HashSet<>(Arrays.asList("/favicon.ico", "/robots.txt"));
 
     @Override
-    public void handle(
-        String target,
-        Request baseRequest,
-        HttpServletRequest request,
-        HttpServletResponse response)
-        throws IOException, ServletException {
-      if (NOT_FOUND_PATHS.contains(request.getRequestURI())) {
-        response.sendError(HttpStatus.NOT_FOUND_404, "Not Found");
+    public boolean handle(Request request, Response response, Callback callback) throws Exception {
+      if (NOT_FOUND_PATHS.contains(request.getHttpURI().getCanonicalPath())) {
+        response.setStatus(HttpStatus.NOT_FOUND_404);
+        callback.succeeded();
+        return true;
       }
-      super.handle(target, baseRequest, request, response);
+
+      return super.handle(request, response, callback);
     }
   }
 

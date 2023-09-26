@@ -44,6 +44,7 @@ import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,16 +63,17 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
+import org.eclipse.jetty.client.ByteBufferRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentProvider;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.BytesContentProvider;
-import org.eclipse.jetty.client.util.MultiPartContentProvider;
-import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.client.MultiPartRequestContent;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.http.MultiPart.ContentSourcePart;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -161,7 +163,7 @@ public class IntegrationTest {
 
     abstract String url();
 
-    abstract ContentProvider requestContent();
+    abstract Request.Content requestContent();
 
     abstract int expectedResponseCode();
 
@@ -194,10 +196,10 @@ public class IntegrationTest {
 
       abstract Builder setUrl(String x);
 
-      abstract Builder setRequestContent(ContentProvider x);
+      abstract Builder setRequestContent(Request.Content x);
 
       Builder setRequestText(String text) {
-        return setRequestContent(new StringContentProvider(text));
+        return setRequestContent(new StringRequestContent(text));
       }
 
       abstract Builder setExpectedResponseCode(int x);
@@ -257,7 +259,7 @@ public class IntegrationTest {
     String exceptionExpectedOutput =
         "\"severity\": \"ERROR\", \"logging.googleapis.com/sourceLocation\": {\"file\":"
             + " \"com/google/cloud/functions/invoker/HttpFunctionExecutor.java\", \"method\":"
-            + " \"service\"}, \"message\": \"Failed to execute"
+            + " \"handle\"}, \"message\": \"Failed to execute"
             + " com.google.cloud.functions.invoker.testfunctions.ExceptionHttp\\n"
             + "java.lang.RuntimeException: exception thrown for test";
     testHttpFunction(
@@ -274,7 +276,7 @@ public class IntegrationTest {
     String exceptionExpectedOutput =
         "\"severity\": \"ERROR\", \"logging.googleapis.com/sourceLocation\": {\"file\":"
             + " \"com/google/cloud/functions/invoker/BackgroundFunctionExecutor.java\", \"method\":"
-            + " \"service\"}, \"message\": \"Failed to execute"
+            + " \"handle\"}, \"message\": \"Failed to execute"
             + " com.google.cloud.functions.invoker.testfunctions.ExceptionBackground\\n"
             + "java.lang.RuntimeException: exception thrown for test";
 
@@ -533,11 +535,14 @@ public class IntegrationTest {
 
   @Test
   public void multipart() throws Exception {
-    MultiPartContentProvider multiPartProvider = new MultiPartContentProvider();
+    MultiPartRequestContent multiPartRequestContent = new MultiPartRequestContent();
     byte[] bytes = new byte[17];
-    multiPartProvider.addFieldPart("bytes", new BytesContentProvider(bytes), new HttpFields());
-    String string = "1234567890";
-    multiPartProvider.addFieldPart("string", new StringContentProvider(string), new HttpFields());
+    multiPartRequestContent.addPart(new ContentSourcePart("bytes", null,
+        HttpFields.EMPTY, new ByteBufferRequestContent(ByteBuffer.wrap(bytes))));
+    multiPartRequestContent.addPart(new MultiPart.ContentSourcePart("string", null,
+        HttpFields.EMPTY, new StringRequestContent("1234567890")));
+    multiPartRequestContent.close();
+
     String expectedResponse =
         "part bytes type application/octet-stream length 17\n"
             + "part string type text/plain;charset=UTF-8 length 10\n";
@@ -545,8 +550,8 @@ public class IntegrationTest {
         fullTarget("Multipart"),
         ImmutableList.of(
             TestCase.builder()
-                .setHttpContentType(Optional.empty())
-                .setRequestContent(multiPartProvider)
+                .setHttpContentType(multiPartRequestContent.getContentType())
+                .setRequestContent(multiPartRequestContent)
                 .setExpectedResponseText(expectedResponse)
                 .build()));
   }
@@ -680,11 +685,12 @@ public class IntegrationTest {
         testCase.snoopFile().ifPresent(File::delete);
         String uri = "http://localhost:" + serverPort + testCase.url();
         Request request = httpClient.POST(uri);
-        testCase
-            .httpContentType()
-            .ifPresent(contentType -> request.header(HttpHeader.CONTENT_TYPE, contentType));
-        testCase.httpHeaders().forEach((header, value) -> request.header(header, value));
-        request.content(testCase.requestContent());
+
+        request.headers(m -> {
+          testCase.httpContentType().ifPresent(contentType -> m.put(HttpHeader.CONTENT_TYPE, contentType));
+          testCase.httpHeaders().forEach(m::put);
+        });
+        request.body(testCase.requestContent());
         ContentResponse response = request.send();
         expect
             .withMessage("Response to %s is %s %s", uri, response.getStatus(), response.getReason())
