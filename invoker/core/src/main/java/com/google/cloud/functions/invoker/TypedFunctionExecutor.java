@@ -104,8 +104,7 @@ public class TypedFunctionExecutor extends Handler.Abstract {
     try {
       Thread.currentThread().setContextClassLoader(function.getClass().getClassLoader());
       handleRequest(reqImpl, resImpl);
-      resImpl.close();
-      callback.succeeded();
+      resImpl.close(callback);
     } catch (Throwable t) {
       if (res.isCommitted()) {
         callback.failed(t);

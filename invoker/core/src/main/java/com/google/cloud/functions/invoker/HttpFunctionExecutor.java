@@ -69,8 +69,7 @@ public class HttpFunctionExecutor extends Handler.Abstract {
     try {
       Thread.currentThread().setContextClassLoader(function.getClass().getClassLoader());
       function.service(reqImpl, respImpl);
-      respImpl.close();
-      callback.succeeded();
+      respImpl.close(callback);
     } catch (Throwable t) {
       logger.log(Level.SEVERE, "Failed to execute " + function.getClass().getName(), t);
       if (response.isCommitted()) {
