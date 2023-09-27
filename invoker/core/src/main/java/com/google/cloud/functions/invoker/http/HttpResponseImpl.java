@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.Callback;
 
 public class HttpResponseImpl implements HttpResponse {
   private final Response response;
-  private ContentSinkOutputStream contentSinkOutputStream;
+  private ContentSinkOutputStream outputStream;
   private BufferedWriter writer;
   private Charset charset;
 
@@ -84,22 +84,22 @@ public class HttpResponseImpl implements HttpResponse {
   public OutputStream getOutputStream() {
     if (writer != null) {
       throw new IllegalStateException("getWriter called");
-    } else if (contentSinkOutputStream == null) {
+    } else if (outputStream == null) {
       Request request = response.getRequest();
       int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration()
           .getOutputBufferSize();
       BufferedContentSink bufferedContentSink = new BufferedContentSink(response,
           request.getComponents().getByteBufferPool(),
           false, outputBufferSize / 2, outputBufferSize);
-      contentSinkOutputStream = new ContentSinkOutputStream(bufferedContentSink);
+      outputStream = new ContentSinkOutputStream(bufferedContentSink);
     }
-    return contentSinkOutputStream;
+    return outputStream;
   }
 
   @Override
   public synchronized BufferedWriter getWriter() throws IOException {
     if (writer == null) {
-      if (contentSinkOutputStream != null) {
+      if (outputStream != null) {
         throw new IllegalStateException("getOutputStream called");
       }
 
@@ -117,9 +117,9 @@ public class HttpResponseImpl implements HttpResponse {
   public void close(Callback callback) {
     try {
       // The writer has been constructed to do no buffering, so it does not need to be flushed
-      if (contentSinkOutputStream != null) {
+      if (outputStream != null) {
         // Do an asynchronous close, so large buffered content may be written without blocking
-        contentSinkOutputStream.close(callback);
+        outputStream.close(callback);
       } else {
         callback.succeeded();
       }
