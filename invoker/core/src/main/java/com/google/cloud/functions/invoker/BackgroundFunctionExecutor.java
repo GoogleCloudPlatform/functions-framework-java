@@ -29,25 +29,32 @@ import io.cloudevents.core.message.MessageReader;
 import io.cloudevents.http.HttpMessageFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
 /** Executes the user's background function. */
-public final class BackgroundFunctionExecutor extends HttpServlet {
+public final class BackgroundFunctionExecutor extends Handler.Abstract {
   private static final Logger logger = Logger.getLogger("com.google.cloud.functions.invoker");
 
   private final FunctionExecutor<?> functionExecutor;
@@ -175,8 +182,10 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
         .findFirst();
   }
 
-  private static Event parseLegacyEvent(HttpServletRequest req) throws IOException {
-    try (BufferedReader bodyReader = req.getReader()) {
+  private static Event parseLegacyEvent(Request req) throws IOException {
+    try (BufferedReader bodyReader = new BufferedReader(
+        new InputStreamReader(Content.Source.asInputStream(req),
+            Objects.requireNonNullElse(Request.getCharset(req), StandardCharsets.ISO_8859_1)))) {
       return parseLegacyEvent(bodyReader);
     }
   }
@@ -223,7 +232,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
    * for the various triggers. CloudEvents are ones that follow the standards defined by <a
    * href="https://cloudevents.io">cloudevents.io</a>.
    *
-   * @param <CloudEventDataT> the type to be used in the {@link Unmarshallers} call when
+   * @param <CloudEventDataT> the type to be used in the {code Unmarshallers} call when
    *     unmarshalling this event, if it is a CloudEvent.
    */
   private abstract static class FunctionExecutor<CloudEventDataT> {
@@ -320,20 +329,23 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
 
   /** Executes the user's background function. This can handle all HTTP methods. */
   @Override
-  public void service(HttpServletRequest req, HttpServletResponse res) throws IOException {
-    String contentType = req.getContentType();
+  public boolean handle(Request req, Response res, Callback callback) throws Exception {
+    String contentType = req.getHeaders().get(HttpHeader.CONTENT_TYPE);
     try {
       if ((contentType != null && contentType.startsWith("application/cloudevents+json"))
-          || req.getHeader("ce-specversion") != null) {
+          || req.getHeaders().get("ce-specversion") != null) {
         serviceCloudEvent(req);
       } else {
         serviceLegacyEvent(req);
       }
-      res.setStatus(HttpServletResponse.SC_OK);
+      res.setStatus(HttpStatus.OK_200);
+      callback.succeeded();
     } catch (Throwable t) {
-      res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
       logger.log(Level.SEVERE, "Failed to execute " + functionExecutor.functionName(), t);
+      res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+      callback.succeeded();
     }
+    return true;
   }
 
   private enum CloudEventKind {
@@ -347,10 +359,11 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
    * @param <CloudEventT> a fake type parameter, which corresponds to the type parameter of {@link
    *     FunctionExecutor}.
    */
-  private <CloudEventT> void serviceCloudEvent(HttpServletRequest req) throws Exception {
+  private <CloudEventT> void serviceCloudEvent(Request req) throws Exception {
     @SuppressWarnings("unchecked")
     FunctionExecutor<CloudEventT> executor = (FunctionExecutor<CloudEventT>) functionExecutor;
-    byte[] body = req.getInputStream().readAllBytes();
+
+    byte[] body = Content.Source.asByteArrayAsync(req, -1).get();
     MessageReader reader = HttpMessageFactory.createReaderFromMultimap(headerMap(req), body);
     // It's important not to set the context ClassLoader earlier, because MessageUtils will use
     // ServiceLoader.load(EventFormat.class) to find a handler to deserialize a binary CloudEvent
@@ -364,17 +377,16 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     // https://github.com/cloudevents/sdk-java/pull/259.
   }
 
-  private static Map<String, List<String>> headerMap(HttpServletRequest req) {
+  private static Map<String, List<String>> headerMap(Request req) {
     Map<String, List<String>> headerMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    for (String header : Collections.list(req.getHeaderNames())) {
-      for (String value : Collections.list(req.getHeaders(header))) {
-        headerMap.computeIfAbsent(header, unused -> new ArrayList<>()).add(value);
-      }
+    for (HttpField field : req.getHeaders()) {
+      headerMap.computeIfAbsent(field.getName(), unused -> new ArrayList<>())
+          .addAll(field.getValueList());
     }
     return headerMap;
   }
 
-  private void serviceLegacyEvent(HttpServletRequest req) throws Exception {
+  private void serviceLegacyEvent(Request req) throws Exception {
     Event event = parseLegacyEvent(req);
     runWithContextClassLoader(() -> functionExecutor.serviceLegacyEvent(event));
   }

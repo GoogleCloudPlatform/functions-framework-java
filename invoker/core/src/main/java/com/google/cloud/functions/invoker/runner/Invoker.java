@@ -44,23 +44,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
@@ -87,7 +82,7 @@ public class Invoker {
       // if we arrange for them to be formatted using StackDriver's "structured
       // logging" JSON format. Remove the JDK's standard logger and replace it with
       // the JSON one.
-      for (Handler handler : rootLogger.getHandlers()) {
+      for (java.util.logging.Handler handler : rootLogger.getHandlers()) {
         rootLogger.removeHandler(handler);
       }
       rootLogger.addHandler(new JsonLogHandler(System.out, false));
@@ -238,7 +233,7 @@ public class Invoker {
    * unit or integration test, use {@link #startTestServer()} instead.
    *
    * @see #stopServer()
-   * @throws Exception
+   * @throws Exception If there was a problem starting the server
    */
   public void startServer() throws Exception {
     startServer(true);
@@ -270,7 +265,7 @@ public class Invoker {
    * }</pre>
    *
    * @see #stopServer()
-   * @throws Exception
+   * @throws Exception If there was a problem starting the server
    */
   public void startTestServer() throws Exception {
     startServer(false);
@@ -283,34 +278,41 @@ public class Invoker {
 
     QueuedThreadPool pool = new QueuedThreadPool(1024);
     server = new Server(pool);
+    server.setErrorHandler(new ErrorHandler() {
+      @Override
+      public boolean handle(Request request, Response response, Callback callback) {
+        // Suppress error body
+        callback.succeeded();
+        return true;
+      }
+    });
     ServerConnector connector = new ServerConnector(server);
     connector.setPort(port);
+    connector.setReuseAddress(true);
+    connector.setReusePort(true);
     server.setConnectors(new Connector[] {connector});
-
-    ServletContextHandler servletContextHandler = new ServletContextHandler();
-    servletContextHandler.setContextPath("/");
-    server.setHandler(NotFoundHandler.forServlet(servletContextHandler));
+    server.setHandler(new NotFoundHandler());
 
     Class<?> functionClass = loadFunctionClass();
 
-    HttpServlet servlet;
+    Handler handler;
     if (functionSignatureType == null) {
-      servlet = servletForDeducedSignatureType(functionClass);
+      handler = handlerForDeducedSignatureType(functionClass);
     } else {
       switch (functionSignatureType) {
         case "http":
           if (TypedFunction.class.isAssignableFrom(functionClass)) {
-            servlet = TypedFunctionExecutor.forClass(functionClass);
+            handler = TypedFunctionExecutor.forClass(functionClass);
           } else {
-            servlet = HttpFunctionExecutor.forClass(functionClass);
+            handler = HttpFunctionExecutor.forClass(functionClass);
           }
           break;
         case "event":
         case "cloudevent":
-          servlet = BackgroundFunctionExecutor.forClass(functionClass);
+          handler = BackgroundFunctionExecutor.forClass(functionClass);
           break;
         case "typed":
-          servlet = TypedFunctionExecutor.forClass(functionClass);
+          handler = TypedFunctionExecutor.forClass(functionClass);
           break;
         default:
           String error =
@@ -321,10 +323,8 @@ public class Invoker {
           throw new RuntimeException(error);
       }
     }
-    ServletHolder servletHolder = new ServletHolder(servlet);
-    servletHolder.getRegistration().setMultipartConfig(new MultipartConfigElement(""));
-    servletContextHandler.addServlet(servletHolder, "/*");
 
+    server.getTail().setHandler(handler);
     server.start();
     logServerInfo();
     if (join) {
@@ -371,7 +371,7 @@ public class Invoker {
     }
   }
 
-  private HttpServlet servletForDeducedSignatureType(Class<?> functionClass) {
+  private Handler handlerForDeducedSignatureType(Class<?> functionClass) {
     if (HttpFunction.class.isAssignableFrom(functionClass)) {
       return HttpFunctionExecutor.forClass(functionClass);
     }
@@ -451,31 +451,24 @@ public class Invoker {
 
   /**
    * Wrapper that intercepts requests for {@code /favicon.ico} and {@code /robots.txt} and causes
-   * them to produce a 404 status. Otherwise they would be sent to the function code, like any other
+   * them to produce a 404 status. Otherwise, they would be sent to the function code, like any other
    * URL, meaning that someone testing their function by using a browser as an HTTP client can see
    * two requests, one for {@code /favicon.ico} and one for {@code /} (or whatever).
    */
-  private static class NotFoundHandler extends HandlerWrapper {
-    static NotFoundHandler forServlet(ServletContextHandler servletHandler) {
-      NotFoundHandler handler = new NotFoundHandler();
-      handler.setHandler(servletHandler);
-      return handler;
-    }
+  private static class NotFoundHandler extends Handler.Wrapper {
 
     private static final Set<String> NOT_FOUND_PATHS =
         new HashSet<>(Arrays.asList("/favicon.ico", "/robots.txt"));
 
     @Override
-    public void handle(
-        String target,
-        Request baseRequest,
-        HttpServletRequest request,
-        HttpServletResponse response)
-        throws IOException, ServletException {
-      if (NOT_FOUND_PATHS.contains(request.getRequestURI())) {
-        response.sendError(HttpStatus.NOT_FOUND_404, "Not Found");
+    public boolean handle(Request request, Response response, Callback callback) throws Exception {
+      if (NOT_FOUND_PATHS.contains(request.getHttpURI().getCanonicalPath())) {
+        response.setStatus(HttpStatus.NOT_FOUND_404);
+        callback.succeeded();
+        return true;
       }
-      super.handle(target, baseRequest, request, response);
+
+      return super.handle(request, response, callback);
     }
   }
 
@@ -504,7 +497,6 @@ public class Invoker {
     protected Class<?> findClass(String name) throws ClassNotFoundException {
       String prefix = "com.google.cloud.functions.";
       if ((name.startsWith(prefix) && Character.isUpperCase(name.charAt(prefix.length())))
-          || name.startsWith("javax.servlet.")
           || isCloudEventsApiClass(name)) {
         return runtimeClassLoader.loadClass(name);
       }
