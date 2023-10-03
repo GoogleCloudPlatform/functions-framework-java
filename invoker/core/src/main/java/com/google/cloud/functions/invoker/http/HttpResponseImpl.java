@@ -20,6 +20,7 @@ import com.google.cloud.functions.HttpResponse;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.util.IO;
 
 public class HttpResponseImpl implements HttpResponse {
   private final HttpServletResponse response;
@@ -43,7 +45,7 @@ public class HttpResponseImpl implements HttpResponse {
   @Override
   @SuppressWarnings("deprecation")
   public void setStatusCode(int code, String message) {
-    response.setStatus(code, message);
+    response.setStatus(code);
   }
 
   @Override
@@ -86,32 +88,92 @@ public class HttpResponseImpl implements HttpResponse {
   @Override
   public synchronized BufferedWriter getWriter() throws IOException {
     if (writer == null) {
-      // Unfortunately this means that we get two intermediate objects between the object we return
-      // and the underlying Writer that response.getWriter() wraps. We could try accessing the
-      // PrintWriter.out field via reflection, but that sort of access to non-public fields of
-      // platform classes is now frowned on and may draw warnings or even fail in subsequent
-      // versions. We could instead wrap the OutputStream, but that would require us to deduce the
-      // appropriate Charset, using logic like this:
-      // https://github.com/eclipse/jetty.project/blob/923ec38adf/jetty-server/src/main/java/org/eclipse/jetty/server/Response.java#L731
-      // We may end up doing that if performance is an issue.
-      writer = new BufferedWriter(response.getWriter());
+      writer = new NonBufferedWriter(response.getWriter());
     }
     return writer;
   }
 
-  public void flush() {
+  /** Close the response, flushing all content. */
+  public void close() {
     try {
-      // We can't use HttpServletResponse.flushBuffer() because we wrap the
-      // PrintWriter returned by HttpServletResponse in our own BufferedWriter
-      // to match our API. So we have to flush whichever of getWriter() or
-      // getOutputStream() works.
+      IO.close(getOutputStream());
+    } catch (IllegalStateException | IOException e) {
       try {
-        getOutputStream().flush();
-      } catch (IllegalStateException e) {
-        getWriter().flush();
+        IO.close(getWriter());
+      } catch (IOException ioe) {
+        // Too bad, can't close.
       }
-    } catch (IOException e) {
-      // Too bad, can't flush.
+    }
+  }
+
+  /**
+   * A {@link BufferedWriter} that does not buffer. It is generally more efficient to buffer at the
+   * lower level, since frequently total content is smaller than a single buffer and the lower level
+   * buffer can turn a close into a last write that will avoid chunking the response if at all
+   * possible. However, {@link BufferedWriter} is in the API for {@link HttpResponse}, so we must
+   * return a writer of that type.
+   */
+  private static class NonBufferedWriter extends BufferedWriter {
+    private final Writer writer;
+
+    public NonBufferedWriter(Writer out) {
+      super(out, 1);
+      writer = out;
+    }
+
+    @Override
+    public void write(int c) throws IOException {
+      writer.write(c);
+    }
+
+    @Override
+    public void write(char[] cbuf) throws IOException {
+      writer.write(cbuf);
+    }
+
+    @Override
+    public void write(char[] cbuf, int off, int len) throws IOException {
+      writer.write(cbuf, off, len);
+    }
+
+    @Override
+    public void write(String str) throws IOException {
+      writer.write(str);
+    }
+
+    @Override
+    public void write(String str, int off, int len) throws IOException {
+      writer.write(str, off, len);
+    }
+
+    @Override
+    public Writer append(CharSequence csq) throws IOException {
+      return writer.append(csq);
+    }
+
+    @Override
+    public Writer append(CharSequence csq, int start, int end) throws IOException {
+      return writer.append(csq, start, end);
+    }
+
+    @Override
+    public Writer append(char c) throws IOException {
+      return writer.append(c);
+    }
+
+    @Override
+    public void flush() throws IOException {
+      writer.flush();
+    }
+
+    @Override
+    public void close() throws IOException {
+      writer.close();
+    }
+
+    @Override
+    public void newLine() throws IOException {
+      writer.write(System.lineSeparator());
     }
   }
 }
