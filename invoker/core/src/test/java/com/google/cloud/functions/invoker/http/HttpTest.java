@@ -242,7 +242,8 @@ public class HttpTest {
     MultiPartContentProvider multiPart = new MultiPartContentProvider();
     HttpFields textHttpFields = HttpFields.build().add("foo", "bar").asImmutable();
     multiPart.addFieldPart("text", new StringContentProvider(TEST_BODY), textHttpFields);
-    HttpFields bytesHttpFields = HttpFields.build().add("foo", "baz").add("foo", "buh").asImmutable();
+    HttpFields bytesHttpFields =
+        HttpFields.build().add("foo", "baz").add("foo", "buh").asImmutable();
     assertThat(bytesHttpFields.getValuesList("foo")).containsExactly("baz", "buh");
     multiPart.addFilePart(
         "binary", "/tmp/binary.x", new BytesContentProvider(RANDOM_BYTES), bytesHttpFields);
