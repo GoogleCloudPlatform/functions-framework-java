@@ -17,14 +17,17 @@ package com.google.cloud.functions.invoker;
 import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.invoker.http.HttpRequestImpl;
 import com.google.cloud.functions.invoker.http.HttpResponseImpl;
+import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.servlet.http.HttpServlet;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 
 /** Executes the user's method. */
-public class HttpFunctionExecutor extends HttpServlet {
+public class HttpFunctionExecutor extends AbstractHandler {
   private static final Logger logger = Logger.getLogger("com.google.cloud.functions.invoker");
 
   private final HttpFunction function;
@@ -62,8 +65,9 @@ public class HttpFunctionExecutor extends HttpServlet {
   }
 
   /** Executes the user's method, can handle all HTTP type methods. */
-  @Override
-  public void service(HttpServletRequest req, HttpServletResponse res) {
+  public void handle(String s, Request baseRequest, HttpServletRequest req, HttpServletResponse res)
+      throws IOException, ServletException {
+    baseRequest.setHandled(true);
     HttpRequestImpl reqImpl = new HttpRequestImpl(req);
     HttpResponseImpl respImpl = new HttpResponseImpl(res);
     ClassLoader oldContextLoader = Thread.currentThread().getContextClassLoader();
@@ -75,7 +79,7 @@ public class HttpFunctionExecutor extends HttpServlet {
       res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     } finally {
       Thread.currentThread().setContextClassLoader(oldContextLoader);
-      respImpl.flush();
+      respImpl.close();
     }
   }
 }

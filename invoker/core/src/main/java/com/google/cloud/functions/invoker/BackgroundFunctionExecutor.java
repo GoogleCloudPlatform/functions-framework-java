@@ -42,12 +42,14 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.servlet.http.HttpServlet;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 
 /** Executes the user's background function. */
-public final class BackgroundFunctionExecutor extends HttpServlet {
+public final class BackgroundFunctionExecutor extends AbstractHandler {
   private static final Logger logger = Logger.getLogger("com.google.cloud.functions.invoker");
 
   private final FunctionExecutor<?> functionExecutor;
@@ -223,7 +225,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
    * for the various triggers. CloudEvents are ones that follow the standards defined by <a
    * href="https://cloudevents.io">cloudevents.io</a>.
    *
-   * @param <CloudEventDataT> the type to be used in the {@link Unmarshallers} call when
+   * @param <CloudEventDataT> the type to be used in the {code Unmarshallers} call when
    *     unmarshalling this event, if it is a CloudEvent.
    */
   private abstract static class FunctionExecutor<CloudEventDataT> {
@@ -320,7 +322,9 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
 
   /** Executes the user's background function. This can handle all HTTP methods. */
   @Override
-  public void service(HttpServletRequest req, HttpServletResponse res) throws IOException {
+  public void handle(String s, Request baseRequest, HttpServletRequest req, HttpServletResponse res)
+      throws IOException, ServletException {
+    baseRequest.setHandled(true);
     String contentType = req.getContentType();
     try {
       if ((contentType != null && contentType.startsWith("application/cloudevents+json"))
