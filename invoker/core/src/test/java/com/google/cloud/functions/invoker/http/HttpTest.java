@@ -240,12 +240,9 @@ public class HttpTest {
     httpClient.start();
     String uri = "http://localhost:" + serverPort + "/";
     MultiPartContentProvider multiPart = new MultiPartContentProvider();
-    HttpFields textHttpFields = new HttpFields();
-    textHttpFields.add("foo", "bar");
+    HttpFields textHttpFields = HttpFields.build().add("foo", "bar").asImmutable();
     multiPart.addFieldPart("text", new StringContentProvider(TEST_BODY), textHttpFields);
-    HttpFields bytesHttpFields = new HttpFields();
-    bytesHttpFields.add("foo", "baz");
-    bytesHttpFields.add("foo", "buh");
+    HttpFields bytesHttpFields = HttpFields.build().add("foo", "baz").add("foo", "buh").asImmutable();
     assertThat(bytesHttpFields.getValuesList("foo")).containsExactly("baz", "buh");
     multiPart.addFilePart(
         "binary", "/tmp/binary.x", new BytesContentProvider(RANDOM_BYTES), bytesHttpFields);

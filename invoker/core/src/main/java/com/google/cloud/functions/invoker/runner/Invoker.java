@@ -282,6 +282,7 @@ public class Invoker {
     ServerConnector connector = new ServerConnector(server);
     connector.setPort(port);
     connector.setReuseAddress(true);
+    connector.setReusePort(true);
     server.setConnectors(new Connector[] {connector});
     server.setHandler(new NotFoundHandler());
 

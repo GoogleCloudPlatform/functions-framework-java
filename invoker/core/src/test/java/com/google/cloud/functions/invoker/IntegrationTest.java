@@ -575,9 +575,9 @@ public class IntegrationTest {
   public void multipart() throws Exception {
     MultiPartContentProvider multiPartProvider = new MultiPartContentProvider();
     byte[] bytes = new byte[17];
-    multiPartProvider.addFieldPart("bytes", new BytesContentProvider(bytes), new HttpFields());
+    multiPartProvider.addFieldPart("bytes", new BytesContentProvider(bytes), HttpFields.EMPTY);
     String string = "1234567890";
-    multiPartProvider.addFieldPart("string", new StringContentProvider(string), new HttpFields());
+    multiPartProvider.addFieldPart("string", new StringContentProvider(string), HttpFields.EMPTY);
     String expectedResponse =
         "part bytes type application/octet-stream length 17\n"
             + "part string type text/plain;charset=UTF-8 length 10\n";
