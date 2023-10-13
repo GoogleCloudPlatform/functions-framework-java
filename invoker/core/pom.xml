@@ -98,12 +98,12 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
-      <version>9.4.52.v20230823</version>
+      <version>9.4.53.v20231009</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <version>9.4.52.v20230823</version>
+      <version>9.4.53.v20231009</version>
     </dependency>
     <dependency>
       <groupId>com.beust</groupId>
@@ -151,7 +151,7 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
-      <version>9.4.52.v20230823</version>
+      <version>9.4.53.v20231009</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -174,7 +174,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.5.0</version>
+        <version>3.5.1</version>
         <executions>
           <execution>
             <phase>package</phase>
