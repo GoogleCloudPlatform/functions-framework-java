@@ -474,6 +474,7 @@ public class Invoker {
         throws IOException, ServletException {
       if (NOT_FOUND_PATHS.contains(request.getRequestURI())) {
         response.sendError(HttpStatus.NOT_FOUND_404, "Not Found");
+        return;
       }
       super.handle(target, baseRequest, request, response);
     }

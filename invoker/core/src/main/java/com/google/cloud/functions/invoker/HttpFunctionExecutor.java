@@ -48,12 +48,16 @@ public class HttpFunctionExecutor extends HttpServlet {
               + HttpFunction.class.getName());
     }
     Class<? extends HttpFunction> httpFunctionClass = functionClass.asSubclass(HttpFunction.class);
+    ClassLoader oldContextLoader = Thread.currentThread().getContextClassLoader();
     try {
+      Thread.currentThread().setContextClassLoader(httpFunctionClass.getClassLoader());
       HttpFunction httpFunction = httpFunctionClass.getConstructor().newInstance();
       return new HttpFunctionExecutor(httpFunction);
     } catch (ReflectiveOperationException e) {
       throw new RuntimeException(
           "Could not construct an instance of " + functionClass.getName() + ": " + e, e);
+    } finally {
+      Thread.currentThread().setContextClassLoader(oldContextLoader);
     }
   }
 
