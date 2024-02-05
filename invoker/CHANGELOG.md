@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.2](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.3.1...java-function-invoker-v1.3.2) (2024-02-05)
+
+
+### Bug Fixes
+
+* avoid executing function when /favicon.ico or /robots.txt is called ([#226](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/226)) ([fca8676](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/fca867667db593699193da01b69a4cca7ca48fc8))
+* set Thread Context ClassLoader correctly when invoking handler constructor ([#239](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/239)) ([9f7155b](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/9f7155b77574ec980ecf9e6dffbd2ee0398db8a7))
+
 ## [1.3.1](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.3.0...java-function-invoker-v1.3.1) (2023-09-13)
 
 
