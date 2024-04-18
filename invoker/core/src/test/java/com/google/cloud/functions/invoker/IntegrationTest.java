@@ -403,6 +403,10 @@ public class IntegrationTest {
       if (dot != -1) {
         version = version.substring(0, dot);
       }
+      int dash = version.indexOf("-");
+      if (dash != -1) {
+        version = version.substring(0, dash);
+      }
     }
     return Integer.parseInt(version);
   }

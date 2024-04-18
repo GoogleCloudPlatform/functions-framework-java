@@ -161,7 +161,7 @@ You can configure the plugin in `pom.xml`:
   <artifactId>function-maven-plugin</artifactId>
   <version>0.10.1</version>
   <configuration>
-    <functionTarget>com.example.function.Echo</functionTarget>
+    <functionTarget>com.example.HelloWorld</functionTarget>
   </configuration>
 </plugin>
 ```
@@ -178,7 +178,7 @@ You can alternatively configure the plugin with properties on the command line:
 
 ```sh
   mvn com.google.cloud.functions:function-maven-plugin:0.10.1:run \
-      -Drun.functionTarget=com.example.function.Echo
+      -Drun.functionTarget=com.example.HelloWorld
 ```
 
 ### Running the Functions Framework directly
