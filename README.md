@@ -13,7 +13,7 @@ An open source FaaS (Function as a service) framework for writing portable
 Java functions -- brought to you by the Google Cloud Functions team.
 
 The Functions Framework lets you write lightweight functions that run in many
-different environments, including:
+different environments, including :
 
 *   [Google Cloud Functions](https://cloud.google.com/functions/)
 *   Your local development machine
