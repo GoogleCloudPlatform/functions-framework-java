@@ -15,7 +15,6 @@
 package com.google.cloud.functions.invoker.http;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.Assert.fail;
 
 import com.google.cloud.functions.HttpRequest;
