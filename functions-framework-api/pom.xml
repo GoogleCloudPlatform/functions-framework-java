@@ -28,8 +28,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven-compiler-plugin.version>3.12.1</maven-compiler-plugin.version>
-    <maven-javadoc-plugin.version>3.6.3</maven-javadoc-plugin.version>
+    <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+    <maven-javadoc-plugin.version>3.7.0</maven-javadoc-plugin.version>
     <junit.jupiter.version>5.3.2</junit.jupiter.version>
   </properties>
 
@@ -52,7 +52,7 @@
     <dependency>
       <groupId>io.cloudevents</groupId>
       <artifactId>cloudevents-api</artifactId>
-      <version>2.5.0</version>
+      <version>3.0.0</version>
     </dependency>
   </dependencies>
 
@@ -73,7 +73,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
-        <version>3.3.0</version>
+        <version>3.3.1</version>
         <executions>
           <execution>
             <id>attach-sources</id>
@@ -86,7 +86,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
-        <version>3.0.1</version>
+        <version>3.1.0</version>
         <executions>
           <execution>
             <id>default</id>
@@ -177,7 +177,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
-            <version>3.1.0</version>
+            <version>3.2.4</version>
             <executions>
               <execution>
                 <id>sign-artifacts</id>
@@ -191,7 +191,7 @@
           <plugin>
             <groupId>org.sonatype.plugins</groupId>
             <artifactId>nexus-staging-maven-plugin</artifactId>
-            <version>1.6.13</version>
+            <version>1.7.0</version>
             <extensions>true</extensions>
             <configuration>
               <serverId>sonatype-nexus-snapshots</serverId>

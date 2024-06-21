@@ -2,7 +2,6 @@ package com.google.cloud.functions.invoker;
 
 import static com.google.cloud.functions.invoker.BackgroundFunctionExecutor.backgroundFunctionTypeArgument;
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth8.assertThat;
 
 import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.Context;
