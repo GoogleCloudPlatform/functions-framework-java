@@ -13,6 +13,6 @@ public class TimeoutHttp implements HttpFunction {
     } catch (InterruptedException e) {
       response.getWriter().close();
     }
-      response.getWriter().write("finished\n");
+    response.getWriter().write("finished\n");
   }
 }

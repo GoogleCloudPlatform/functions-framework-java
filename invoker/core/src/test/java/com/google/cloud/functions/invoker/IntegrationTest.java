@@ -708,7 +708,8 @@ public class IntegrationTest {
       String target,
       ImmutableList<String> extraArgs,
       List<TestCase> testCases,
-      Map<String, String> environmentVariables) throws Exception {
+      Map<String, String> environmentVariables)
+      throws Exception {
     ServerProcess serverProcess =
         startServer(signatureType, target, extraArgs, environmentVariables);
     try {
