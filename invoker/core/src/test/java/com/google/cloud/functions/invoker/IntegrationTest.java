@@ -433,8 +433,8 @@ public class IntegrationTest {
         fullTarget("TypedVoid"),
         ImmutableList.of(),
         ImmutableList.of(
-        TestCase.builder().setRequestText("{}").setExpectedResponseCode(204).build()),
-      Collections.emptyMap());
+            TestCase.builder().setRequestText("{}").setExpectedResponseCode(204).build()),
+        Collections.emptyMap());
   }
 
   @Test
@@ -448,7 +448,7 @@ public class IntegrationTest {
                 .setRequestText("abc\n123\n$#@\n")
                 .setExpectedResponseText("abc123$#@")
                 .setExpectedResponseCode(200)
-            .build()),
+                .build()),
         Collections.emptyMap());
   }
 
