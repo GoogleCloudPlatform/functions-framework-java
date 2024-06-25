@@ -704,7 +704,7 @@ public class IntegrationTest {
   }
 
   private void testFunction(
-      SignatureType signatureType, 
+      SignatureType signatureType,
       String target,
       ImmutableList<String> extraArgs,
       List<TestCase> testCases,
