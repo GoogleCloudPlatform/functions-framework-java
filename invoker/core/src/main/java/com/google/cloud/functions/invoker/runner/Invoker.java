@@ -401,12 +401,14 @@ public class Invoker {
 
   private ServletContextHandler addDosFilterForRequestTimeout(
       ServletContextHandler servletContextHandler) {
-    String timeout = System.getenv("CLOUD_RUN_TIMEOUT_SECONDS");
-    if (timeout == null) {
+    String timeoutSeconds = System.getenv("CLOUD_RUN_TIMEOUT_SECONDS");
+    if (timeoutSeconds == null) {
       return servletContextHandler;
     }
+    double seconds = Double.parseDouble(timeoutSeconds);
+    long milliseconds = (long) (seconds * 1000);
     FilterHolder holder = new FilterHolder(DoSFilter.class);
-    holder.setInitParameter("maxRequestMs", timeout);
+    holder.setInitParameter("maxRequestMs", Long.toString(milliseconds));
     servletContextHandler.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
     return servletContextHandler;
   }
