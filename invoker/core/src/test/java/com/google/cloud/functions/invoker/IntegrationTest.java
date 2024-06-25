@@ -257,14 +257,14 @@ public class IntegrationTest {
   public void timeoutHttpSuccess() throws Exception {
     testFunction(SignatureType.HTTP, fullTarget("TimeoutHttp"), ImmutableList.of(),
         ImmutableList.of(TestCase.builder().setExpectedResponseText("finished\n").build()),
-        ImmutableMap.of("CLOUD_RUN_TIMEOUT_SECONDS", "3000"));
+        ImmutableMap.of("CLOUD_RUN_TIMEOUT_SECONDS", "3"));
   }
 
   @Test
   public void timeoutHttpTimesOut() throws Exception {
     testFunction(SignatureType.HTTP, fullTarget("TimeoutHttp"), ImmutableList.of(),
         ImmutableList.of(TestCase.builder().setExpectedResponseCode(503).build()),
-        ImmutableMap.of("CLOUD_RUN_TIMEOUT_SECONDS", "1000"));
+        ImmutableMap.of("CLOUD_RUN_TIMEOUT_SECONDS", "1"));
   }
 
   @Test
