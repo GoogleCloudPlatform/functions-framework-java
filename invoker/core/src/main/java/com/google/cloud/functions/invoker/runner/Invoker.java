@@ -398,7 +398,6 @@ public class Invoker {
     throw new RuntimeException(error);
   }
 
-
   private ServletContextHandler addDosFilterForRequestTimeout(
       ServletContextHandler servletContextHandler) {
     String timeoutSeconds = System.getenv("CLOUD_RUN_TIMEOUT_SECONDS");

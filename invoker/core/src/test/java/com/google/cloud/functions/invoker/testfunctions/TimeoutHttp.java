@@ -6,14 +6,13 @@ import com.google.cloud.functions.HttpResponse;
 
 public class TimeoutHttp implements HttpFunction {
 
-    @Override
-    public void service(HttpRequest request, HttpResponse response) throws Exception {
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            response.getWriter().close();
-        }
-        response.getWriter().write("finished\n");
+  @Override
+  public void service(HttpRequest request, HttpResponse response) throws Exception {
+    try {
+      Thread.sleep(2000);
+    } catch (InterruptedException e) {
+      response.getWriter().close();
     }
-
+      response.getWriter().write("finished\n");
+  }
 }

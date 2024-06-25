@@ -255,14 +255,20 @@ public class IntegrationTest {
 
   @Test
   public void timeoutHttpSuccess() throws Exception {
-    testFunction(SignatureType.HTTP, fullTarget("TimeoutHttp"), ImmutableList.of(),
+    testFunction(
+        SignatureType.HTTP,
+        fullTarget("TimeoutHttp"),
+        ImmutableList.of(),
         ImmutableList.of(TestCase.builder().setExpectedResponseText("finished\n").build()),
         ImmutableMap.of("CLOUD_RUN_TIMEOUT_SECONDS", "3"));
   }
 
   @Test
   public void timeoutHttpTimesOut() throws Exception {
-    testFunction(SignatureType.HTTP, fullTarget("TimeoutHttp"), ImmutableList.of(),
+    testFunction(
+        SignatureType.HTTP,
+        fullTarget("TimeoutHttp"),
+        ImmutableList.of(),
         ImmutableList.of(TestCase.builder().setExpectedResponseCode(503).build()),
         ImmutableMap.of("CLOUD_RUN_TIMEOUT_SECONDS", "1"));
   }
@@ -296,9 +302,16 @@ public class IntegrationTest {
     File snoopFile = snoopFile();
     String gcfRequestText = sampleLegacyEvent(snoopFile);
 
-    testFunction(SignatureType.BACKGROUND, fullTarget("ExceptionBackground"), ImmutableList.of(),
-        ImmutableList.of(TestCase.builder().setRequestText(gcfRequestText)
-            .setExpectedResponseCode(500).setExpectedOutput(exceptionExpectedOutput).build()),
+    testFunction(
+        SignatureType.BACKGROUND,
+        fullTarget("ExceptionBackground"),
+        ImmutableList.of(),
+        ImmutableList.of(
+            TestCase.builder()
+                .setRequestText(gcfRequestText)
+                .setExpectedResponseCode(500)
+                .setExpectedOutput(exceptionExpectedOutput)
+                .build()),
         Collections.emptyMap());
   }
 
@@ -639,8 +652,11 @@ public class IntegrationTest {
         SignatureType.TYPED,
         "com.example.functionjar.Typed",
         ImmutableList.of("--classpath", functionJarString()),
-        ImmutableList.of(TestCase.builder().setRequestText(originalJson)
-            .setExpectedResponseText("{\"fullName\":\"JohnDoe\"}").build()),
+        ImmutableList.of(
+            TestCase.builder()
+                .setRequestText(originalJson)
+                .setExpectedResponseText("{\"fullName\":\"JohnDoe\"}")
+                .build()),
         Collections.emptyMap());
   }
 
@@ -655,7 +671,11 @@ public class IntegrationTest {
     for (TestCase testCase : testCases) {
       File snoopFile = testCase.snoopFile().get();
       snoopFile.delete();
-      testFunction(signatureType, functionTarget, ImmutableList.of(), ImmutableList.of(testCase),
+      testFunction(
+          signatureType,
+          functionTarget,
+          ImmutableList.of(),
+          ImmutableList.of(testCase),
           Collections.emptyMap());
       String snooped = new String(Files.readAllBytes(snoopFile.toPath()), StandardCharsets.UTF_8);
       Gson gson = new Gson();
@@ -683,8 +703,11 @@ public class IntegrationTest {
     testFunction(SignatureType.HTTP, target, ImmutableList.of(), testCases, Collections.emptyMap());
   }
 
-  private void testFunction(SignatureType signatureType, String target,
-      ImmutableList<String> extraArgs, List<TestCase> testCases,
+  private void testFunction(
+      SignatureType signatureType, 
+      String target,
+      ImmutableList<String> extraArgs,
+      List<TestCase> testCases,
       Map<String, String> environmentVariables) throws Exception {
     ServerProcess serverProcess =
         startServer(signatureType, target, extraArgs, environmentVariables);
@@ -782,8 +805,11 @@ public class IntegrationTest {
     }
   }
 
-  private ServerProcess startServer(SignatureType signatureType, String target,
-      ImmutableList<String> extraArgs, Map<String, String> environmentVariables)
+  private ServerProcess startServer(
+      SignatureType signatureType,
+      String target,
+      ImmutableList<String> extraArgs,
+      Map<String, String> environmentVariables)
       throws IOException, InterruptedException {
     File javaHome = new File(System.getProperty("java.home"));
     assertThat(javaHome.exists()).isTrue();
