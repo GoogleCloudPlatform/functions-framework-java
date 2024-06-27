@@ -5,7 +5,7 @@
 
 ### Bug Fixes
 
-* release 1.1.1 ([#277](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/277)) ([7e4ca5d](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/7e4ca5d15d5b200787b999f82da6d6cd1cbd4b7e))
+* release 1.1.1; this updates transitive dependencies on jackson ([#277](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/277)) ([7e4ca5d](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/7e4ca5d15d5b200787b999f82da6d6cd1cbd4b7e))
 
 ## [1.1.0](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/functions-framework-api-v1.0.4...functions-framework-api-v1.1.0) (2023-05-31)
 
