@@ -32,6 +32,7 @@ jobs:
           egress-policy: block
           allowed-endpoints: >
             api.osv.dev:443
+            api.scorecard.dev:443
             api.securityscorecards.dev:443
             auth.docker.io:443
             bestpractices.coreinfrastructure.org:443
