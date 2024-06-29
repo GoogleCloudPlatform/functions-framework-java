@@ -33,12 +33,14 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.Part;
 
 public class HttpRequestImpl implements HttpRequest {
   private final HttpServletRequest request;
+  private final MultipartConfigElement multipartConfigElement = new MultipartConfigElement("");
 
   public HttpRequestImpl(HttpServletRequest request) {
     this.request = request;
@@ -81,6 +83,7 @@ public class HttpRequestImpl implements HttpRequest {
       throw new IllegalStateException("Content-Type must be multipart/form-data: " + contentType);
     }
     try {
+      request.setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
       return request.getParts().stream().collect(toMap(Part::getName, HttpPartImpl::new));
     } catch (IOException e) {
       throw new UncheckedIOException(e);
