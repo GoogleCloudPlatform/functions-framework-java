@@ -261,9 +261,9 @@ public class IntegrationTest {
         ImmutableList.of(),
         ImmutableList.of(
             TestCase.builder()
-            .setExpectedResponseText("finished\n")
-            .setExpectedResponseText(Optional.empty())
-            .build()),
+                .setExpectedResponseText("finished\n")
+                .setExpectedResponseText(Optional.empty())
+                .build()),
         ImmutableMap.of("CLOUD_RUN_TIMEOUT_SECONDS", "3"));
   }
 
@@ -273,11 +273,11 @@ public class IntegrationTest {
         SignatureType.HTTP,
         fullTarget("TimeoutHttp"),
         ImmutableList.of(),
-            ImmutableList.of(
+        ImmutableList.of(
             TestCase.builder()
-            .setExpectedResponseCode(408)
-            .setExpectedResponseText(Optional.empty())
-            .build()),
+                .setExpectedResponseCode(408)
+                .setExpectedResponseText(Optional.empty())
+                .build()),
         ImmutableMap.of("CLOUD_RUN_TIMEOUT_SECONDS", "1"));
   }
 
