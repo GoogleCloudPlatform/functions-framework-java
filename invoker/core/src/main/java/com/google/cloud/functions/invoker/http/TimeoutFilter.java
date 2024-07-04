@@ -17,6 +17,7 @@ package com.google.cloud.functions.invoker.http;
 import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Logger;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -25,12 +26,9 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 
 public class TimeoutFilter implements Filter {
-  private static final int DEFAULT_TIMEOUT_SECONDS = 30; // Default timeout in seconds
-  private final int timeoutMs;
 
-  public TimeoutFilter() {
-    this(DEFAULT_TIMEOUT_SECONDS);
-  }
+  private static final Logger logger = Logger.getLogger(TimeoutFilter.class.getName());
+  private final int timeoutMs;
 
   public TimeoutFilter(int timeoutSeconds) {
     this.timeoutMs = timeoutSeconds * 1000; // Convert seconds to milliseconds
@@ -49,13 +47,13 @@ public class TimeoutFilter implements Filter {
                 ((HttpServletResponse) response)
                     .sendError(HttpServletResponse.SC_REQUEST_TIMEOUT, "Request timed out");
               } catch (IOException e) {
-                e.printStackTrace();
+                logger.warning("Error while sending HTTP response " + e.toString());
               }
             } else {
               try {
                 response.getWriter().write("Request timed out");
               } catch (IOException e) {
-                e.printStackTrace();
+                logger.warning("Error while writing response " + e.toString());
               }
             }
           }
