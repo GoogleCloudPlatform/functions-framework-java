@@ -47,13 +47,13 @@ public class TimeoutFilter implements Filter {
                 ((HttpServletResponse) response)
                     .sendError(HttpServletResponse.SC_REQUEST_TIMEOUT, "Request timed out");
               } catch (IOException e) {
-                logger.warning("Error while sending HTTP response " + e.toString());
+                logger.warning("Error while sending HTTP response: " + e.toString());
               }
             } else {
               try {
                 response.getWriter().write("Request timed out");
               } catch (IOException e) {
-                logger.warning("Error while writing response " + e.toString());
+                logger.warning("Error while writing response: " + e.toString());
               }
             }
           }
