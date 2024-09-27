@@ -51,6 +51,7 @@ import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -253,6 +254,34 @@ public class IntegrationTest {
   }
 
   @Test
+  public void timeoutHttpSuccess() throws Exception {
+    testFunction(
+        SignatureType.HTTP,
+        fullTarget("TimeoutHttp"),
+        ImmutableList.of(),
+        ImmutableList.of(
+            TestCase.builder()
+                .setExpectedResponseText("finished\n")
+                .setExpectedResponseText(Optional.empty())
+                .build()),
+        ImmutableMap.of("CLOUD_RUN_TIMEOUT_SECONDS", "3"));
+  }
+
+  @Test
+  public void timeoutHttpTimesOut() throws Exception {
+    testFunction(
+        SignatureType.HTTP,
+        fullTarget("TimeoutHttp"),
+        ImmutableList.of(),
+        ImmutableList.of(
+            TestCase.builder()
+                .setExpectedResponseCode(408)
+                .setExpectedResponseText(Optional.empty())
+                .build()),
+        ImmutableMap.of("CLOUD_RUN_TIMEOUT_SECONDS", "1"));
+  }
+
+  @Test
   public void exceptionHttp() throws Exception {
     String exceptionExpectedOutput =
         "\"severity\": \"ERROR\", \"logging.googleapis.com/sourceLocation\": {\"file\":"
@@ -290,7 +319,8 @@ public class IntegrationTest {
                 .setRequestText(gcfRequestText)
                 .setExpectedResponseCode(500)
                 .setExpectedOutput(exceptionExpectedOutput)
-                .build()));
+                .build()),
+        Collections.emptyMap());
   }
 
   @Test
@@ -400,7 +430,8 @@ public class IntegrationTest {
             TestCase.builder()
                 .setRequestText(originalJson)
                 .setExpectedResponseText("{\"fullName\":\"JohnDoe\"}")
-                .build()));
+                .build()),
+        Collections.emptyMap());
   }
 
   @Test
@@ -410,7 +441,8 @@ public class IntegrationTest {
         fullTarget("TypedVoid"),
         ImmutableList.of(),
         ImmutableList.of(
-            TestCase.builder().setRequestText("{}").setExpectedResponseCode(204).build()));
+            TestCase.builder().setRequestText("{}").setExpectedResponseCode(204).build()),
+        Collections.emptyMap());
   }
 
   @Test
@@ -424,7 +456,8 @@ public class IntegrationTest {
                 .setRequestText("abc\n123\n$#@\n")
                 .setExpectedResponseText("abc123$#@")
                 .setExpectedResponseCode(200)
-                .build()));
+                .build()),
+        Collections.emptyMap());
   }
 
   private void backgroundTest(String target) throws Exception {
@@ -595,7 +628,8 @@ public class IntegrationTest {
         SignatureType.HTTP,
         "com.example.functionjar.Foreground",
         ImmutableList.of("--classpath", functionJarString()),
-        ImmutableList.of(testCase));
+        ImmutableList.of(testCase),
+        Collections.emptyMap());
   }
 
   /** Like {@link #classpathOptionHttp} but for background functions. */
@@ -612,7 +646,8 @@ public class IntegrationTest {
         SignatureType.BACKGROUND,
         "com.example.functionjar.Background",
         ImmutableList.of("--classpath", functionJarString()),
-        ImmutableList.of(TestCase.builder().setRequestText(json.toString()).build()));
+        ImmutableList.of(TestCase.builder().setRequestText(json.toString()).build()),
+        Collections.emptyMap());
   }
 
   /** Like {@link #classpathOptionHttp} but for typed functions. */
@@ -629,7 +664,8 @@ public class IntegrationTest {
             TestCase.builder()
                 .setRequestText(originalJson)
                 .setExpectedResponseText("{\"fullName\":\"JohnDoe\"}")
-                .build()));
+                .build()),
+        Collections.emptyMap());
   }
 
   // In these tests, we test a number of different functions that express the same functionality
@@ -643,7 +679,12 @@ public class IntegrationTest {
     for (TestCase testCase : testCases) {
       File snoopFile = testCase.snoopFile().get();
       snoopFile.delete();
-      testFunction(signatureType, functionTarget, ImmutableList.of(), ImmutableList.of(testCase));
+      testFunction(
+          signatureType,
+          functionTarget,
+          ImmutableList.of(),
+          ImmutableList.of(testCase),
+          Collections.emptyMap());
       String snooped = new String(Files.readAllBytes(snoopFile.toPath()), StandardCharsets.UTF_8);
       Gson gson = new Gson();
       JsonObject snoopedJson = gson.fromJson(snooped, JsonObject.class);
@@ -667,16 +708,18 @@ public class IntegrationTest {
   }
 
   private void testHttpFunction(String target, List<TestCase> testCases) throws Exception {
-    testFunction(SignatureType.HTTP, target, ImmutableList.of(), testCases);
+    testFunction(SignatureType.HTTP, target, ImmutableList.of(), testCases, Collections.emptyMap());
   }
 
   private void testFunction(
       SignatureType signatureType,
       String target,
       ImmutableList<String> extraArgs,
-      List<TestCase> testCases)
+      List<TestCase> testCases,
+      Map<String, String> environmentVariables)
       throws Exception {
-    ServerProcess serverProcess = startServer(signatureType, target, extraArgs);
+    ServerProcess serverProcess =
+        startServer(signatureType, target, extraArgs, environmentVariables);
     try {
       HttpClient httpClient = new HttpClient();
       httpClient.start();
@@ -772,7 +815,10 @@ public class IntegrationTest {
   }
 
   private ServerProcess startServer(
-      SignatureType signatureType, String target, ImmutableList<String> extraArgs)
+      SignatureType signatureType,
+      String target,
+      ImmutableList<String> extraArgs,
+      Map<String, String> environmentVariables)
       throws IOException, InterruptedException {
     File javaHome = new File(System.getProperty("java.home"));
     assertThat(javaHome.exists()).isTrue();
@@ -798,6 +844,7 @@ public class IntegrationTest {
             "FUNCTION_TARGET",
             target);
     processBuilder.environment().putAll(environment);
+    processBuilder.environment().putAll(environmentVariables);
     Process serverProcess = processBuilder.start();
     CountDownLatch ready = new CountDownLatch(1);
     StringBuilder output = new StringBuilder();
