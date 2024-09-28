@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/functions-framework-api-v1.1.1...functions-framework-api-v1.1.2) (2024-09-27)
+
+
+### Bug Fixes
+
+* use a version of maven-source-plugin that's available in mavencentral ([#288](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/288)) ([f8c1d57](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/f8c1d575660312101532a1f579c0492593248f37))
+
 ## [1.1.1](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/functions-framework-api-v1.1.0...functions-framework-api-v1.1.1) (2024-06-27)
 
 
