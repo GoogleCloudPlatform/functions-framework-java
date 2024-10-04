@@ -3,6 +3,16 @@
 # Stop execution when any command fails.
 set -e
 
+# update the Maven version to 3.6.3
+pushd /usr/local
+wget https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.6.3/apache-maven-3.6.3-bin.tar.gz
+tar -xvzf apache-maven-3.6.3-bin.tar.gz apache-maven-3.6.3
+rm -f /usr/local/apache-maven
+ln -s /usr/local/apache-maven-3.6.3 /usr/local/apache-maven
+rm apache-maven-3.6.3-bin.tar.gz
+popd
+
+
 # Get secrets from keystore and set and environment variables.
 setup_environment_secrets() {
   export GPG_TTY=$(tty)
