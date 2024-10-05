@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.3](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/functions-framework-api-v1.1.2...functions-framework-api-v1.1.3) (2024-10-05)
+
+
+### Bug Fixes
+
+* revert maven-source-plugin to 3.2.1 ([#297](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/297)) ([8f1fd84](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/8f1fd84ca4cc43b2e93b66fe160f78a868b55ffe))
+* update maven-source-plugin version ([#295](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/295)) ([346714a](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/346714a6162adc72fc0f2ae6a2337198742b2197))
+
 ## [1.1.2](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/functions-framework-api-v1.1.1...functions-framework-api-v1.1.2) (2024-09-27)
 
 
