@@ -24,7 +24,7 @@ jobs:
     - name: Set up JDK
       uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b # v4.5.0
       with:
-        java-version: 17.x
+        java-version: 11.x
         distribution: temurin
     - name: Build API with Maven
       run: (cd functions-framework-api/ && mvn install)
@@ -48,6 +48,7 @@ jobs:
         uses: axel-op/googlejavaformat-action@dbff853fb823671ec5781365233bf86543b13215 # v3
         with:
           args: "--replace"
+          java-version: 17.x
           skip-commit: true
       - name: Print diffs
         run: git --no-pager diff --exit-code
