@@ -47,6 +47,7 @@ jobs:
         uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b # v4.5.0
         with:
           java-version: 17.x
+          distribution: temurin
       - name: Run formatter
         id: formatter
         uses: axel-op/googlejavaformat-action@dbff853fb823671ec5781365233bf86543b13215 # v3
