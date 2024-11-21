@@ -24,7 +24,7 @@ jobs:
     - name: Set up JDK
       uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b # v4.5.0
       with:
-        java-version: 11.x
+        java-version: 17.x
         distribution: temurin
     - name: Build API with Maven
       run: (cd functions-framework-api/ && mvn install)
