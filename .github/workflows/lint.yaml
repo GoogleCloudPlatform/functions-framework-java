@@ -24,7 +24,7 @@ jobs:
     - name: Set up JDK
       uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b # v4.5.0
       with:
-        java-version: 17.x
+        java-version: 11.x
         distribution: temurin
     - name: Build API with Maven
       run: (cd functions-framework-api/ && mvn install)
@@ -43,6 +43,10 @@ jobs:
           egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
 
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2 # v2 minimum required
+      - name: Set up JDK
+        uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b # v4.5.0
+        with:
+          java-version: 17.x
       - name: Run formatter
         id: formatter
         uses: axel-op/googlejavaformat-action@dbff853fb823671ec5781365233bf86543b13215 # v3
