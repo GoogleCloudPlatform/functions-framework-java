@@ -16,8 +16,8 @@ popd
 # Get secrets from keystore and set and environment variables.
 setup_environment_secrets() {
   export GPG_TTY=$(tty)
-  export SONATYPE_USERNAME=functions-framework-release-bot
-  export SONATYPE_PASSWORD=$(cat ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-sonatype-password)
+  export SONATYPE_USERNAME=$(cat ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-sonatype-password | cut -f1 -d':')
+  export SONATYPE_PASSWORD=$(cat ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-sonatype-password | cut -f2 -d':')
   export GPG_PASSPHRASE=$(cat ${KOKORO_KEYSTORE_DIR}/70247_maven-gpg-passphrase)
 
   # Add the key ring files to $GNUPGHOME to verify the GPG credentials.
