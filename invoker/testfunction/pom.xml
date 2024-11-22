@@ -4,12 +4,12 @@
   <parent>
     <groupId>com.google.cloud.functions.invoker</groupId>
     <artifactId>java-function-invoker-parent</artifactId>
-    <version>1.3.3-SNAPSHOT</version>
+    <version>1.3.3</version>
   </parent>
 
   <groupId>com.google.cloud.functions.invoker</groupId>
   <artifactId>java-function-invoker-testfunction</artifactId>
-  <version>1.3.3-SNAPSHOT</version>
+  <version>1.3.3</version>
   <name>Example GCF Function Jar</name>
   <description>
     An example of a GCF function packaged into a jar. We use this in tests.
