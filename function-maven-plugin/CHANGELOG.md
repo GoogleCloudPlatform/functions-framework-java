@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/function-maven-plugin-v0.11.0...function-maven-plugin-v0.11.1) (2024-11-27)
+
+
+### Bug Fixes
+
+* revert maven-source-plugin to 3.2.1 ([#303](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/303)) ([2db9a2b](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/2db9a2bec6ba93e7954e68c2301c5fc2fcc032d8))
+
 ## [0.11.0](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/function-maven-plugin-v0.10.1...function-maven-plugin-v0.11.0) (2023-05-31)
 
 
