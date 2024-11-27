@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.3](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.3.2...java-function-invoker-v1.3.3) (2024-11-27)
+
+
+### Bug Fixes
+
+* revert maven-source-plugin to 3.2.1 ([#303](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/303)) ([2db9a2b](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/2db9a2bec6ba93e7954e68c2301c5fc2fcc032d8))
+
 ## [1.3.2](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.3.1...java-function-invoker-v1.3.2) (2024-09-18)
 
 
