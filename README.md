@@ -10,14 +10,13 @@
 ![Security Scorecard](https://api.securityscorecards.dev/projects/github.com/GoogleCloudPlatform/functions-framework-java/badge)
 
 An open source FaaS (Function as a service) framework for writing portable
-Java functions -- brought to you by the Google Cloud Functions team.
+Java functions.
 
 The Functions Framework lets you write lightweight functions that run in many
 different environments, including:
 
-*   [Google Cloud Functions](https://cloud.google.com/functions/)
+*   [Google Cloud Run functions](https://cloud.google.com/functions/)
 *   Your local development machine
-*   [Cloud Run](https://cloud.google.com/run/) and [Cloud Run for Anthos](https://cloud.google.com/anthos/run/)
 *   [Knative](https://github.com/knative/)-based environments
 
 ## Installation
