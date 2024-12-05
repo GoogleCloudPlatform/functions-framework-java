@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["group:allNonMajor", "schedule:monthly"],
-  "ignoreDeps": ["org.apache.maven.plugins:maven-source-plugin"]
+  "ignoreDeps": ["org.apache.maven.plugins:maven-source-plugin"],
   "packageRules": [
     {
       "description": "Create a PR whenever there is a new major version",
