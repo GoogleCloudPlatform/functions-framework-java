@@ -28,6 +28,8 @@ import com.google.common.io.Resources;
 import com.google.common.truth.Expect;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.stream.JsonReader;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.builder.CloudEventBuilder;
 import io.cloudevents.core.format.EventFormat;
@@ -39,6 +41,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.net.URI;
@@ -89,6 +92,8 @@ public class IntegrationTest {
   @Rule public final TestName testName = new TestName();
 
   private static final String SERVER_READY_STRING = "Started ServerConnector";
+  private static final String EXECUTION_ID_HTTP_HEADER = "HTTP_FUNCTION_EXECUTION_ID";
+  private static final String EXECUTION_ID = "1234abcd";
 
   private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
 
@@ -286,7 +291,10 @@ public class IntegrationTest {
     String exceptionExpectedOutput =
         "\"severity\": \"ERROR\", \"logging.googleapis.com/sourceLocation\": {\"file\":"
             + " \"com/google/cloud/functions/invoker/HttpFunctionExecutor.java\", \"method\":"
-            + " \"service\"}, \"message\": \"Failed to execute"
+            + " \"service\"}, \"execution_id\": \""
+            + EXECUTION_ID
+            + "\","
+            + " \"message\": \"Failed to execute"
             + " com.google.cloud.functions.invoker.testfunctions.ExceptionHttp\\n"
             + "java.lang.RuntimeException: exception thrown for test";
     testHttpFunction(
@@ -294,6 +302,7 @@ public class IntegrationTest {
         ImmutableList.of(
             TestCase.builder()
                 .setExpectedResponseCode(500)
+                .setHttpHeaders(ImmutableMap.of(EXECUTION_ID_HTTP_HEADER, EXECUTION_ID))
                 .setExpectedOutput(exceptionExpectedOutput)
                 .build()));
   }
@@ -303,7 +312,10 @@ public class IntegrationTest {
     String exceptionExpectedOutput =
         "\"severity\": \"ERROR\", \"logging.googleapis.com/sourceLocation\": {\"file\":"
             + " \"com/google/cloud/functions/invoker/BackgroundFunctionExecutor.java\", \"method\":"
-            + " \"service\"}, \"message\": \"Failed to execute"
+            + " \"service\"}, \"execution_id\": \""
+            + EXECUTION_ID
+            + "\", "
+            + "\"message\": \"Failed to execute"
             + " com.google.cloud.functions.invoker.testfunctions.ExceptionBackground\\n"
             + "java.lang.RuntimeException: exception thrown for test";
 
@@ -317,6 +329,7 @@ public class IntegrationTest {
         ImmutableList.of(
             TestCase.builder()
                 .setRequestText(gcfRequestText)
+                .setHttpHeaders(ImmutableMap.of(EXECUTION_ID_HTTP_HEADER, EXECUTION_ID))
                 .setExpectedResponseCode(500)
                 .setExpectedOutput(exceptionExpectedOutput)
                 .build()),
@@ -359,13 +372,21 @@ public class IntegrationTest {
             + "\"logging.googleapis.com/sourceLocation\": "
             + "{\"file\": \"com/google/cloud/functions/invoker/testfunctions/Log.java\","
             + " \"method\": \"service\"},"
+            + " \"execution_id\": \""
+            + EXECUTION_ID
+            + "\","
             + " \"message\": \"blim\"}";
     TestCase simpleTestCase =
-        TestCase.builder().setUrl("/?message=blim").setExpectedOutput(simpleExpectedOutput).build();
+        TestCase.builder()
+            .setUrl("/?message=blim")
+            .setHttpHeaders(ImmutableMap.of(EXECUTION_ID_HTTP_HEADER, EXECUTION_ID))
+            .setExpectedOutput(simpleExpectedOutput)
+            .build();
     String quotingExpectedOutput = "\"message\": \"foo\\nbar\\\"";
     TestCase quotingTestCase =
         TestCase.builder()
             .setUrl("/?message=" + URLEncoder.encode("foo\nbar\"", "UTF-8"))
+            .setHttpHeaders(ImmutableMap.of(EXECUTION_ID_HTTP_HEADER, EXECUTION_ID))
             .setExpectedOutput(quotingExpectedOutput)
             .build();
     String exceptionExpectedOutput =
@@ -373,11 +394,15 @@ public class IntegrationTest {
             + "\"logging.googleapis.com/sourceLocation\": "
             + "{\"file\": \"com/google/cloud/functions/invoker/testfunctions/Log.java\", "
             + "\"method\": \"service\"}, "
+            + "\"execution_id\": \""
+            + EXECUTION_ID
+            + "\", "
             + "\"message\": \"oops\\njava.lang.Exception: disaster\\n"
             + "	at com.google.cloud.functions.invoker.testfunctions.Log.service(Log.java:";
     TestCase exceptionTestCase =
         TestCase.builder()
             .setUrl("/?message=oops&level=severe&exception=disaster")
+            .setHttpHeaders(ImmutableMap.of(EXECUTION_ID_HTTP_HEADER, EXECUTION_ID))
             .setExpectedOutput(exceptionExpectedOutput)
             .build();
     testHttpFunction(
@@ -753,7 +778,11 @@ public class IntegrationTest {
     for (TestCase testCase : testCases) {
       testCase
           .expectedOutput()
-          .ifPresent(output -> expect.that(serverProcess.output()).contains(output));
+          .ifPresent(
+              (output) -> {
+                expect.that(serverProcess.output()).contains(output);
+                parseLogJson(serverProcess.output());
+              });
     }
     // Wait for the output monitor task to terminate. If it threw an exception, we will get an
     // ExecutionException here.
@@ -842,7 +871,9 @@ public class IntegrationTest {
             "FUNCTION_SIGNATURE_TYPE",
             signatureType.toString(),
             "FUNCTION_TARGET",
-            target);
+            target,
+            "LOG_EXECUTION_ID",
+            "true");
     processBuilder.environment().putAll(environment);
     processBuilder.environment().putAll(environmentVariables);
     Process serverProcess = processBuilder.start();
@@ -878,5 +909,13 @@ public class IntegrationTest {
       e.printStackTrace();
       throw new UncheckedIOException(e);
     }
+  }
+
+  // Attempt to parse Json object, throws on parse failure
+  private void parseLogJson(String json) throws RuntimeException {
+    System.out.println("trying to parse the following object ");
+    System.out.println(json);
+    JsonReader reader = new JsonReader(new StringReader(json));
+    JsonParser.parseReader(reader);
   }
 }

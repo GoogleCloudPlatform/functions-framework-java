@@ -15,6 +15,7 @@
 package com.google.cloud.functions.invoker;
 
 import com.google.cloud.functions.HttpFunction;
+import com.google.cloud.functions.invoker.gcf.ExecutionIdUtil;
 import com.google.cloud.functions.invoker.http.HttpRequestImpl;
 import com.google.cloud.functions.invoker.http.HttpResponseImpl;
 import java.util.logging.Level;
@@ -28,6 +29,7 @@ public class HttpFunctionExecutor extends HttpServlet {
   private static final Logger logger = Logger.getLogger("com.google.cloud.functions.invoker");
 
   private final HttpFunction function;
+  private final ExecutionIdUtil executionIdUtil = new ExecutionIdUtil();
 
   private HttpFunctionExecutor(HttpFunction function) {
     this.function = function;
@@ -68,6 +70,7 @@ public class HttpFunctionExecutor extends HttpServlet {
     HttpResponseImpl respImpl = new HttpResponseImpl(res);
     ClassLoader oldContextLoader = Thread.currentThread().getContextClassLoader();
     try {
+      executionIdUtil.storeExecutionId(req);
       Thread.currentThread().setContextClassLoader(function.getClass().getClassLoader());
       function.service(reqImpl, respImpl);
     } catch (Throwable t) {
@@ -75,6 +78,7 @@ public class HttpFunctionExecutor extends HttpServlet {
       res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     } finally {
       Thread.currentThread().setContextClassLoader(oldContextLoader);
+      executionIdUtil.removeExecutionId();
       respImpl.flush();
     }
   }
