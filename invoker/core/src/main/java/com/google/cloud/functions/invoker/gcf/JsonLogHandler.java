@@ -5,6 +5,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -24,6 +26,14 @@ public final class JsonLogHandler extends Handler {
 
   private final PrintStream out;
   private final boolean closePrintStreamOnClose;
+  // This map is used to track execution id for currently running Jetty requests. Mapping thread
+  // id to request works because of an implementation detail of Jetty thread pool handling.
+  // Jetty worker threads completely handle a request before beginning work on a new request.
+  // NOTE: Store thread id as a string to avoid comparison failures between int and long.
+  //
+  // Jetty Documentation (https://jetty.org/docs/jetty/10/programming-guide/arch/threads.html)
+  private static final ConcurrentMap<String, String> executionIdByThreadMap =
+      new ConcurrentHashMap<>();
 
   public JsonLogHandler(PrintStream out, boolean closePrintStreamOnClose) {
     this.out = out;
@@ -38,6 +48,7 @@ public final class JsonLogHandler extends Handler {
     StringBuilder json = new StringBuilder("{");
     appendSeverity(json, record);
     appendSourceLocation(json, record);
+    appendExecutionId(json, record);
     appendMessage(json, record); // must be last, see appendMessage
     json.append("}");
     // We must output the log all at once (should only call println once per call to publish)
@@ -96,6 +107,12 @@ public final class JsonLogHandler extends Handler {
     json.append(SOURCE_LOCATION_KEY).append("{").append(String.join(", ", entries)).append("}, ");
   }
 
+  private void appendExecutionId(StringBuilder json, LogRecord record) {
+    json.append("\"execution_id\": \"")
+        .append(executionIdByThreadMap.get(Integer.toString(record.getThreadID())))
+        .append("\", ");
+  }
+
   private static String escapeString(String s) {
     return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
   }
@@ -116,5 +133,13 @@ public final class JsonLogHandler extends Handler {
     if (closePrintStreamOnClose) {
       out.close();
     }
+  }
+
+  public void addExecutionId(long threadId, String executionId) {
+    executionIdByThreadMap.put(Long.toString(threadId), executionId);
+  }
+
+  public void removeExecutionId(long threadId) {
+    executionIdByThreadMap.remove(Long.toString(threadId));
   }
 }

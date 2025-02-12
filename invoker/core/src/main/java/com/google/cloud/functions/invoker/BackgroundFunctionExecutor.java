@@ -21,6 +21,7 @@ import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.CloudEventsFunction;
 import com.google.cloud.functions.Context;
 import com.google.cloud.functions.RawBackgroundFunction;
+import com.google.cloud.functions.invoker.gcf.ExecutionIdUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
@@ -51,6 +52,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
   private static final Logger logger = Logger.getLogger("com.google.cloud.functions.invoker");
 
   private final FunctionExecutor<?> functionExecutor;
+  private final ExecutionIdUtil executionIdUtil = new ExecutionIdUtil();
 
   private BackgroundFunctionExecutor(FunctionExecutor<?> functionExecutor) {
     this.functionExecutor = functionExecutor;
@@ -323,6 +325,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
   public void service(HttpServletRequest req, HttpServletResponse res) throws IOException {
     String contentType = req.getContentType();
     try {
+      executionIdUtil.storeExecutionId(req);
       if ((contentType != null && contentType.startsWith("application/cloudevents+json"))
           || req.getHeader("ce-specversion") != null) {
         serviceCloudEvent(req);
@@ -333,6 +336,8 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     } catch (Throwable t) {
       res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
       logger.log(Level.SEVERE, "Failed to execute " + functionExecutor.functionName(), t);
+    } finally {
+      executionIdUtil.removeExecutionId();
     }
   }
 
@@ -359,7 +364,14 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     // ServiceLoader.load
     // will throw ServiceConfigurationError. At this point we're still running with the default
     // context ClassLoader, which is the system ClassLoader that has loaded the code here.
-    runWithContextClassLoader(() -> executor.serviceCloudEvent(reader.toEvent(data -> data)));
+    try {
+      executionIdUtil.storeExecutionId(req);
+      runWithContextClassLoader(() -> executor.serviceCloudEvent(reader.toEvent(data -> data)));
+    } catch (Throwable t) {
+      logger.log(Level.SEVERE, "Failed to execute " + executor.functionName(), t);
+    } finally {
+      executionIdUtil.removeExecutionId();
+    }
     // The data->data is a workaround for a bug fixed since Milestone 4 of the SDK, in
     // https://github.com/cloudevents/sdk-java/pull/259.
   }

@@ -10,14 +10,13 @@
 ![Security Scorecard](https://api.securityscorecards.dev/projects/github.com/GoogleCloudPlatform/functions-framework-java/badge)
 
 An open source FaaS (Function as a service) framework for writing portable
-Java functions -- brought to you by the Google Cloud Functions team.
+Java functions.
 
 The Functions Framework lets you write lightweight functions that run in many
 different environments, including:
 
-*   [Google Cloud Functions](https://cloud.google.com/functions/)
+*   [Google Cloud Run functions](https://cloud.google.com/functions/)
 *   Your local development machine
-*   [Cloud Run](https://cloud.google.com/run/) and [Cloud Run for Anthos](https://cloud.google.com/anthos/run/)
 *   [Knative](https://github.com/knative/)-based environments
 
 ## Installation
@@ -41,7 +40,7 @@ that supports Maven to create the Maven project. Add this dependency in the
     <dependency>
       <groupId>com.google.cloud.functions</groupId>
       <artifactId>functions-framework-api</artifactId>
-      <version>1.0.4</version>
+      <version>1.1.2</version>
       <scope>provided</scope>
     </dependency>
 ```
@@ -51,7 +50,7 @@ Framework dependency in your `build.gradle` project file as follows:
 
 ```groovy
     dependencies {
-        implementation 'com.google.cloud.functions:functions-framework-api:1.0.4'
+        implementation 'com.google.cloud.functions:functions-framework-api:1.1.2'
     }
 
 ```
@@ -188,7 +187,7 @@ Copy the Functions Framework jar to a local location like this:
 
 ```sh
 mvn dependency:copy \
-    -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.1.1' \
+    -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.3.2' \
     -DoutputDirectory=.
 ```
 
@@ -196,7 +195,7 @@ In this example we use the current directory `.` but you can specify any other
 directory to copy to. Then run your function:
 
 ```sh
-java -jar java-function-invoker-1.1.1 \
+java -jar java-function-invoker-1.3.2 \
     --classpath myfunction.jar \
     --target com.example.HelloWorld
 ```
@@ -215,8 +214,8 @@ configurations {
 }
 
 dependencies {
-    implementation 'com.google.cloud.functions:functions-framework-api:1.0.4'
-    invoker 'com.google.cloud.functions.invoker:java-function-invoker:1.1.1'
+    implementation 'com.google.cloud.functions:functions-framework-api:1.1.2'
+    invoker 'com.google.cloud.functions.invoker:java-function-invoker:1.3.2'
 }
 
 tasks.register("runFunction", JavaExec) {
@@ -289,7 +288,7 @@ Framework directly, you must use `--classpath` to indicate how to find the code
 and its dependencies. For example:
 
 ```
-java -jar java-function-invoker-1.1.1 \
+java -jar java-function-invoker-1.3.2 \
     --classpath 'myfunction.jar:/some/directory:/some/library/*' \
     --target com.example.HelloWorld
 ```
