@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.3.3...java-function-invoker-v1.4.0) (2025-02-12)
+
+
+### Features
+
+* Add execution id logging to uniquely identify request logs ([#319](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/319)) ([5ef5317](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/5ef53174b6cdbc644336121bc19bab6c4b90892d))
+
 ## [1.3.3](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.3.2...java-function-invoker-v1.3.3) (2024-11-27)
 
 
