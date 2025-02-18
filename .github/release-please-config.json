@@ -48,11 +48,6 @@
                 },
                 {
                     "type": "xml",
-                    "path": "conformance/pom.xml",
-                    "xpath": "//*[local-name()='artifactId' and text()='function-maven-plugin']/parent::*/*[local-name()='version']" 
-                },
-                {
-                    "type": "xml",
                     "path": "testfunction/pom.xml",
                     "xpath": "//*[local-name()='artifactId' and text()='java-function-invoker-parent']/parent::*/*[local-name()='version']"
                 },
