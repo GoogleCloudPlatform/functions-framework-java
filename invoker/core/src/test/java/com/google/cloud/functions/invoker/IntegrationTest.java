@@ -577,6 +577,43 @@ public class IntegrationTest {
         ImmutableList.of(cloudEventsStructuredTestCase, cloudEventsBinaryTestCase));
   }
 
+  /** Tests a CloudEvent being handled by a CloudEvent handler throws exception */
+  @Test
+  public void nativeCloudEventException() throws Exception {
+    String exceptionExpectedOutput =
+        "\"severity\": \"ERROR\", \"logging.googleapis.com/sourceLocation\": {\"file\":"
+            + " \"com/google/cloud/functions/invoker/BackgroundFunctionExecutor.java\", \"method\":"
+            + " \"service\"}, \"execution_id\": \""
+            + EXECUTION_ID
+            + "\", "
+            + "\"message\": \"Failed to execute"
+            + " com.google.cloud.functions.invoker.testfunctions.ExceptionBackground\\n"
+            + "java.lang.RuntimeException: exception thrown for test";
+    File snoopFile = snoopFile();
+    CloudEvent cloudEvent = sampleCloudEvent(snoopFile);
+    EventFormat jsonFormat =
+        EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE);
+    String cloudEventJson = new String(jsonFormat.serialize(cloudEvent), UTF_8);
+
+    // A CloudEvent using the "structured content mode", where both the metadata and the payload
+    // are in the body of the HTTP request.
+    TestCase cloudEventsStructuredTestCase =
+        TestCase.builder()
+            .setRequestText(cloudEventJson)
+            .setHttpContentType("application/cloudevents+json; charset=utf-8")
+            .setHttpHeaders(ImmutableMap.of(EXECUTION_ID_HTTP_HEADER, EXECUTION_ID))
+            .setExpectedResponseCode(500)
+            .setExpectedOutput(exceptionExpectedOutput)
+            .build();
+
+    testFunction(
+        SignatureType.CLOUD_EVENT,
+        fullTarget("ExceptionBackground"),
+        ImmutableList.of(),
+        ImmutableList.of(cloudEventsStructuredTestCase),
+        Collections.emptyMap());
+  }
+
   @Test
   public void nested() throws Exception {
     String testText = "sic transit gloria mundi";

@@ -17,6 +17,7 @@ import java.util.logging.LogRecord;
  */
 public final class JsonLogHandler extends Handler {
   private static final String SOURCE_LOCATION_KEY = "\"logging.googleapis.com/sourceLocation\": ";
+  private static final String LOG_EXECUTION_ID_ENV_NAME = "LOG_EXECUTION_ID";
 
   private static final String DEBUG = "DEBUG";
   private static final String INFO = "INFO";
@@ -108,9 +109,11 @@ public final class JsonLogHandler extends Handler {
   }
 
   private void appendExecutionId(StringBuilder json, LogRecord record) {
-    json.append("\"execution_id\": \"")
-        .append(executionIdByThreadMap.get(Integer.toString(record.getThreadID())))
-        .append("\", ");
+    if (executionIdLoggingEnabled()) {
+      json.append("\"execution_id\": \"")
+          .append(executionIdByThreadMap.get(Integer.toString(record.getThreadID())))
+          .append("\", ");
+    }
   }
 
   private static String escapeString(String s) {
@@ -141,5 +144,9 @@ public final class JsonLogHandler extends Handler {
 
   public void removeExecutionId(long threadId) {
     executionIdByThreadMap.remove(Long.toString(threadId));
+  }
+
+  private boolean executionIdLoggingEnabled() {
+    return Boolean.parseBoolean(System.getenv().getOrDefault(LOG_EXECUTION_ID_ENV_NAME, "false"));
   }
 }
