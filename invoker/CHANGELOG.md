@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.4.0...java-function-invoker-v1.4.1) (2025-03-07)
+
+
+### Bug Fixes
+
+* correct Cloud Event retry functionality ([#326](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/326)) ([9899a67](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/9899a67a9a8cb6ebb27a92cccb740e7e23d48578))
+
 ## [1.4.0](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.3.3...java-function-invoker-v1.4.0) (2025-02-12)
 
 
