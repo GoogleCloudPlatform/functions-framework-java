@@ -364,14 +364,7 @@ public final class BackgroundFunctionExecutor extends HttpServlet {
     // ServiceLoader.load
     // will throw ServiceConfigurationError. At this point we're still running with the default
     // context ClassLoader, which is the system ClassLoader that has loaded the code here.
-    try {
-      executionIdUtil.storeExecutionId(req);
-      runWithContextClassLoader(() -> executor.serviceCloudEvent(reader.toEvent(data -> data)));
-    } catch (Throwable t) {
-      logger.log(Level.SEVERE, "Failed to execute " + executor.functionName(), t);
-    } finally {
-      executionIdUtil.removeExecutionId();
-    }
+    runWithContextClassLoader(() -> executor.serviceCloudEvent(reader.toEvent(data -> data)));
     // The data->data is a workaround for a bug fixed since Milestone 4 of the SDK, in
     // https://github.com/cloudevents/sdk-java/pull/259.
   }
