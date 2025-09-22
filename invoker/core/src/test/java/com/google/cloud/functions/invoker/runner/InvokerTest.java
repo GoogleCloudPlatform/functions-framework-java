@@ -2,7 +2,6 @@ package com.google.cloud.functions.invoker.runner;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
-import static com.google.common.truth.Truth8.assertThat;
 import static java.util.stream.Collectors.joining;
 
 import java.io.ByteArrayOutputStream;

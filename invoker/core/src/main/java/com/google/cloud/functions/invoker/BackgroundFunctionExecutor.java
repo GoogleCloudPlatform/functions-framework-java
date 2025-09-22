@@ -21,6 +21,7 @@ import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.CloudEventsFunction;
 import com.google.cloud.functions.Context;
 import com.google.cloud.functions.RawBackgroundFunction;
+import com.google.cloud.functions.invoker.gcf.ExecutionIdUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
@@ -58,6 +59,7 @@ public final class BackgroundFunctionExecutor extends Handler.Abstract {
   private static final Logger logger = Logger.getLogger("com.google.cloud.functions.invoker");
 
   private final FunctionExecutor<?> functionExecutor;
+  private final ExecutionIdUtil executionIdUtil = new ExecutionIdUtil();
 
   private BackgroundFunctionExecutor(FunctionExecutor<?> functionExecutor) {
     this.functionExecutor = functionExecutor;
@@ -332,6 +334,7 @@ public final class BackgroundFunctionExecutor extends Handler.Abstract {
   public boolean handle(Request req, Response res, Callback callback) throws Exception {
     String contentType = req.getHeaders().get(HttpHeader.CONTENT_TYPE);
     try {
+      executionIdUtil.storeExecutionId(req);
       if ((contentType != null && contentType.startsWith("application/cloudevents+json"))
           || req.getHeaders().get("ce-specversion") != null) {
         serviceCloudEvent(req);
@@ -344,6 +347,8 @@ public final class BackgroundFunctionExecutor extends Handler.Abstract {
       logger.log(Level.SEVERE, "Failed to execute " + functionExecutor.functionName(), t);
       res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
       callback.succeeded();
+    } finally {
+      executionIdUtil.removeExecutionId();
     }
     return true;
   }

@@ -24,7 +24,7 @@ jobs:
       prerun: 'invoker/conformance/prerun.sh'
       builder-runtime: 'java11'
       builder-runtime-version: '11'
-      builder-url: gcr.io/gae-runtimes/buildpacks/google-gae-22/java/builder:latest
+      builder-url: gcr.io/serverless-runtimes/google-22-full/builder/java:latest
   java17-buildpack-test:
     uses: GoogleCloudPlatform/functions-framework-conformance/.github/workflows/buildpack-integration-test.yml@main
     with:
@@ -35,4 +35,4 @@ jobs:
       prerun: 'invoker/conformance/prerun.sh'
       builder-runtime: 'java17'
       builder-runtime-version: '17'
-      builder-url: gcr.io/gae-runtimes/buildpacks/google-gae-22/java/builder:latest
+      builder-url: gcr.io/serverless-runtimes/google-22-full/builder/java:latest

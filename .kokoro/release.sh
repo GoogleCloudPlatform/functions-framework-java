@@ -3,11 +3,21 @@
 # Stop execution when any command fails.
 set -e
 
+# update the Maven version to 3.6.3
+pushd /usr/local
+wget https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.6.3/apache-maven-3.6.3-bin.tar.gz
+tar -xvzf apache-maven-3.6.3-bin.tar.gz apache-maven-3.6.3
+rm -f /usr/local/apache-maven
+ln -s /usr/local/apache-maven-3.6.3 /usr/local/apache-maven
+rm apache-maven-3.6.3-bin.tar.gz
+popd
+
+
 # Get secrets from keystore and set and environment variables.
 setup_environment_secrets() {
   export GPG_TTY=$(tty)
-  export SONATYPE_USERNAME=functions-framework-release-bot
-  export SONATYPE_PASSWORD=$(cat ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-sonatype-password)
+  export SONATYPE_USERNAME=$(cat ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-sonatype-password | cut -f1 -d':')
+  export SONATYPE_PASSWORD=$(cat ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-sonatype-password | cut -f2 -d':')
   export GPG_PASSPHRASE=$(cat ${KOKORO_KEYSTORE_DIR}/70247_maven-gpg-passphrase)
 
   # Add the key ring files to $GNUPGHOME to verify the GPG credentials.

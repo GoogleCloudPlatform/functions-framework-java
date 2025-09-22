@@ -28,6 +28,8 @@ import com.google.common.io.Resources;
 import com.google.common.truth.Expect;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.stream.JsonReader;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.builder.CloudEventBuilder;
 import io.cloudevents.core.format.EventFormat;
@@ -39,6 +41,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.net.URI;
@@ -52,6 +55,7 @@ import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -90,6 +94,8 @@ public class IntegrationTest {
   @Rule public final TestName testName = new TestName();
 
   private static final String SERVER_READY_STRING = "Started ServerConnector";
+  private static final String EXECUTION_ID_HTTP_HEADER = "HTTP_FUNCTION_EXECUTION_ID";
+  private static final String EXECUTION_ID = "1234abcd";
 
   private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
 
@@ -298,6 +304,9 @@ public class IntegrationTest {
         "\"severity\": \"ERROR\", \"logging.googleapis.com/sourceLocation\": {\"file\":"
             + " \"com/google/cloud/functions/invoker/HttpFunctionExecutor.java\", \"method\":"
             + " \"handle\"}, \"message\": \"Failed to execute"
+            + EXECUTION_ID
+            + "\","
+            + " \"message\": \"Failed to execute"
             + " com.google.cloud.functions.invoker.testfunctions.ExceptionHttp\\n"
             + "java.lang.RuntimeException: exception thrown for test";
     testHttpFunction(
@@ -305,6 +314,7 @@ public class IntegrationTest {
         ImmutableList.of(
             TestCase.builder()
                 .setExpectedResponseCode(500)
+                .setHttpHeaders(ImmutableMap.of(EXECUTION_ID_HTTP_HEADER, EXECUTION_ID))
                 .setExpectedOutput(exceptionExpectedOutput)
                 .build()));
   }
@@ -315,6 +325,9 @@ public class IntegrationTest {
         "\"severity\": \"ERROR\", \"logging.googleapis.com/sourceLocation\": {\"file\":"
             + " \"com/google/cloud/functions/invoker/BackgroundFunctionExecutor.java\", \"method\":"
             + " \"handle\"}, \"message\": \"Failed to execute"
+            + EXECUTION_ID
+            + "\", "
+            + "\"message\": \"Failed to execute"
             + " com.google.cloud.functions.invoker.testfunctions.ExceptionBackground\\n"
             + "java.lang.RuntimeException: exception thrown for test";
 
@@ -328,9 +341,11 @@ public class IntegrationTest {
         ImmutableList.of(
             TestCase.builder()
                 .setRequestText(gcfRequestText)
+                .setHttpHeaders(ImmutableMap.of(EXECUTION_ID_HTTP_HEADER, EXECUTION_ID))
                 .setExpectedResponseCode(500)
                 .setExpectedOutput(exceptionExpectedOutput)
-                .build()));
+                .build()),
+        Collections.emptyMap());
   }
 
   @Test
@@ -369,13 +384,21 @@ public class IntegrationTest {
             + "\"logging.googleapis.com/sourceLocation\": "
             + "{\"file\": \"com/google/cloud/functions/invoker/testfunctions/Log.java\","
             + " \"method\": \"service\"},"
+            + " \"execution_id\": \""
+            + EXECUTION_ID
+            + "\","
             + " \"message\": \"blim\"}";
     TestCase simpleTestCase =
-        TestCase.builder().setUrl("/?message=blim").setExpectedOutput(simpleExpectedOutput).build();
+        TestCase.builder()
+            .setUrl("/?message=blim")
+            .setHttpHeaders(ImmutableMap.of(EXECUTION_ID_HTTP_HEADER, EXECUTION_ID))
+            .setExpectedOutput(simpleExpectedOutput)
+            .build();
     String quotingExpectedOutput = "\"message\": \"foo\\nbar\\\"";
     TestCase quotingTestCase =
         TestCase.builder()
             .setUrl("/?message=" + URLEncoder.encode("foo\nbar\"", "UTF-8"))
+            .setHttpHeaders(ImmutableMap.of(EXECUTION_ID_HTTP_HEADER, EXECUTION_ID))
             .setExpectedOutput(quotingExpectedOutput)
             .build();
     String exceptionExpectedOutput =
@@ -383,11 +406,15 @@ public class IntegrationTest {
             + "\"logging.googleapis.com/sourceLocation\": "
             + "{\"file\": \"com/google/cloud/functions/invoker/testfunctions/Log.java\", "
             + "\"method\": \"service\"}, "
+            + "\"execution_id\": \""
+            + EXECUTION_ID
+            + "\", "
             + "\"message\": \"oops\\njava.lang.Exception: disaster\\n"
             + "	at com.google.cloud.functions.invoker.testfunctions.Log.service(Log.java:";
     TestCase exceptionTestCase =
         TestCase.builder()
             .setUrl("/?message=oops&level=severe&exception=disaster")
+            .setHttpHeaders(ImmutableMap.of(EXECUTION_ID_HTTP_HEADER, EXECUTION_ID))
             .setExpectedOutput(exceptionExpectedOutput)
             .build();
     testHttpFunction(
@@ -402,6 +429,10 @@ public class IntegrationTest {
       int dot = version.indexOf(".");
       if (dot != -1) {
         version = version.substring(0, dot);
+      }
+      int dash = version.indexOf("-");
+      if (dash != -1) {
+        version = version.substring(0, dash);
       }
     }
     return Integer.parseInt(version);
@@ -436,7 +467,8 @@ public class IntegrationTest {
             TestCase.builder()
                 .setRequestText(originalJson)
                 .setExpectedResponseText("{\"fullName\":\"JohnDoe\"}")
-                .build()));
+                .build()),
+        Collections.emptyMap());
   }
 
   @Test
@@ -446,7 +478,8 @@ public class IntegrationTest {
         fullTarget("TypedVoid"),
         ImmutableList.of(),
         ImmutableList.of(
-            TestCase.builder().setRequestText("{}").setExpectedResponseCode(204).build()));
+            TestCase.builder().setRequestText("{}").setExpectedResponseCode(204).build()),
+        Collections.emptyMap());
   }
 
   @Test
@@ -460,7 +493,8 @@ public class IntegrationTest {
                 .setRequestText("abc\n123\n$#@\n")
                 .setExpectedResponseText("abc123$#@")
                 .setExpectedResponseCode(200)
-                .build()));
+                .build()),
+        Collections.emptyMap());
   }
 
   private void backgroundTest(String target) throws Exception {
@@ -555,6 +589,43 @@ public class IntegrationTest {
         ImmutableList.of(cloudEventsStructuredTestCase, cloudEventsBinaryTestCase));
   }
 
+  /** Tests a CloudEvent being handled by a CloudEvent handler throws exception */
+  @Test
+  public void nativeCloudEventException() throws Exception {
+    String exceptionExpectedOutput =
+        "\"severity\": \"ERROR\", \"logging.googleapis.com/sourceLocation\": {\"file\":"
+            + " \"com/google/cloud/functions/invoker/BackgroundFunctionExecutor.java\", \"method\":"
+            + " \"service\"}, \"execution_id\": \""
+            + EXECUTION_ID
+            + "\", "
+            + "\"message\": \"Failed to execute"
+            + " com.google.cloud.functions.invoker.testfunctions.ExceptionBackground\\n"
+            + "java.lang.RuntimeException: exception thrown for test";
+    File snoopFile = snoopFile();
+    CloudEvent cloudEvent = sampleCloudEvent(snoopFile);
+    EventFormat jsonFormat =
+        EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE);
+    String cloudEventJson = new String(jsonFormat.serialize(cloudEvent), UTF_8);
+
+    // A CloudEvent using the "structured content mode", where both the metadata and the payload
+    // are in the body of the HTTP request.
+    TestCase cloudEventsStructuredTestCase =
+        TestCase.builder()
+            .setRequestText(cloudEventJson)
+            .setHttpContentType("application/cloudevents+json; charset=utf-8")
+            .setHttpHeaders(ImmutableMap.of(EXECUTION_ID_HTTP_HEADER, EXECUTION_ID))
+            .setExpectedResponseCode(500)
+            .setExpectedOutput(exceptionExpectedOutput)
+            .build();
+
+    testFunction(
+        SignatureType.CLOUD_EVENT,
+        fullTarget("ExceptionBackground"),
+        ImmutableList.of(),
+        ImmutableList.of(cloudEventsStructuredTestCase),
+        Collections.emptyMap());
+  }
+
   @Test
   public void nested() throws Exception {
     String testText = "sic transit gloria mundi";
@@ -634,7 +705,8 @@ public class IntegrationTest {
         SignatureType.HTTP,
         "com.example.functionjar.Foreground",
         ImmutableList.of("--classpath", functionJarString()),
-        ImmutableList.of(testCase));
+        ImmutableList.of(testCase),
+        Collections.emptyMap());
   }
 
   /** Like {@link #classpathOptionHttp} but for background functions. */
@@ -651,7 +723,8 @@ public class IntegrationTest {
         SignatureType.BACKGROUND,
         "com.example.functionjar.Background",
         ImmutableList.of("--classpath", functionJarString()),
-        ImmutableList.of(TestCase.builder().setRequestText(json.toString()).build()));
+        ImmutableList.of(TestCase.builder().setRequestText(json.toString()).build()),
+        Collections.emptyMap());
   }
 
   /** Like {@link #classpathOptionHttp} but for typed functions. */
@@ -668,7 +741,8 @@ public class IntegrationTest {
             TestCase.builder()
                 .setRequestText(originalJson)
                 .setExpectedResponseText("{\"fullName\":\"JohnDoe\"}")
-                .build()));
+                .build()),
+        Collections.emptyMap());
   }
 
   // In these tests, we test a number of different functions that express the same functionality
@@ -682,7 +756,12 @@ public class IntegrationTest {
     for (TestCase testCase : testCases) {
       File snoopFile = testCase.snoopFile().get();
       snoopFile.delete();
-      testFunction(signatureType, functionTarget, ImmutableList.of(), ImmutableList.of(testCase));
+      testFunction(
+          signatureType,
+          functionTarget,
+          ImmutableList.of(),
+          ImmutableList.of(testCase),
+          Collections.emptyMap());
       String snooped = new String(Files.readAllBytes(snoopFile.toPath()), StandardCharsets.UTF_8);
       Gson gson = new Gson();
       JsonObject snoopedJson = gson.fromJson(snooped, JsonObject.class);
@@ -706,16 +785,18 @@ public class IntegrationTest {
   }
 
   private void testHttpFunction(String target, List<TestCase> testCases) throws Exception {
-    testFunction(SignatureType.HTTP, target, ImmutableList.of(), testCases);
+    testFunction(SignatureType.HTTP, target, ImmutableList.of(), testCases, Collections.emptyMap());
   }
 
   private void testFunction(
       SignatureType signatureType,
       String target,
       ImmutableList<String> extraArgs,
-      List<TestCase> testCases)
+      List<TestCase> testCases,
+      Map<String, String> environmentVariables)
       throws Exception {
-    ServerProcess serverProcess = startServer(signatureType, target, extraArgs);
+    ServerProcess serverProcess =
+        startServer(signatureType, target, extraArgs, environmentVariables);
     try {
       HttpClient httpClient = new HttpClient();
       httpClient.start();
@@ -761,7 +842,11 @@ public class IntegrationTest {
     for (TestCase testCase : testCases) {
       testCase
           .expectedOutput()
-          .ifPresent(output -> expect.that(serverProcess.output()).contains(output));
+          .ifPresent(
+              (output) -> {
+                expect.that(serverProcess.output()).contains(output);
+                parseLogJson(serverProcess.output());
+              });
     }
     // Wait for the output monitor task to terminate. If it threw an exception, we will get an
     // ExecutionException here.
@@ -823,7 +908,10 @@ public class IntegrationTest {
   }
 
   private ServerProcess startServer(
-      SignatureType signatureType, String target, ImmutableList<String> extraArgs)
+      SignatureType signatureType,
+      String target,
+      ImmutableList<String> extraArgs,
+      Map<String, String> environmentVariables)
       throws IOException, InterruptedException {
     File javaHome = new File(System.getProperty("java.home"));
     assertThat(javaHome.exists()).isTrue();
@@ -847,8 +935,11 @@ public class IntegrationTest {
             "FUNCTION_SIGNATURE_TYPE",
             signatureType.toString(),
             "FUNCTION_TARGET",
-            target);
+            target,
+            "LOG_EXECUTION_ID",
+            "true");
     processBuilder.environment().putAll(environment);
+    processBuilder.environment().putAll(environmentVariables);
     Process serverProcess = processBuilder.start();
     CountDownLatch ready = new CountDownLatch(1);
     StringBuilder output = new StringBuilder();
@@ -882,5 +973,13 @@ public class IntegrationTest {
       e.printStackTrace();
       throw new UncheckedIOException(e);
     }
+  }
+
+  // Attempt to parse Json object, throws on parse failure
+  private void parseLogJson(String json) throws RuntimeException {
+    System.out.println("trying to parse the following object ");
+    System.out.println(json);
+    JsonReader reader = new JsonReader(new StringReader(json));
+    JsonParser.parseReader(reader);
   }
 }

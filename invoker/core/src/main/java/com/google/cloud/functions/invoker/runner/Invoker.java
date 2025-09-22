@@ -25,6 +25,7 @@ import com.google.cloud.functions.invoker.BackgroundFunctionExecutor;
 import com.google.cloud.functions.invoker.HttpFunctionExecutor;
 import com.google.cloud.functions.invoker.TypedFunctionExecutor;
 import com.google.cloud.functions.invoker.gcf.JsonLogHandler;
+import com.google.cloud.functions.invoker.http.TimeoutFilter;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -38,6 +39,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +49,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
+import javax.servlet.DispatcherType;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
@@ -56,6 +59,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
@@ -323,6 +327,7 @@ public class Invoker {
           throw new RuntimeException(error);
       }
     }
+    servletContextHandler = addTimerFilterForRequestTimeout(servletContextHandler);
 
     server.getTail().setHandler(handler);
     server.start();
@@ -391,6 +396,18 @@ public class Invoker {
                 + " \"event\".",
             functionTarget);
     throw new RuntimeException(error);
+  }
+
+  private ServletContextHandler addTimerFilterForRequestTimeout(
+      ServletContextHandler servletContextHandler) {
+    String timeoutSeconds = System.getenv("CLOUD_RUN_TIMEOUT_SECONDS");
+    if (timeoutSeconds == null) {
+      return servletContextHandler;
+    }
+    int seconds = Integer.parseInt(timeoutSeconds);
+    FilterHolder holder = new FilterHolder(new TimeoutFilter(seconds));
+    servletContextHandler.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
+    return servletContextHandler;
   }
 
   static URL[] classpathToUrls(String classpath) {
@@ -466,6 +483,7 @@ public class Invoker {
         response.setStatus(HttpStatus.NOT_FOUND_404);
         callback.succeeded();
         return true;
+        return;
       }
 
       return super.handle(request, response, callback);

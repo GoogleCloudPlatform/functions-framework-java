@@ -14,13 +14,11 @@ jobs:
     strategy:
       matrix:
         java: [
-          11.x
-          # 12.x,
-          # 13.x
+          11.x,
         ]
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@8ca2b8b2ece13480cda6dacd3511b49857a23c09 # v2.5.1
+      uses: step-security/harden-runner@4d991eb9b905ef189e4c376166672c3f2f230481 # v2.11.0
       with:
         disable-sudo: true
         egress-policy: block
@@ -32,16 +30,16 @@ jobs:
           repo.maven.apache.org:443
           storage.googleapis.com:443
 
-    - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
     - name: Set up JDK ${{ matrix.java }}
-      uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # v3.12.0
+      uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4.7.0
       with:
         java-version: ${{ matrix.java }}
         distribution: temurin
 
     - name: Setup Go
-      uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
+      uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
       with:
         go-version: '1.21'
 
@@ -55,7 +53,7 @@ jobs:
       run: (cd function-maven-plugin/ && mvn install)
 
     - name: Run HTTP conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@72a4f36b10f1c6435ab1a86a9ea24bda464cc262 # main
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@1041a97e93a463d9efb17dda821f3ddc0bf0024f # main
       with:
         functionType: 'http'
         useBuildpacks: false
@@ -63,7 +61,7 @@ jobs:
         startDelay: 10
 
     - name: Run Typed conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@72a4f36b10f1c6435ab1a86a9ea24bda464cc262 # main
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@1041a97e93a463d9efb17dda821f3ddc0bf0024f # main
       with:
         functionType: 'http'
         declarativeType: 'typed'
@@ -72,7 +70,7 @@ jobs:
         startDelay: 10
 
     - name: Run background event conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@72a4f36b10f1c6435ab1a86a9ea24bda464cc262 # main
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@1041a97e93a463d9efb17dda821f3ddc0bf0024f # main
       with:
         functionType: 'legacyevent'
         useBuildpacks: false
@@ -81,7 +79,7 @@ jobs:
         startDelay: 10
 
     - name: Run cloudevent conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@72a4f36b10f1c6435ab1a86a9ea24bda464cc262 # main
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@1041a97e93a463d9efb17dda821f3ddc0bf0024f # main
       with:
         functionType: 'cloudevent'
         useBuildpacks: false
@@ -90,7 +88,7 @@ jobs:
         startDelay: 10
 
     - name: Run HTTP concurrency conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@72a4f36b10f1c6435ab1a86a9ea24bda464cc262 # main
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@1041a97e93a463d9efb17dda821f3ddc0bf0024f # main
       with:
         functionType: 'http'
         useBuildpacks: false

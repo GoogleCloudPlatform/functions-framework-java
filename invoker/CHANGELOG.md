@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.4.1](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.4.0...java-function-invoker-v1.4.1) (2025-03-07)
+
+
+### Bug Fixes
+
+* correct Cloud Event retry functionality ([#326](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/326)) ([9899a67](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/9899a67a9a8cb6ebb27a92cccb740e7e23d48578))
+
+## [1.4.0](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.3.3...java-function-invoker-v1.4.0) (2025-02-12)
+
+
+### Features
+
+* Add execution id logging to uniquely identify request logs ([#319](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/319)) ([5ef5317](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/5ef53174b6cdbc644336121bc19bab6c4b90892d))
+
+## [1.3.3](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.3.2...java-function-invoker-v1.3.3) (2024-11-27)
+
+
+### Bug Fixes
+
+* revert maven-source-plugin to 3.2.1 ([#303](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/303)) ([2db9a2b](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/2db9a2bec6ba93e7954e68c2301c5fc2fcc032d8))
+
+## [1.3.2](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.3.1...java-function-invoker-v1.3.2) (2024-09-18)
+
+
+### Bug Fixes
+
+* avoid executing function when /favicon.ico or /robots.txt is called ([#226](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/226)) ([fca8676](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/fca867667db593699193da01b69a4cca7ca48fc8))
+* server times out when specified by CLOUD_RUN_TIMEOUT_SECONDS ([#275](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/275)) ([9e91f57](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/9e91f57b12d73c655e3d7e226d21d54ccec32b73))
+* set Thread Context ClassLoader correctly when invoking handler constructor ([#239](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/239)) ([9f7155b](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/9f7155b77574ec980ecf9e6dffbd2ee0398db8a7))
+
+## [1.3.1](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.3.0...java-function-invoker-v1.3.1) (2023-09-13)
+
+
+### Bug Fixes
+
+* **functions:** include Implementation-Version key in invoker package manifest ([#221](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/221)) ([f3fe2ce](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/f3fe2ce46fcb1885137cdf504649612e7c31dc4c))
+* typed declaration works correctly with http trigger ([#212](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/212)) ([b3045ad](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/b3045ad380cd23e37f5edec0d758031438bcb568))
+
 ## [1.3.0](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.2.1...java-function-invoker-v1.3.0) (2023-06-01)
 
 
