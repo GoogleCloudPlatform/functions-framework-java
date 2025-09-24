@@ -93,7 +93,7 @@ public class IntegrationTest {
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   @Rule public final TestName testName = new TestName();
 
-  private static final String SERVER_READY_STRING = "Started ServerConnector";
+  private static final String SERVER_READY_STRING = "Started oejs.ServerConnector";
   private static final String EXECUTION_ID_HTTP_HEADER = "HTTP_FUNCTION_EXECUTION_ID";
   private static final String EXECUTION_ID = "1234abcd";
 
@@ -303,7 +303,7 @@ public class IntegrationTest {
     String exceptionExpectedOutput =
         "\"severity\": \"ERROR\", \"logging.googleapis.com/sourceLocation\": {\"file\":"
             + " \"com/google/cloud/functions/invoker/HttpFunctionExecutor.java\", \"method\":"
-            + " \"handle\"}, \"message\": \"Failed to execute"
+            + " \"handle\"}, \"execution_id\": \""
             + EXECUTION_ID
             + "\","
             + " \"message\": \"Failed to execute"
@@ -314,6 +314,7 @@ public class IntegrationTest {
         ImmutableList.of(
             TestCase.builder()
                 .setExpectedResponseCode(500)
+                .setExpectedResponseText("")
                 .setHttpHeaders(ImmutableMap.of(EXECUTION_ID_HTTP_HEADER, EXECUTION_ID))
                 .setExpectedOutput(exceptionExpectedOutput)
                 .build()));
@@ -324,7 +325,7 @@ public class IntegrationTest {
     String exceptionExpectedOutput =
         "\"severity\": \"ERROR\", \"logging.googleapis.com/sourceLocation\": {\"file\":"
             + " \"com/google/cloud/functions/invoker/BackgroundFunctionExecutor.java\", \"method\":"
-            + " \"handle\"}, \"message\": \"Failed to execute"
+            + " \"handle\"}, \"execution_id\": \""
             + EXECUTION_ID
             + "\", "
             + "\"message\": \"Failed to execute"
@@ -595,7 +596,7 @@ public class IntegrationTest {
     String exceptionExpectedOutput =
         "\"severity\": \"ERROR\", \"logging.googleapis.com/sourceLocation\": {\"file\":"
             + " \"com/google/cloud/functions/invoker/BackgroundFunctionExecutor.java\", \"method\":"
-            + " \"service\"}, \"execution_id\": \""
+            + " \"handle\"}, \"execution_id\": \""
             + EXECUTION_ID
             + "\", "
             + "\"message\": \"Failed to execute"

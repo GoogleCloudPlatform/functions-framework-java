@@ -40,16 +40,13 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.MultiPartRequestContent;
 import org.eclipse.jetty.client.StringRequestContent;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.*;
 import org.eclipse.jetty.http.HttpStatus.Code;
-import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.EagerContentHandler;
 import org.eclipse.jetty.util.Callback;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -92,6 +89,12 @@ public class HttpTest {
     SimpleServer(Handler handler) throws Exception {
       this.server = new Server(serverPort);
       server.setHandler(handler);
+
+      MultiPartConfig config = new MultiPartConfig.Builder().maxMemoryPartSize(-1).build();
+      EagerContentHandler.MultiPartContentLoaderFactory factory =
+          new EagerContentHandler.MultiPartContentLoaderFactory(config);
+      server.insertHandler(new EagerContentHandler(factory));
+
       server.start();
     }
 

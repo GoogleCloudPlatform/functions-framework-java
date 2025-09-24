@@ -106,13 +106,7 @@ public class TypedFunctionExecutor extends Handler.Abstract {
       handleRequest(reqImpl, resImpl);
       resImpl.close(callback);
     } catch (Throwable t) {
-      if (res.isCommitted()) {
-        callback.failed(t);
-      } else {
-        res.reset();
-        res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-        callback.succeeded();
-      }
+      Response.writeError(req, res, callback, HttpStatus.INTERNAL_SERVER_ERROR_500, null, t);
     } finally {
       Thread.currentThread().setContextClassLoader(oldContextClassLoader);
     }

@@ -29,14 +29,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.concurrent.ExecutionException;
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.http.*;
 import org.eclipse.jetty.http.MultiPart.Part;
-import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Fields;
@@ -78,39 +72,31 @@ public class HttpRequestImpl implements HttpRequest {
     }
 
     Map<String, List<String>> map = new HashMap<>();
-    fields.forEach(field -> map.put(field.getName(),
-        Collections.unmodifiableList(field.getValues())));
+    fields.forEach(
+        field -> map.put(field.getName(), Collections.unmodifiableList(field.getValues())));
     return Collections.unmodifiableMap(map);
   }
 
   @Override
   public Map<String, HttpPart> getParts() {
-    // TODO initiate reading the parts asynchronously before invocation
     String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-    if (contentType == null || !contentType.startsWith("multipart/form-data")) {
+    if (contentType == null || !contentType.startsWith(MimeTypes.Type.MULTIPART_FORM_DATA.asString())) {
       throw new IllegalStateException("Content-Type must be multipart/form-data: " + contentType);
     }
-    String boundary = MultiPart.extractBoundary(contentType);
-    if (boundary == null) {
-      throw new IllegalStateException("No boundary in content-type: " + contentType);
-    }
-    try {
-      MultiPartFormData.Parts parts =
-          MultiPartFormData.from(request, boundary, parser -> {
-            parser.setMaxMemoryFileSize(-1);
-            return parser.parse(request);
-          }).get();
 
-      if (parts.size() == 0) {
-        return Collections.emptyMap();
-      }
-
-      Map<String, HttpPart> map = new HashMap<>();
-      parts.forEach(part -> map.put(part.getName(), new HttpPartImpl(part)));
-      return Collections.unmodifiableMap(map);
-    } catch (InterruptedException | ExecutionException e) {
-      throw new RuntimeException(e);
+    // The multipart parsing is done by the EagerContentHandler, so we just call getParts.
+    MultiPartFormData.Parts parts = MultiPartFormData.getParts(request);
+    if (parts == null){
+      throw new IllegalStateException();
     }
+
+    if (parts.size() == 0) {
+      return Collections.emptyMap();
+    }
+
+    Map<String, HttpPart> map = new HashMap<>();
+    parts.forEach(part -> map.put(part.getName(), new HttpPartImpl(part)));
+    return Collections.unmodifiableMap(map);
   }
 
   @Override
@@ -147,8 +133,11 @@ public class HttpRequestImpl implements HttpRequest {
         throw new IllegalStateException("getInputStream already called");
       }
       inputStream = Content.Source.asInputStream(request);
-      reader = new BufferedReader(new InputStreamReader(getInputStream(),
-          Objects.requireNonNullElse(Request.getCharset(request), StandardCharsets.UTF_8)));
+      reader =
+          new BufferedReader(
+              new InputStreamReader(
+                  getInputStream(),
+                  Objects.requireNonNullElse(Request.getCharset(request), StandardCharsets.UTF_8)));
     }
     return reader;
   }
@@ -175,10 +164,6 @@ public class HttpRequestImpl implements HttpRequest {
       contentType = part.getHeaders().get(HttpHeader.CONTENT_TYPE);
     }
 
-    public String getName() {
-      return part.getName();
-    }
-
     @Override
     public Optional<String> getFileName() {
       return Optional.ofNullable(part.getFileName());
@@ -201,15 +186,18 @@ public class HttpRequestImpl implements HttpRequest {
 
     @Override
     public InputStream getInputStream() throws IOException {
-      return Content.Source.asInputStream(part.newContentSource());
+        // TODO: update with createContentSource when https://github.com/jetty/jetty.project/pull/13610 is released.
+        Content.Source contentSource = part.newContentSource(null, 0, -1);
+        return Content.Source.asInputStream(contentSource);
     }
 
     @Override
     public BufferedReader getReader() throws IOException {
       return new BufferedReader(
-          new InputStreamReader(getInputStream(),
-              Objects.requireNonNullElse(MimeTypes.DEFAULTS.getCharset(contentType),
-                  StandardCharsets.UTF_8)));
+          new InputStreamReader(
+              getInputStream(),
+              Objects.requireNonNullElse(
+                  MimeTypes.DEFAULTS.getCharset(contentType), StandardCharsets.UTF_8)));
     }
 
     @Override

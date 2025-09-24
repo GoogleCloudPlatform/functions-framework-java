@@ -73,19 +73,13 @@ public class HttpFunctionExecutor extends Handler.Abstract {
     HttpResponseImpl respImpl = new HttpResponseImpl(response);
     ClassLoader oldContextLoader = Thread.currentThread().getContextClassLoader();
     try {
-      executionIdUtil.storeExecutionId(req);
+      executionIdUtil.storeExecutionId(request);
       Thread.currentThread().setContextClassLoader(function.getClass().getClassLoader());
       function.service(reqImpl, respImpl);
       respImpl.close(callback);
     } catch (Throwable t) {
       logger.log(Level.SEVERE, "Failed to execute " + function.getClass().getName(), t);
-      if (response.isCommitted()) {
-        callback.failed(t);
-      } else {
-        response.reset();
-        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-        callback.succeeded();
-      }
+      Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500, null, t);
     } finally {
       Thread.currentThread().setContextClassLoader(oldContextLoader);
       executionIdUtil.removeExecutionId();
