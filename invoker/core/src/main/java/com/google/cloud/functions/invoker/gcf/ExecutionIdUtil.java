@@ -5,7 +5,7 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
-import javax.servlet.http.HttpServletRequest;
+import org.eclipse.jetty.server.Request;
 
 /**
  * A helper class that either fetches a unique execution id from request HTTP headers or generates a
@@ -23,7 +23,7 @@ public final class ExecutionIdUtil {
    * Add mapping to root logger from current thread id to execution id. This mapping will be used to
    * append the execution id to log lines.
    */
-  public void storeExecutionId(HttpServletRequest request) {
+  public void storeExecutionId(Request request) {
     if (!executionIdLoggingEnabled()) {
       return;
     }
@@ -47,8 +47,8 @@ public final class ExecutionIdUtil {
     }
   }
 
-  private String getOrGenerateExecutionId(HttpServletRequest request) {
-    String executionId = request.getHeader(EXECUTION_ID_HTTP_HEADER);
+  private String getOrGenerateExecutionId(Request request) {
+    String executionId = request.getHeaders().get(EXECUTION_ID_HTTP_HEADER);
     if (executionId == null) {
       byte[] array = new byte[EXECUTION_ID_LENGTH];
       random.nextBytes(array);

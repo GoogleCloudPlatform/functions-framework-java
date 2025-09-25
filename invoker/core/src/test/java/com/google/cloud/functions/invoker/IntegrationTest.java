@@ -47,6 +47,7 @@ import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,16 +67,17 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
+import org.eclipse.jetty.client.ByteBufferRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentProvider;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.BytesContentProvider;
-import org.eclipse.jetty.client.util.MultiPartContentProvider;
-import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.client.MultiPartRequestContent;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.http.MultiPart.ContentSourcePart;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -91,7 +93,7 @@ public class IntegrationTest {
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   @Rule public final TestName testName = new TestName();
 
-  private static final String SERVER_READY_STRING = "Started ServerConnector";
+  private static final String SERVER_READY_STRING = "Started oejs.ServerConnector";
   private static final String EXECUTION_ID_HTTP_HEADER = "HTTP_FUNCTION_EXECUTION_ID";
   private static final String EXECUTION_ID = "1234abcd";
 
@@ -167,9 +169,11 @@ public class IntegrationTest {
 
     abstract String url();
 
-    abstract ContentProvider requestContent();
+    abstract Request.Content requestContent();
 
     abstract int expectedResponseCode();
+
+    abstract Optional<Map<String, String>> expectedResponseHeaders();
 
     abstract Optional<String> expectedResponseText();
 
@@ -190,6 +194,7 @@ public class IntegrationTest {
           .setUrl("/")
           .setRequestText("")
           .setExpectedResponseCode(HttpStatus.OK_200)
+          .setExpectedResponseHeaders(ImmutableMap.of())
           .setExpectedResponseText("")
           .setHttpContentType("text/plain")
           .setHttpHeaders(ImmutableMap.of());
@@ -200,13 +205,15 @@ public class IntegrationTest {
 
       abstract Builder setUrl(String x);
 
-      abstract Builder setRequestContent(ContentProvider x);
+      abstract Builder setRequestContent(Request.Content x);
 
       Builder setRequestText(String text) {
-        return setRequestContent(new StringContentProvider(text));
+        return setRequestContent(new StringRequestContent(text));
       }
 
       abstract Builder setExpectedResponseCode(int x);
+
+      abstract Builder setExpectedResponseHeaders(Map<String, String> x);
 
       abstract Builder setExpectedResponseText(String x);
 
@@ -253,37 +260,42 @@ public class IntegrationTest {
     testHttpFunction(
         fullTarget("HelloWorld"),
         ImmutableList.of(
-            TestCase.builder().setExpectedResponseText("hello\n").build(),
+            TestCase.builder()
+                .setExpectedResponseHeaders(ImmutableMap.of(
+                    "Content-Length", "*"))
+                .setExpectedResponseText("hello\n")
+                .build(),
             FAVICON_TEST_CASE,
             ROBOTS_TXT_TEST_CASE));
   }
 
   @Test
-  public void timeoutHttpSuccess() throws Exception {
-    testFunction(
-        SignatureType.HTTP,
-        fullTarget("TimeoutHttp"),
-        ImmutableList.of(),
+  public void bufferedWrites() throws Exception {
+    // This test checks that writes are buffered and are written
+    // in an efficient way with known content-length if possible.
+    testHttpFunction(
+        fullTarget("BufferedWrites"),
         ImmutableList.of(
             TestCase.builder()
-                .setExpectedResponseText("finished\n")
-                .setExpectedResponseText(Optional.empty())
-                .build()),
-        ImmutableMap.of("CLOUD_RUN_TIMEOUT_SECONDS", "3"));
-  }
-
-  @Test
-  public void timeoutHttpTimesOut() throws Exception {
-    testFunction(
-        SignatureType.HTTP,
-        fullTarget("TimeoutHttp"),
-        ImmutableList.of(),
-        ImmutableList.of(
+                .setUrl("/target?writes=2")
+                .setExpectedResponseText("write 0\nwrite 1\n")
+                .setExpectedResponseHeaders(ImmutableMap.of(
+                    "x-write-0", "true",
+                    "x-write-1", "true",
+                    "x-written", "true",
+                    "Content-Length", "16"
+                ))
+                .build(),
             TestCase.builder()
-                .setExpectedResponseCode(408)
-                .setExpectedResponseText(Optional.empty())
-                .build()),
-        ImmutableMap.of("CLOUD_RUN_TIMEOUT_SECONDS", "1"));
+                .setUrl("/target?writes=2&flush=true")
+                .setExpectedResponseText("write 0\nwrite 1\n")
+                .setExpectedResponseHeaders(ImmutableMap.of(
+                    "x-write-0", "true",
+                    "x-write-1", "true",
+                    "x-written", "-",
+                    "Transfer-Encoding", "chunked"))
+                .build()
+        ));
   }
 
   @Test
@@ -291,7 +303,7 @@ public class IntegrationTest {
     String exceptionExpectedOutput =
         "\"severity\": \"ERROR\", \"logging.googleapis.com/sourceLocation\": {\"file\":"
             + " \"com/google/cloud/functions/invoker/HttpFunctionExecutor.java\", \"method\":"
-            + " \"service\"}, \"execution_id\": \""
+            + " \"handle\"}, \"execution_id\": \""
             + EXECUTION_ID
             + "\","
             + " \"message\": \"Failed to execute"
@@ -302,6 +314,7 @@ public class IntegrationTest {
         ImmutableList.of(
             TestCase.builder()
                 .setExpectedResponseCode(500)
+                .setExpectedResponseText("")
                 .setHttpHeaders(ImmutableMap.of(EXECUTION_ID_HTTP_HEADER, EXECUTION_ID))
                 .setExpectedOutput(exceptionExpectedOutput)
                 .build()));
@@ -312,7 +325,7 @@ public class IntegrationTest {
     String exceptionExpectedOutput =
         "\"severity\": \"ERROR\", \"logging.googleapis.com/sourceLocation\": {\"file\":"
             + " \"com/google/cloud/functions/invoker/BackgroundFunctionExecutor.java\", \"method\":"
-            + " \"service\"}, \"execution_id\": \""
+            + " \"handle\"}, \"execution_id\": \""
             + EXECUTION_ID
             + "\", "
             + "\"message\": \"Failed to execute"
@@ -583,7 +596,7 @@ public class IntegrationTest {
     String exceptionExpectedOutput =
         "\"severity\": \"ERROR\", \"logging.googleapis.com/sourceLocation\": {\"file\":"
             + " \"com/google/cloud/functions/invoker/BackgroundFunctionExecutor.java\", \"method\":"
-            + " \"service\"}, \"execution_id\": \""
+            + " \"handle\"}, \"execution_id\": \""
             + EXECUTION_ID
             + "\", "
             + "\"message\": \"Failed to execute"
@@ -632,11 +645,14 @@ public class IntegrationTest {
 
   @Test
   public void multipart() throws Exception {
-    MultiPartContentProvider multiPartProvider = new MultiPartContentProvider();
+    MultiPartRequestContent multiPartRequestContent = new MultiPartRequestContent();
     byte[] bytes = new byte[17];
-    multiPartProvider.addFieldPart("bytes", new BytesContentProvider(bytes), new HttpFields());
-    String string = "1234567890";
-    multiPartProvider.addFieldPart("string", new StringContentProvider(string), new HttpFields());
+    multiPartRequestContent.addPart(new ContentSourcePart("bytes", null,
+        HttpFields.EMPTY, new ByteBufferRequestContent(ByteBuffer.wrap(bytes))));
+    multiPartRequestContent.addPart(new MultiPart.ContentSourcePart("string", null,
+        HttpFields.EMPTY, new StringRequestContent("1234567890")));
+    multiPartRequestContent.close();
+
     String expectedResponse =
         "part bytes type application/octet-stream length 17\n"
             + "part string type text/plain;charset=UTF-8 length 10\n";
@@ -644,8 +660,8 @@ public class IntegrationTest {
         fullTarget("Multipart"),
         ImmutableList.of(
             TestCase.builder()
-                .setHttpContentType(Optional.empty())
-                .setRequestContent(multiPartProvider)
+                .setHttpContentType(multiPartRequestContent.getContentType())
+                .setRequestContent(multiPartRequestContent)
                 .setExpectedResponseText(expectedResponse)
                 .build()));
   }
@@ -789,16 +805,28 @@ public class IntegrationTest {
         testCase.snoopFile().ifPresent(File::delete);
         String uri = "http://localhost:" + serverPort + testCase.url();
         Request request = httpClient.POST(uri);
-        testCase
-            .httpContentType()
-            .ifPresent(contentType -> request.header(HttpHeader.CONTENT_TYPE, contentType));
-        testCase.httpHeaders().forEach((header, value) -> request.header(header, value));
-        request.content(testCase.requestContent());
+
+        request.headers(m -> {
+          testCase.httpContentType().ifPresent(contentType -> m.put(HttpHeader.CONTENT_TYPE, contentType));
+          testCase.httpHeaders().forEach(m::put);
+        });
+        request.body(testCase.requestContent());
         ContentResponse response = request.send();
         expect
             .withMessage("Response to %s is %s %s", uri, response.getStatus(), response.getReason())
             .that(response.getStatus())
             .isEqualTo(testCase.expectedResponseCode());
+        testCase.expectedResponseHeaders().ifPresent(map -> {
+          for (Map.Entry<String, String> entry : map.entrySet()) {
+            if ("*".equals(entry.getValue())) {
+              expect.that(response.getHeaders().getFieldNamesCollection()).contains(entry.getKey());
+            } else if ("-".equals(entry.getValue())) {
+              expect.that(response.getHeaders().getFieldNamesCollection()).doesNotContain(entry.getKey());
+            } else {
+              expect.that(response.getHeaders().getValuesList(entry.getKey())).contains(entry.getValue());
+            }
+          }
+        });
         testCase
             .expectedResponseText()
             .ifPresent(text -> expect.that(response.getContentAsString()).isEqualTo(text));
