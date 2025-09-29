@@ -79,7 +79,7 @@ public class HttpFunctionExecutor extends Handler.Abstract {
       respImpl.close(callback);
     } catch (Throwable t) {
       logger.log(Level.SEVERE, "Failed to execute " + function.getClass().getName(), t);
-      Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500, null, t);
+      Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500, null);
     } finally {
       Thread.currentThread().setContextClassLoader(oldContextLoader);
       executionIdUtil.removeExecutionId();
