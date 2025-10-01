@@ -53,7 +53,7 @@ jobs:
       run: (cd function-maven-plugin/ && mvn install)
 
     - name: Run HTTP conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@1041a97e93a463d9efb17dda821f3ddc0bf0024f # main
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@6ae50bd9db5ed980c5ceff3cf7b200f705be94fc # main
       with:
         functionType: 'http'
         useBuildpacks: false
@@ -61,7 +61,7 @@ jobs:
         startDelay: 10
 
     - name: Run Typed conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@1041a97e93a463d9efb17dda821f3ddc0bf0024f # main
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@6ae50bd9db5ed980c5ceff3cf7b200f705be94fc # main
       with:
         functionType: 'http'
         declarativeType: 'typed'
@@ -70,7 +70,7 @@ jobs:
         startDelay: 10
 
     - name: Run background event conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@1041a97e93a463d9efb17dda821f3ddc0bf0024f # main
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@6ae50bd9db5ed980c5ceff3cf7b200f705be94fc # main
       with:
         functionType: 'legacyevent'
         useBuildpacks: false
@@ -79,7 +79,7 @@ jobs:
         startDelay: 10
 
     - name: Run cloudevent conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@1041a97e93a463d9efb17dda821f3ddc0bf0024f # main
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@6ae50bd9db5ed980c5ceff3cf7b200f705be94fc # main
       with:
         functionType: 'cloudevent'
         useBuildpacks: false
@@ -88,7 +88,7 @@ jobs:
         startDelay: 10
 
     - name: Run HTTP concurrency conformance tests
-      uses: GoogleCloudPlatform/functions-framework-conformance/action@1041a97e93a463d9efb17dda821f3ddc0bf0024f # main
+      uses: GoogleCloudPlatform/functions-framework-conformance/action@6ae50bd9db5ed980c5ceff3cf7b200f705be94fc # main
       with:
         functionType: 'http'
         useBuildpacks: false
