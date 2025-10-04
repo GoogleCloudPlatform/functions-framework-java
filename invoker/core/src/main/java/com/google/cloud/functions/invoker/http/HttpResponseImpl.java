@@ -14,24 +14,33 @@
 
 package com.google.cloud.functions.invoker.http;
 
-import static java.util.stream.Collectors.toMap;
-
 import com.google.cloud.functions.HttpResponse;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.io.Writer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.TreeMap;
-import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.WriteThroughWriter;
+import org.eclipse.jetty.io.content.BufferedContentSink;
+import org.eclipse.jetty.io.content.ContentSinkOutputStream;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
 public class HttpResponseImpl implements HttpResponse {
-  private final HttpServletResponse response;
+  private final Response response;
+  private ContentSinkOutputStream outputStream;
+  private BufferedWriter writer;
+  private Charset charset;
 
-  public HttpResponseImpl(HttpServletResponse response) {
+  public HttpResponseImpl(Response response) {
     this.response = response;
   }
 
@@ -43,75 +52,152 @@ public class HttpResponseImpl implements HttpResponse {
   @Override
   @SuppressWarnings("deprecation")
   public void setStatusCode(int code, String message) {
-    response.setStatus(code, message);
+    response.setStatus(code);
   }
 
   @Override
   public void setContentType(String contentType) {
-    response.setContentType(contentType);
+    response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
+    charset = response.getRequest().getContext().getMimeTypes().getCharset(contentType);
   }
 
   @Override
   public Optional<String> getContentType() {
-    return Optional.ofNullable(response.getContentType());
+    return Optional.ofNullable(response.getHeaders().get(HttpHeader.CONTENT_TYPE));
   }
 
   @Override
   public void appendHeader(String key, String value) {
-    response.addHeader(key, value);
+    if (HttpHeader.CONTENT_TYPE.is(key)) {
+      setContentType(value);
+    } else {
+      response.getHeaders().add(key, value);
+    }
   }
 
   @Override
   public Map<String, List<String>> getHeaders() {
-    return response.getHeaderNames().stream()
-        .collect(
-            toMap(
-                name -> name,
-                name -> new ArrayList<>(response.getHeaders(name)),
-                (a, b) -> b,
-                () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
-  }
-
-  private static <T> List<T> list(Collection<T> collection) {
-    return (collection instanceof List<?>) ? (List<T>) collection : new ArrayList<>(collection);
+    return HttpRequestImpl.toStringListMap(response.getHeaders());
   }
 
   @Override
-  public OutputStream getOutputStream() throws IOException {
-    return response.getOutputStream();
+  public OutputStream getOutputStream() {
+    if (writer != null) {
+      throw new IllegalStateException("getWriter called");
+    } else if (outputStream == null) {
+      Request request = response.getRequest();
+      int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration()
+          .getOutputBufferSize();
+      BufferedContentSink bufferedContentSink = new BufferedContentSink(response,
+          request.getComponents().getByteBufferPool(),
+          false, outputBufferSize / 2, outputBufferSize);
+      outputStream = new ContentSinkOutputStream(bufferedContentSink);
+    }
+    return outputStream;
   }
-
-  private BufferedWriter writer;
 
   @Override
   public synchronized BufferedWriter getWriter() throws IOException {
     if (writer == null) {
-      // Unfortunately this means that we get two intermediate objects between the object we return
-      // and the underlying Writer that response.getWriter() wraps. We could try accessing the
-      // PrintWriter.out field via reflection, but that sort of access to non-public fields of
-      // platform classes is now frowned on and may draw warnings or even fail in subsequent
-      // versions. We could instead wrap the OutputStream, but that would require us to deduce the
-      // appropriate Charset, using logic like this:
-      // https://github.com/eclipse/jetty.project/blob/923ec38adf/jetty-server/src/main/java/org/eclipse/jetty/server/Response.java#L731
-      // We may end up doing that if performance is an issue.
-      writer = new BufferedWriter(response.getWriter());
+      if (outputStream != null) {
+        throw new IllegalStateException("getOutputStream called");
+      }
+
+      writer = new NonBufferedWriter(WriteThroughWriter.newWriter(getOutputStream(),
+          Objects.requireNonNullElse(charset, StandardCharsets.UTF_8)));
     }
     return writer;
   }
 
-  public void flush() {
+  /**
+   * Close the response, flushing all content.
+   *
+   * @param callback a {@link Callback} to be completed when the response is closed.
+   */
+  public void close(Callback callback) {
     try {
-      // We can't use HttpServletResponse.flushBuffer() because we wrap the
-      // PrintWriter returned by HttpServletResponse in our own BufferedWriter
-      // to match our API. So we have to flush whichever of getWriter() or
-      // getOutputStream() works.
-      try {
-        getOutputStream().flush();
-      } catch (IllegalStateException e) {
-        getWriter().flush();
+      // The writer has been constructed to do no buffering, so it does not need to be flushed
+      if (outputStream != null) {
+        // Do an asynchronous close, so large buffered content may be written without blocking
+        outputStream.close(callback);
+      } else {
+        callback.succeeded();
       }
     } catch (IOException e) {
-      // Too bad, can't flush.
+      // Too bad, can't close.
+    }
+  }
+
+  /**
+   * A {@link BufferedWriter} that does not buffer.
+   * It is generally more efficient to buffer at the {@link Content.Sink} level,
+   * since frequently total content is smaller than a single buffer and
+   * the {@link Content.Sink} can turn a close into a last write that will avoid
+   * chunking the response if at all possible.   However, {@link BufferedWriter}
+   * is in the API for {@link HttpResponse}, so we must return a writer of
+   * that type.
+   */
+  private static class NonBufferedWriter extends BufferedWriter {
+    private final Writer writer;
+
+    public NonBufferedWriter(Writer out) {
+      super(out, 1);
+      writer = out;
+    }
+
+    @Override
+    public void write(int c) throws IOException {
+      writer.write(c);
+    }
+
+    @Override
+    public void write(char[] cbuf) throws IOException {
+      writer.write(cbuf);
+    }
+
+    @Override
+    public void write(char[] cbuf, int off, int len) throws IOException {
+      writer.write(cbuf, off, len);
+    }
+
+    @Override
+    public void write(String str) throws IOException {
+      writer.write(str);
+    }
+
+    @Override
+    public void write(String str, int off, int len) throws IOException {
+      writer.write(str, off, len);
+    }
+
+    @Override
+    public Writer append(CharSequence csq) throws IOException {
+      return writer.append(csq);
+    }
+
+    @Override
+    public Writer append(CharSequence csq, int start, int end) throws IOException {
+      return writer.append(csq, start, end);
+    }
+
+    @Override
+    public Writer append(char c) throws IOException {
+      return writer.append(c);
+    }
+
+    @Override
+    public void flush() throws IOException {
+      writer.flush();
+    }
+
+    @Override
+    public void close() throws IOException {
+      writer.close();
+    }
+
+    @Override
+    public void newLine() throws IOException {
+      writer.write(System.lineSeparator());
     }
   }
 }
