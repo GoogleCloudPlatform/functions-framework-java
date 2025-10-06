@@ -14,7 +14,7 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
-    
+
     permissions:
       actions: read
       contents: read
@@ -22,13 +22,13 @@ jobs:
 
     strategy:
       fail-fast: false
-      matrix: 
+      matrix:
         # Autobuild each of these seperate maven projects
         working-directory: ['invoker', 'functions-framework-api', 'function-maven-plugin']
 
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@4d991eb9b905ef189e4c376166672c3f2f230481 # v2.11.0
+      uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
       with:
         disable-sudo: true
         egress-policy: block
@@ -37,16 +37,17 @@ jobs:
           github.com:443
           objects.githubusercontent.com:443
           proxy.golang.org:443
+          release-assets.githubusercontent.com:443
           repo.maven.apache.org:443
           storage.googleapis.com:443
           uploads.github.com:443
-          
+
     - name: Checkout repository
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@b56ba49b26e50535fa1e7f7db0f4f7b4bf65d80d # v3.28.10
+      uses: github/codeql-action/init@64d10c13136e1c5bce3e5fbde8d4906eeaafc885 # v3.30.6
       with:
         # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
         languages: java
@@ -57,8 +58,6 @@ jobs:
         # Details on CodeQL's query packs refer to : https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
         # queries: security-extended,security-and-quality
 
-
-    
     - name: Build
       run: |
         (cd functions-framework-api/ && mvn install)
@@ -66,6 +65,6 @@ jobs:
         (cd function-maven-plugin && mvn install)
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@b56ba49b26e50535fa1e7f7db0f4f7b4bf65d80d # v3.28.10
+      uses: github/codeql-action/analyze@64d10c13136e1c5bce3e5fbde8d4906eeaafc885 # v3.30.6
       with:
         category: ${{ matrix.working-directory }}
