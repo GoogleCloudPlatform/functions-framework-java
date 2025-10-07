@@ -63,9 +63,8 @@ public class DeployFunction extends CloudSdkMojo {
    */
   @Parameter(
       alias = "deploy.allowunauthenticated",
-      property = "function.deploy.allowunauthenticated",
-      defaultValue = "false")
-  boolean allowUnauthenticated;
+      property = "function.deploy.allowunauthenticated")
+  Boolean allowUnauthenticated;
 
   /**
    * Name of a Google Cloud Function (as defined in source code) that will be executed. Defaults to
@@ -314,8 +313,12 @@ public class DeployFunction extends CloudSdkMojo {
     if (triggerEvent != null) {
       commands.add("--trigger-event=" + triggerEvent);
     }
-    if (allowUnauthenticated) {
-      commands.add("--allow-unauthenticated");
+    if (allowUnauthenticated != null) {
+      if (allowUnauthenticated) {
+        commands.add("--allow-unauthenticated");
+      } else {
+        commands.add("--no-allow-unauthenticated");
+      }
     }
     if (functionTarget != null) {
       commands.add("--entry-point=" + functionTarget);
@@ -371,6 +374,8 @@ public class DeployFunction extends CloudSdkMojo {
     if (projectId != null) {
       commands.add("--project=" + projectId);
     }
+
+    commands.add("--quiet");
     return Collections.unmodifiableList(commands);
   }
 
@@ -382,7 +387,8 @@ public class DeployFunction extends CloudSdkMojo {
       System.out.println("Executing Cloud SDK command: gcloud " + String.join(" ", params));
       gcloud.runCommand(params);
     } catch (CloudSdkNotFoundException | IOException | ProcessHandlerException ex) {
-      Logger.getLogger(DeployFunction.class.getName()).log(Level.SEVERE, null, ex);
+      Logger.getLogger(DeployFunction.class.getName()).log(Level.SEVERE, "Function deployment failed", ex);
+      throw new MojoExecutionException("Function deployment failed", ex);
     }
   }
 }
