@@ -387,7 +387,8 @@ public class DeployFunction extends CloudSdkMojo {
       System.out.println("Executing Cloud SDK command: gcloud " + String.join(" ", params));
       gcloud.runCommand(params);
     } catch (CloudSdkNotFoundException | IOException | ProcessHandlerException ex) {
-      Logger.getLogger(DeployFunction.class.getName()).log(Level.SEVERE, "Function deployment failed", ex);
+      Logger.getLogger(DeployFunction.class.getName())
+          .log(Level.SEVERE, "Function deployment failed", ex);
       throw new MojoExecutionException("Function deployment failed", ex);
     }
   }
