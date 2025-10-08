@@ -53,7 +53,8 @@ public class DeployFunctionTest {
             "--env-vars-file=myfile",
             "--set-build-env-vars=env1=a,env2=b",
             "--build-env-vars-file=myfile2",
-            "--runtime=java11");
+            "--runtime=java11",
+            "--quiet");
     assertThat(mojo.getCommands()).isEqualTo(expected);
   }
 }
