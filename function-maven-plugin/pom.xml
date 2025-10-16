@@ -23,6 +23,21 @@
     <tag>HEAD</tag>
   </scm>
 
+  <developers>
+    <developer>
+      <name>Andras Kerekes</name>
+      <email>akerekes@google.com</email>
+      <organization>Google LLC</organization>
+      <organizationUrl>http://www.google.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Di Xu</name>
+      <email>dixuswe@google.com</email>
+      <organization>Google LLC</organization>
+      <organizationUrl>http://www.google.com</organizationUrl>
+    </developer>
+  </developers>
+
   <licenses>
     <license>
       <name>Apache License, Version 2.0</name>
@@ -159,14 +174,12 @@
             </executions>
           </plugin>
           <plugin>
-            <groupId>org.sonatype.plugins</groupId>
-            <artifactId>nexus-staging-maven-plugin</artifactId>
-            <version>1.7.0</version>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.9.0</version>
             <extensions>true</extensions>
             <configuration>
-              <serverId>sonatype-nexus-snapshots</serverId>
-              <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-              <autoReleaseAfterClose>true</autoReleaseAfterClose>
+              <publishingServerId>sonatype-central-portal</publishingServerId>
             </configuration>
           </plugin>
         </plugins>

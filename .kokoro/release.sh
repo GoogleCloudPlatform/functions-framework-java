@@ -3,21 +3,19 @@
 # Stop execution when any command fails.
 set -e
 
-# update the Maven version to 3.6.3
+# update the Maven version to 3.9.11
 pushd /usr/local
-wget https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.6.3/apache-maven-3.6.3-bin.tar.gz
-tar -xvzf apache-maven-3.6.3-bin.tar.gz apache-maven-3.6.3
+wget https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.11/apache-maven-3.9.11-bin.tar.gz
+tar -xvzf apache-maven-3.9.11-bin.tar.gz apache-maven-3.9.11
 rm -f /usr/local/apache-maven
-ln -s /usr/local/apache-maven-3.6.3 /usr/local/apache-maven
-rm apache-maven-3.6.3-bin.tar.gz
+ln -s /usr/local/apache-maven-3.9.11 /usr/local/apache-maven
+rm apache-maven-3.9.11-bin.tar.gz
 popd
 
 
 # Get secrets from keystore and set and environment variables.
 setup_environment_secrets() {
   export GPG_TTY=$(tty)
-  export SONATYPE_USERNAME=$(cat ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-sonatype-password | cut -f1 -d':')
-  export SONATYPE_PASSWORD=$(cat ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-sonatype-password | cut -f2 -d':')
   export GPG_PASSPHRASE=$(cat ${KOKORO_KEYSTORE_DIR}/70247_maven-gpg-passphrase)
 
   # Add the key ring files to $GNUPGHOME to verify the GPG credentials.
@@ -26,6 +24,29 @@ setup_environment_secrets() {
   mv ${KOKORO_KEYSTORE_DIR}/70247_maven-gpg-pubkeyring $GNUPGHOME/pubring.gpg
   mv ${KOKORO_KEYSTORE_DIR}/70247_maven-gpg-keyring $GNUPGHOME/secring.gpg
   gpg -k
+
+  echo "KOKORO_GFILE_DIR: ${KOKORO_GFILE_DIR}"
+  SECRET_LOCATION="${KOKORO_GFILE_DIR}/secret_manager"
+  echo "Creating folder for secrets: ${SECRET_LOCATION} (if not exists)"
+  mkdir -p "${SECRET_LOCATION}"
+  echo "Content of ${SECRET_LOCATION}:"
+  ls -alt "${SECRET_LOCATION}"
+  echo "------"
+
+  export SECRET_MANAGER_PROJECT_ID="serverless-runtimes"
+  export CENTRAL_REPO_USER="sonatype-central-repo-user"
+  export CENTRAL_REPO_TOKEN="sonatype-central-repo-token"
+  SECRET_MANAGER_KEYS="${CENTRAL_REPO_USER} ${CENTRAL_REPO_TOKEN}"
+  echo "SECRET_MANAGER_PROJECT_ID: ${SECRET_MANAGER_PROJECT_ID}, SECRET_MANAGER_KEYS: ${SECRET_MANAGER_KEYS}"
+
+  for key in $(echo "${SECRET_MANAGER_KEYS}" | sed "s/,/ /g")
+  do
+    gcloud secrets versions access latest \
+        --project "${SECRET_MANAGER_PROJECT_ID}" \
+        --secret "${key}" \
+        --out-file "${SECRET_LOCATION}/${key}"
+    echo "Created ${SECRET_LOCATION}/${key}"
+  done
 }
 
 create_settings_xml_file() {
@@ -42,14 +63,10 @@ create_settings_xml_file() {
   </profiles>
   <servers>
     <server>
-      <id>sonatype-nexus-staging</id>
-      <username>${SONATYPE_USERNAME}</username>
-      <password>${SONATYPE_PASSWORD}</password>
+      <id>sonatype-central-portal</id>
+      <username>$(cat "${SECRET_LOCATION}/${CENTRAL_REPO_USER}")</username>
+      <password>$(cat "${SECRET_LOCATION}/${CENTRAL_REPO_TOKEN}")</password>
     </server>
-    <server>
-      <id>sonatype-nexus-snapshots</id>
-      <username>${SONATYPE_USERNAME}</username>
-      <password>${SONATYPE_PASSWORD}</password>
     </server>
   </servers>
 </settings>" > $1
