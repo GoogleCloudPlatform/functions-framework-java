@@ -24,29 +24,6 @@ setup_environment_secrets() {
   mv ${KOKORO_KEYSTORE_DIR}/70247_maven-gpg-pubkeyring $GNUPGHOME/pubring.gpg
   mv ${KOKORO_KEYSTORE_DIR}/70247_maven-gpg-keyring $GNUPGHOME/secring.gpg
   gpg -k
-
-  echo "KOKORO_GFILE_DIR: ${KOKORO_GFILE_DIR}"
-  SECRET_LOCATION="${KOKORO_GFILE_DIR}/secret_manager"
-  echo "Creating folder for secrets: ${SECRET_LOCATION} (if not exists)"
-  mkdir -p "${SECRET_LOCATION}"
-  echo "Content of ${SECRET_LOCATION}:"
-  ls -alt "${SECRET_LOCATION}"
-  echo "------"
-
-  export SECRET_MANAGER_PROJECT_ID="serverless-runtimes"
-  export CENTRAL_REPO_USER="sonatype-central-repo-user"
-  export CENTRAL_REPO_TOKEN="sonatype-central-repo-token"
-  SECRET_MANAGER_KEYS="${CENTRAL_REPO_USER} ${CENTRAL_REPO_TOKEN}"
-  echo "SECRET_MANAGER_PROJECT_ID: ${SECRET_MANAGER_PROJECT_ID}, SECRET_MANAGER_KEYS: ${SECRET_MANAGER_KEYS}"
-
-  for key in $(echo "${SECRET_MANAGER_KEYS}" | sed "s/,/ /g")
-  do
-    gcloud secrets versions access latest \
-        --project "${SECRET_MANAGER_PROJECT_ID}" \
-        --secret "${key}" \
-        --out-file "${SECRET_LOCATION}/${key}"
-    echo "Created ${SECRET_LOCATION}/${key}"
-  done
 }
 
 create_settings_xml_file() {
@@ -64,8 +41,8 @@ create_settings_xml_file() {
   <servers>
     <server>
       <id>sonatype-central-portal</id>
-      <username>$(cat "${SECRET_LOCATION}/${CENTRAL_REPO_USER}")</username>
-      <password>$(cat "${SECRET_LOCATION}/${CENTRAL_REPO_TOKEN}")</password>
+      <username>$(cat "${KOKORO_KEYSTORE_DIR}/75699_functions-framework-release-sonatype-central-portal-username")</username>
+      <password>$(cat "${KOKORO_KEYSTORE_DIR}/75699_functions-framework-release-sonatype-central-portal-password")</password>
     </server>
     </server>
   </servers>
