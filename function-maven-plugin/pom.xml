@@ -168,6 +168,7 @@
             <extensions>true</extensions>
             <configuration>
               <publishingServerId>sonatype-central-portal</publishingServerId>
+              <centralSnapshotsUrl>https://central.sonatype.com/repository/maven-snapshots/</centralSnapshotsUrl>
             </configuration>
           </plugin>
         </plugins>
