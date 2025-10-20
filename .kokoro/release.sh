@@ -41,8 +41,8 @@ create_settings_xml_file() {
   <servers>
     <server>
       <id>sonatype-central-portal</id>
-      <username>$(cat "${KOKORO_KEYSTORE_DIR}/75699_functions-framework-release-sonatype-central-portal-username")</username>
-      <password>$(cat "${KOKORO_KEYSTORE_DIR}/75699_functions-framework-release-sonatype-central-portal-password")</password>
+      <username>$(cat "${KOKORO_KEYSTORE_DIR}/75669_functions-framework-release-sonatype-central-portal-username")</username>
+      <password>$(cat "${KOKORO_KEYSTORE_DIR}/75669_functions-framework-release-sonatype-central-portal-password")</password>
     </server>
   </servers>
 </settings>" > $1
