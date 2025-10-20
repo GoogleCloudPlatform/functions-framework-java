@@ -53,7 +53,6 @@ setup_environment_secrets
 # Pick the right package to release based on the Kokoro job name.
 cd ${KOKORO_ARTIFACTS_DIR}/github/functions-framework-java
 create_settings_xml_file "settings.xml"
-cat settings.xml
 echo "KOKORO_JOB_NAME=${KOKORO_JOB_NAME}"
 if [[ $KOKORO_JOB_NAME == *"function-maven-plugin"* ]]; then
   cd function-maven-plugin
