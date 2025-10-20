@@ -41,6 +41,21 @@
     </license>
   </licenses>
 
+  <developers>
+    <developer>
+      <name>Andras Kerekes</name>
+      <email>akerekes@google.com</email>
+      <organization>Google LLC</organization>
+      <organizationUrl>http://www.google.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Di Xu</name>
+      <email>dixuswe@google.com</email>
+      <organization>Google LLC</organization>
+      <organizationUrl>http://www.google.com</organizationUrl>
+    </developer>
+  </developers>
+
   <scm>
     <connection>scm:git:https://github.com/GoogleCloudPlatform/functions-framework-java.git</connection>
     <developerConnection>scm:git:git@github.com:GoogleCloudPlatform/functions-framework-java.git</developerConnection>
@@ -131,18 +146,6 @@
       </plugins>
     </pluginManagement>
   </build>
-  <distributionManagement>
-    <snapshotRepository>
-      <id>sonatype-nexus-snapshots</id>
-      <name>Sonatype Nexus Snapshots</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-    </snapshotRepository>
-    <repository>
-      <id>sonatype-nexus-staging</id>
-      <name>Nexus Release Repository</name>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-    </repository>
-  </distributionManagement>
   <profiles>
     <profile>
       <id>sonatype-oss-release</id>
@@ -189,14 +192,13 @@
             </executions>
           </plugin>
           <plugin>
-            <groupId>org.sonatype.plugins</groupId>
-            <artifactId>nexus-staging-maven-plugin</artifactId>
-            <version>1.7.0</version>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.9.0</version>
             <extensions>true</extensions>
             <configuration>
-              <serverId>sonatype-nexus-snapshots</serverId>
-              <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-              <autoReleaseAfterClose>true</autoReleaseAfterClose>
+              <publishingServerId>sonatype-central-portal</publishingServerId>
+              <centralSnapshotsUrl>https://central.sonatype.com/repository/maven-snapshots/</centralSnapshotsUrl>
             </configuration>
           </plugin>
         </plugins>
