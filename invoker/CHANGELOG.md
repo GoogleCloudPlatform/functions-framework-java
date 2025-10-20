@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.3](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.4.2...java-function-invoker-v1.4.3) (2025-10-20)
+
+
+### Bug Fixes
+
+* add autovalue plugin config to invoker/core/pom.xml to fix local development ([#339](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/339)) ([4203279](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/420327967b96b4aa66c0edd6753a9d6db781478d))
+
 ## [1.4.2](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.4.1...java-function-invoker-v1.4.2) (2025-10-20)
 
 
