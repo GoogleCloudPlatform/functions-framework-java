@@ -38,15 +38,15 @@ This project is divided into multiple packages, primarily:
   - `function-maven-plugin` - The Maven plugin for building functions
   - `conformance` - A set of functions used for conformance testing
 
-### Setup JDK 11 / 17
+### Setup JDK 17 / 21
 
-Install JDK 11 and 17. One way to install these is through [SDK man](https://sdkman.io/).
+Install JDK 17 and 21. One way to install these is through [SDK man](https://sdkman.io/).
 
 ```sh
-sdk install java 11.0.2-open
 sdk install java 17-open
+sdk install java 21-open
 sdk use java 17-open
-sdk use java 11.0.2-open
+sdk use java 21-open
 ```
 
 Verify Java version with:

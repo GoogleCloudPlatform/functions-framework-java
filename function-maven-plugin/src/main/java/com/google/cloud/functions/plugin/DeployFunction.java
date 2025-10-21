@@ -98,13 +98,13 @@ public class DeployFunction extends CloudSdkMojo {
    * Runtime in which to run the function.
    *
    * <p>Required when deploying a new function; optional when updating an existing function. Default
-   * to Java11.
+   * to Java17.
    */
   @Parameter(
       alias = "deploy.runtime",
-      defaultValue = "java11",
+      defaultValue = "java17",
       property = "function.deploy.runtime")
-  String runtime = "java11";
+  String runtime = "java17";
 
   /**
    * The email address of the IAM service account associated with the function at runtime. The
