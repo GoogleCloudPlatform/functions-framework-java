@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.2](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/function-maven-plugin-v0.11.1...function-maven-plugin-v0.11.2) (2025-10-21)
+
+
+### Bug Fixes
+
+* several minor fixes ([#341](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/341)) ([e152e0d](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/e152e0d697c1a3f4a90a6480347b4ddf0b73f3e3))
+* update dependency com.google.cloud.functions.invoker to 1.4.3 ([#354](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/354)) ([0e24d42](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/0e24d42573d104f8b73921513f6f296ada4a255c))
+
 ## [0.11.1](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/function-maven-plugin-v0.11.0...function-maven-plugin-v0.11.1) (2024-11-27)
 
 
