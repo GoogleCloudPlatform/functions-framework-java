@@ -13,9 +13,8 @@ jobs:
     strategy:
       matrix:
         java: [
-          11.x,
           17.x,
-          21-ea
+          21.x
         ]
     steps:
     - name: Harden Runner
