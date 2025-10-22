@@ -63,9 +63,14 @@ else
 fi
 echo "pwd=$(pwd)"
 
-# Make sure `JAVA_HOME` is set and using jdk11.
-export JAVA_HOME=/usr/lib/jvm/java-1.17.0-openjdk-amd64
+# Make sure `JAVA_HOME` is set and using jdk17.
+JDK_VERSION=17
+apt-get update
+# Install new JDK version
+apt-get install -y openjdk-"${JDK_VERSION}"-jdk
+export JAVA_HOME="$(update-java-alternatives -l | grep "1.${JDK_VERSION}" | head -n 1 | tr -s " " | cut -d " " -f 3)"
 echo "JAVA_HOME=$JAVA_HOME"
+
 mvn clean deploy -B -q \
   -P sonatype-oss-release \
   --settings=../settings.xml \
