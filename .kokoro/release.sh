@@ -3,21 +3,19 @@
 # Stop execution when any command fails.
 set -e
 
-# update the Maven version to 3.6.3
+# update the Maven version to 3.9.11
 pushd /usr/local
-wget https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.6.3/apache-maven-3.6.3-bin.tar.gz
-tar -xvzf apache-maven-3.6.3-bin.tar.gz apache-maven-3.6.3
+wget https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.11/apache-maven-3.9.11-bin.tar.gz
+tar -xvzf apache-maven-3.9.11-bin.tar.gz apache-maven-3.9.11
 rm -f /usr/local/apache-maven
-ln -s /usr/local/apache-maven-3.6.3 /usr/local/apache-maven
-rm apache-maven-3.6.3-bin.tar.gz
+ln -s /usr/local/apache-maven-3.9.11 /usr/local/apache-maven
+rm apache-maven-3.9.11-bin.tar.gz
 popd
 
 
 # Get secrets from keystore and set and environment variables.
 setup_environment_secrets() {
   export GPG_TTY=$(tty)
-  export SONATYPE_USERNAME=$(cat ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-sonatype-password | cut -f1 -d':')
-  export SONATYPE_PASSWORD=$(cat ${KOKORO_KEYSTORE_DIR}/75669_functions-framework-java-release-bot-sonatype-password | cut -f2 -d':')
   export GPG_PASSPHRASE=$(cat ${KOKORO_KEYSTORE_DIR}/70247_maven-gpg-passphrase)
 
   # Add the key ring files to $GNUPGHOME to verify the GPG credentials.
@@ -42,14 +40,9 @@ create_settings_xml_file() {
   </profiles>
   <servers>
     <server>
-      <id>sonatype-nexus-staging</id>
-      <username>${SONATYPE_USERNAME}</username>
-      <password>${SONATYPE_PASSWORD}</password>
-    </server>
-    <server>
-      <id>sonatype-nexus-snapshots</id>
-      <username>${SONATYPE_USERNAME}</username>
-      <password>${SONATYPE_PASSWORD}</password>
+      <id>sonatype-central-portal</id>
+      <username>$(cat "${KOKORO_KEYSTORE_DIR}/75669_functions-framework-release-sonatype-central-portal-username")</username>
+      <password>$(cat "${KOKORO_KEYSTORE_DIR}/75669_functions-framework-release-sonatype-central-portal-password")</password>
     </server>
   </servers>
 </settings>" > $1
@@ -70,10 +63,15 @@ else
 fi
 echo "pwd=$(pwd)"
 
-# Make sure `JAVA_HOME` is set and using jdk11.
-export JAVA_HOME=/usr/lib/jvm/java-1.11.0-openjdk-amd64
+# Make sure `JAVA_HOME` is set and using jdk17.
+JDK_VERSION=17
+apt-get update
+# Install new JDK version
+apt-get install -y openjdk-"${JDK_VERSION}"-jdk
+export JAVA_HOME="$(update-java-alternatives -l | grep "1.${JDK_VERSION}" | head -n 1 | tr -s " " | cut -d " " -f 3)"
 echo "JAVA_HOME=$JAVA_HOME"
-mvn clean deploy -B \
+
+mvn clean deploy -B -q \
   -P sonatype-oss-release \
   --settings=../settings.xml \
   -Dgpg.executable=gpg \
