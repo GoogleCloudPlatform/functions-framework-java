@@ -21,16 +21,16 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.TreeMap;
-import org.eclipse.jetty.http.*;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPart.Part;
+import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Fields;
@@ -144,15 +144,7 @@ public class HttpRequestImpl implements HttpRequest {
 
   @Override
   public Map<String, List<String>> getHeaders() {
-    return toStringListMap(request.getHeaders());
-  }
-
-  static Map<String, List<String>> toStringListMap(HttpFields headers) {
-    Map<String, List<String>> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    for (HttpField field : headers) {
-      map.computeIfAbsent(field.getName(), key -> new ArrayList<>()).add(field.getValue());
-    }
-    return map;
+    return HttpUtil.toStringListMap(request.getHeaders());
   }
 
   private static class HttpPartImpl implements HttpPart {
@@ -186,8 +178,7 @@ public class HttpRequestImpl implements HttpRequest {
 
     @Override
     public InputStream getInputStream() throws IOException {
-        // TODO: update with createContentSource when https://github.com/jetty/jetty.project/pull/13610 is released.
-        Content.Source contentSource = part.newContentSource(null, 0, -1);
+        Content.Source contentSource = part.createContentSource();
         return Content.Source.asInputStream(contentSource);
     }
 
@@ -202,7 +193,7 @@ public class HttpRequestImpl implements HttpRequest {
 
     @Override
     public Map<String, List<String>> getHeaders() {
-      return HttpRequestImpl.toStringListMap(part.getHeaders());
+      return HttpUtil.toStringListMap(part.getHeaders());
     }
 
     @Override

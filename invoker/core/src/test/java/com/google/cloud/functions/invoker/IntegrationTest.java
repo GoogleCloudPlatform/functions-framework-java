@@ -173,6 +173,13 @@ public class IntegrationTest {
 
     abstract int expectedResponseCode();
 
+    /**
+     * Expected response headers map, header name -> value.
+     * Value "*" asserts the header is present with any value.
+     * Value "-" asserts the header is not present.
+     *
+     * @return the expected response headers for this test case.
+     */
     abstract Optional<Map<String, String>> expectedResponseHeaders();
 
     abstract Optional<String> expectedResponseText();
@@ -270,9 +277,38 @@ public class IntegrationTest {
   }
 
   @Test
+  public void timeoutHttpSuccess() throws Exception {
+    testFunction(
+        SignatureType.HTTP,
+        fullTarget("TimeoutHttp"),
+        ImmutableList.of(),
+        ImmutableList.of(
+            TestCase.builder()
+                .setExpectedResponseText("finished\n")
+                .setExpectedResponseText(Optional.empty())
+                .build()),
+        ImmutableMap.of("CLOUD_RUN_TIMEOUT_SECONDS", "3"));
+  }
+
+  @Test
+  public void timeoutHttpTimesOut() throws Exception {
+    testFunction(
+        SignatureType.HTTP,
+        fullTarget("TimeoutHttp"),
+        ImmutableList.of(),
+        ImmutableList.of(
+            TestCase.builder()
+                .setExpectedResponseCode(408)
+                .setExpectedResponseText(Optional.empty())
+                .build()),
+        ImmutableMap.of("CLOUD_RUN_TIMEOUT_SECONDS", "1"));
+  }
+
+  @Test
   public void bufferedWrites() throws Exception {
-    // This test checks that writes are buffered and are written
-    // in an efficient way with known content-length if possible.
+    // This test checks that writes are buffered, and are written
+    // in an efficient way with known content-length if possible
+    // instead of doing a chunked response.
     testHttpFunction(
         fullTarget("BufferedWrites"),
         ImmutableList.of(
@@ -798,17 +834,17 @@ public class IntegrationTest {
       throws Exception {
     ServerProcess serverProcess =
         startServer(signatureType, target, extraArgs, environmentVariables);
+    HttpClient httpClient = new HttpClient();
     try {
-      HttpClient httpClient = new HttpClient();
       httpClient.start();
       for (TestCase testCase : testCases) {
         testCase.snoopFile().ifPresent(File::delete);
         String uri = "http://localhost:" + serverPort + testCase.url();
         Request request = httpClient.POST(uri);
 
-        request.headers(m -> {
-          testCase.httpContentType().ifPresent(contentType -> m.put(HttpHeader.CONTENT_TYPE, contentType));
-          testCase.httpHeaders().forEach(m::put);
+        request.headers(headers -> {
+          testCase.httpContentType().ifPresent(contentType -> headers.put(HttpHeader.CONTENT_TYPE, contentType));
+          testCase.httpHeaders().forEach(headers::put);
         });
         request.body(testCase.requestContent());
         ContentResponse response = request.send();
@@ -816,8 +852,8 @@ public class IntegrationTest {
             .withMessage("Response to %s is %s %s", uri, response.getStatus(), response.getReason())
             .that(response.getStatus())
             .isEqualTo(testCase.expectedResponseCode());
-        testCase.expectedResponseHeaders().ifPresent(map -> {
-          for (Map.Entry<String, String> entry : map.entrySet()) {
+        testCase.expectedResponseHeaders().ifPresent(expectedResponseHeaders -> {
+          for (Map.Entry<String, String> entry : expectedResponseHeaders.entrySet()) {
             if ("*".equals(entry.getValue())) {
               expect.that(response.getHeaders().getFieldNamesCollection()).contains(entry.getKey());
             } else if ("-".equals(entry.getValue())) {
@@ -839,6 +875,7 @@ public class IntegrationTest {
       }
     } finally {
       serverProcess.close();
+      httpClient.stop();
     }
     for (TestCase testCase : testCases) {
       testCase

@@ -345,8 +345,7 @@ public final class BackgroundFunctionExecutor extends Handler.Abstract {
       callback.succeeded();
     } catch (Throwable t) {
       logger.log(Level.SEVERE, "Failed to execute " + functionExecutor.functionName(), t);
-      res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-      callback.succeeded();
+      Response.writeError(req, res, callback, HttpStatus.INTERNAL_SERVER_ERROR_500, null);
     } finally {
       executionIdUtil.removeExecutionId();
     }

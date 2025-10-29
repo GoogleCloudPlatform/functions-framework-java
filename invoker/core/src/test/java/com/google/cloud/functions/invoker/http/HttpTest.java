@@ -40,8 +40,12 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.MultiPartRequestContent;
 import org.eclipse.jetty.client.StringRequestContent;
-import org.eclipse.jetty.http.*;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpStatus.Code;
+import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.http.MultiPartConfig;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -309,16 +313,10 @@ public class HttpTest {
     @Override
     public boolean handle(Request request, Response response, Callback callback) {
       try {
-        if (!HttpMethod.POST.is(request.getMethod())) {
-          response.setStatus(HttpStatus.METHOD_NOT_ALLOWED_405);
-          callback.succeeded();
-          return true;
-        }
-
         testReference.get().test(new HttpRequestImpl(request));
       } catch (Throwable t) {
-        t.printStackTrace();
         exceptionReference.set(t);
+        Response.writeError(request, response, callback, t);
       }
       callback.succeeded();
       return true;
@@ -397,9 +395,6 @@ public class HttpTest {
 
     @Override
     public boolean handle(Request request, Response response, Callback callback) {
-      if (!HttpMethod.POST.is(request.getMethod())) {
-        return false;
-      }
       try {
         testReference.get().test(new HttpResponseImpl(response));
         callback.succeeded();
@@ -462,10 +457,10 @@ public class HttpTest {
           response -> response.setStatusCode(HttpStatus.IM_A_TEAPOT_418),
           response -> assertThat(response.getStatus()).isEqualTo(HttpStatus.IM_A_TEAPOT_418)),
       responseTest(
-          // reason string cannot be set by application
           response -> response.setStatusCode(HttpStatus.IM_A_TEAPOT_418, "Je suis une théière"),
           response -> {
             assertThat(response.getStatus()).isEqualTo(HttpStatus.IM_A_TEAPOT_418);
+            // Reason string cannot be set by the application.
             assertThat(response.getReason()).isEqualTo(Code.IM_A_TEAPOT.getMessage());
           }),
       responseTest(

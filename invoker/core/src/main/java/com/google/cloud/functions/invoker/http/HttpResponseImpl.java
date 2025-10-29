@@ -77,14 +77,15 @@ public class HttpResponseImpl implements HttpResponse {
 
   @Override
   public Map<String, List<String>> getHeaders() {
-    return HttpRequestImpl.toStringListMap(response.getHeaders());
+    return HttpUtil.toStringListMap(response.getHeaders());
   }
 
   @Override
   public OutputStream getOutputStream() {
     if (writer != null) {
       throw new IllegalStateException("getWriter called");
-    } else if (outputStream == null) {
+    }
+    if (outputStream == null) {
       Request request = response.getRequest();
       int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration()
           .getOutputBufferSize();
