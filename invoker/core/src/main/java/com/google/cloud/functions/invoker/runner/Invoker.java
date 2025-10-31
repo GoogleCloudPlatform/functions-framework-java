@@ -283,7 +283,13 @@ public class Invoker {
     server.setErrorHandler(
         new ErrorHandler() {
           @Override
-          protected void generateResponse(Request request, Response response, int code, String message, Throwable cause, Callback callback) {
+          protected void generateResponse(
+              Request request,
+              Response response,
+              int code,
+              String message,
+              Throwable cause,
+              Callback callback) {
             // Suppress error body
             callback.succeeded();
           }

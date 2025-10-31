@@ -80,13 +80,14 @@ public class HttpRequestImpl implements HttpRequest {
   @Override
   public Map<String, HttpPart> getParts() {
     String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-    if (contentType == null || !contentType.startsWith(MimeTypes.Type.MULTIPART_FORM_DATA.asString())) {
+    if (contentType == null
+        || !contentType.startsWith(MimeTypes.Type.MULTIPART_FORM_DATA.asString())) {
       throw new IllegalStateException("Content-Type must be multipart/form-data: " + contentType);
     }
 
     // The multipart parsing is done by the EagerContentHandler, so we just call getParts.
     MultiPartFormData.Parts parts = MultiPartFormData.getParts(request);
-    if (parts == null){
+    if (parts == null) {
       throw new IllegalStateException();
     }
 
@@ -178,8 +179,8 @@ public class HttpRequestImpl implements HttpRequest {
 
     @Override
     public InputStream getInputStream() throws IOException {
-        Content.Source contentSource = part.createContentSource();
-        return Content.Source.asInputStream(contentSource);
+      Content.Source contentSource = part.createContentSource();
+      return Content.Source.asInputStream(contentSource);
     }
 
     @Override

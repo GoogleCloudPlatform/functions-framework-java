@@ -14,76 +14,65 @@
 
 package com.google.cloud.functions.invoker.http;
 
-import java.util.Timer;
-import java.util.TimerTask;
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 public class TimeoutHandler extends Handler.Wrapper {
-  private final int timeoutMs;
+  private final Duration timeout;
 
   public TimeoutHandler(int timeoutSeconds, Handler handler) {
     setHandler(handler);
-    this.timeoutMs = timeoutSeconds * 1000; // Convert seconds to milliseconds
+    timeout = Duration.ofSeconds(timeoutSeconds);
   }
 
   @Override
   public boolean handle(Request request, Response response, Callback callback) throws Exception {
-    // Wrap the callback to ensure it is only called once between the handler and the timeout task.
-    AtomicBoolean completed = new AtomicBoolean(false);
-    Callback wrappedCallback = new Callback() {
-      @Override
-      public void succeeded() {
-        if (completed.compareAndSet(false, true)) {
-          callback.succeeded();
-        }
-      }
+    // Wrap the callback to ensure it is only completed once between the
+    // handler and the timeout task.
+    Callback wrappedCallback = new ProtectedCallback(callback);
+    Scheduler.Task timeoutTask =
+        request
+            .getComponents()
+            .getScheduler()
+            .schedule(
+                () -> wrappedCallback.failed(new TimeoutException("Function execution timed out")),
+                timeout);
 
-      @Override
-      public void failed(Throwable x) {
-        if (completed.compareAndSet(false, true)) {
-            callback.failed(x);
-        }
-      }
+    // Cancel the timeout if the request completes the callback first.
+    return super.handle(request, response, Callback.from(timeoutTask::cancel, wrappedCallback));
+  }
 
-      @Override
-      public InvocationType getInvocationType() {
-        return callback.getInvocationType();
-      }
-    };
+  private static class ProtectedCallback implements Callback {
+    private final Callback callback;
+    private final AtomicBoolean completed = new AtomicBoolean(false);
 
-    // TODO: consider wrapping the request/response to throw if they are used after timeout.
-    // TODO: Use org.eclipse.jetty.io.CyclicTimeouts which is optimized for timeouts which are almost always cancelled.
-    Timer timer = new Timer(true);
-    TimerTask timeoutTask =
-        new TimerTask() {
-          @Override
-          public void run() {
-            // TODO: there is a race between the handler writing response and timeout firing.
-            //  This timeout firing doesn't stop the thread handling the request / response it just writes an error to the response.
-            Response.writeError(
-                request,
-                response,
-                callback,
-                HttpStatus.REQUEST_TIMEOUT_408,
-                "Function execution timed out");
-          }
-        };
-
-    timer.schedule(timeoutTask, timeoutMs);
-
-    boolean handle;
-    try {
-      handle = super.handle(request, response, wrappedCallback);
-      timeoutTask.cancel();
-    } finally {
-      timer.purge();
+    public ProtectedCallback(Callback callback) {
+      this.callback = callback;
     }
 
-    return handle;
+    @Override
+    public void succeeded() {
+      if (completed.compareAndSet(false, true)) {
+        callback.succeeded();
+      }
+    }
+
+    @Override
+    public void failed(Throwable x) {
+      if (completed.compareAndSet(false, true)) {
+        callback.failed(x);
+      }
+    }
+
+    @Override
+    public InvocationType getInvocationType() {
+      return callback.getInvocationType();
+    }
   }
 }

@@ -87,11 +87,15 @@ public class HttpResponseImpl implements HttpResponse {
     }
     if (outputStream == null) {
       Request request = response.getRequest();
-      int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration()
-          .getOutputBufferSize();
-      BufferedContentSink bufferedContentSink = new BufferedContentSink(response,
-          request.getComponents().getByteBufferPool(),
-          false, outputBufferSize / 2, outputBufferSize);
+      int outputBufferSize =
+          request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
+      BufferedContentSink bufferedContentSink =
+          new BufferedContentSink(
+              response,
+              request.getComponents().getByteBufferPool(),
+              false,
+              outputBufferSize / 2,
+              outputBufferSize);
       outputStream = new ContentSinkOutputStream(bufferedContentSink);
     }
     return outputStream;
@@ -104,8 +108,10 @@ public class HttpResponseImpl implements HttpResponse {
         throw new IllegalStateException("getOutputStream called");
       }
 
-      writer = new NonBufferedWriter(WriteThroughWriter.newWriter(getOutputStream(),
-          Objects.requireNonNullElse(charset, StandardCharsets.UTF_8)));
+      writer =
+          new NonBufferedWriter(
+              WriteThroughWriter.newWriter(
+                  getOutputStream(), Objects.requireNonNullElse(charset, StandardCharsets.UTF_8)));
     }
     return writer;
   }
@@ -130,13 +136,11 @@ public class HttpResponseImpl implements HttpResponse {
   }
 
   /**
-   * A {@link BufferedWriter} that does not buffer.
-   * It is generally more efficient to buffer at the {@link Content.Sink} level,
-   * since frequently total content is smaller than a single buffer and
-   * the {@link Content.Sink} can turn a close into a last write that will avoid
-   * chunking the response if at all possible.   However, {@link BufferedWriter}
-   * is in the API for {@link HttpResponse}, so we must return a writer of
-   * that type.
+   * A {@link BufferedWriter} that does not buffer. It is generally more efficient to buffer at the
+   * {@link Content.Sink} level, since frequently total content is smaller than a single buffer and
+   * the {@link Content.Sink} can turn a close into a last write that will avoid chunking the
+   * response if at all possible. However, {@link BufferedWriter} is in the API for {@link
+   * HttpResponse}, so we must return a writer of that type.
    */
   private static class NonBufferedWriter extends BufferedWriter {
     private final Writer writer;

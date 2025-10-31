@@ -185,9 +185,12 @@ public final class BackgroundFunctionExecutor extends Handler.Abstract {
   }
 
   private static Event parseLegacyEvent(Request req) throws IOException {
-    try (BufferedReader bodyReader = new BufferedReader(
-        new InputStreamReader(Content.Source.asInputStream(req),
-            Objects.requireNonNullElse(Request.getCharset(req), StandardCharsets.ISO_8859_1)))) {
+    try (BufferedReader bodyReader =
+        new BufferedReader(
+            new InputStreamReader(
+                Content.Source.asInputStream(req),
+                Objects.requireNonNullElse(
+                    Request.getCharset(req), StandardCharsets.ISO_8859_1)))) {
       return parseLegacyEvent(bodyReader);
     }
   }
@@ -367,6 +370,9 @@ public final class BackgroundFunctionExecutor extends Handler.Abstract {
     @SuppressWarnings("unchecked")
     FunctionExecutor<CloudEventT> executor = (FunctionExecutor<CloudEventT>) functionExecutor;
 
+    // Read the entire request body into a byte array.
+    // TODO: this method is deprecated for removal, use the method introduced by
+    //    https://github.com/jetty/jetty.project/pull/13939 when it is released.
     byte[] body = Content.Source.asByteArrayAsync(req, -1).get();
     MessageReader reader = HttpMessageFactory.createReaderFromMultimap(headerMap(req), body);
     // It's important not to set the context ClassLoader earlier, because MessageUtils will use
@@ -384,7 +390,8 @@ public final class BackgroundFunctionExecutor extends Handler.Abstract {
   private static Map<String, List<String>> headerMap(Request req) {
     Map<String, List<String>> headerMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     for (HttpField field : req.getHeaders()) {
-      headerMap.computeIfAbsent(field.getName(), unused -> new ArrayList<>())
+      headerMap
+          .computeIfAbsent(field.getName(), unused -> new ArrayList<>())
           .addAll(field.getValueList());
     }
     return headerMap;
