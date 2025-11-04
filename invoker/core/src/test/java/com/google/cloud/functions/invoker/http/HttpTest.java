@@ -115,9 +115,9 @@ public class HttpTest {
 
   /**
    * Tests methods on the {@link HttpRequest} object while the request is being serviced. We are not
-   * guaranteed that the underlying {@link Request} object will still be valid when the
-   * request completes, and in fact in Jetty it isn't. So we perform the checks in the context of
-   * the handler, and report any exception back to the test method.
+   * guaranteed that the underlying {@link Request} object will still be valid when the request
+   * completes, and in fact in Jetty it isn't. So we perform the checks in the context of the
+   * handler, and report any exception back to the test method.
    */
   @Test
   public void httpRequestMethods() throws Exception {
@@ -198,12 +198,13 @@ public class HttpTest {
       org.eclipse.jetty.client.Request request =
           httpClient
               .POST(uri)
-              .headers(m -> {
-                m.add(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
-                m.add("foo", "bar");
-                m.add("foo", "baz");
-                m.add("CaSe-SeNsItIvE", "VaLuE");
-              })
+              .headers(
+                  m -> {
+                    m.add(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
+                    m.add("foo", "bar");
+                    m.add("foo", "baz");
+                    m.add("CaSe-SeNsItIvE", "VaLuE");
+                  })
               .body(new StringRequestContent(TEST_BODY));
       ContentResponse response = request.send();
       assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
@@ -249,16 +250,18 @@ public class HttpTest {
     httpClient.start();
     String uri = "http://localhost:" + serverPort + "/";
     MultiPartRequestContent multiPart = new MultiPartRequestContent();
-    HttpFields textHttpFields = HttpFields.build()
-      .add("foo", "bar");
-    multiPart.addPart(new MultiPart.ContentSourcePart("text", null, textHttpFields,
-        new StringRequestContent(TEST_BODY)));
-    HttpFields.Mutable bytesHttpFields = HttpFields.build()
-      .add("foo", "baz")
-      .add("foo", "buh");
+    HttpFields textHttpFields = HttpFields.build().add("foo", "bar");
+    multiPart.addPart(
+        new MultiPart.ContentSourcePart(
+            "text", null, textHttpFields, new StringRequestContent(TEST_BODY)));
+    HttpFields.Mutable bytesHttpFields = HttpFields.build().add("foo", "baz").add("foo", "buh");
     assertThat(bytesHttpFields.getValuesList("foo")).containsExactly("baz", "buh");
-    multiPart.addPart(new MultiPart.ContentSourcePart("binary", "/tmp/binary.x",
-        bytesHttpFields, new ByteBufferRequestContent(ByteBuffer.wrap(RANDOM_BYTES))));
+    multiPart.addPart(
+        new MultiPart.ContentSourcePart(
+            "binary",
+            "/tmp/binary.x",
+            bytesHttpFields,
+            new ByteBufferRequestContent(ByteBuffer.wrap(RANDOM_BYTES))));
     multiPart.close();
     HttpRequestTest test =
         request -> {
@@ -290,9 +293,8 @@ public class HttpTest {
         };
     try (SimpleServer server = new SimpleServer(testHandler)) {
       testReference.set(test);
-      org.eclipse.jetty.client.Request request = httpClient.POST(uri)
-          .headers(m -> m.put("foo", "oof"))
-          .body(multiPart);
+      org.eclipse.jetty.client.Request request =
+          httpClient.POST(uri).headers(m -> m.put("foo", "oof")).body(multiPart);
       ContentResponse response = request.send();
       assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
       throwIfNotNull(exceptionReference.get());

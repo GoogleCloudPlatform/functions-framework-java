@@ -174,9 +174,8 @@ public class IntegrationTest {
     abstract int expectedResponseCode();
 
     /**
-     * Expected response headers map, header name -> value.
-     * Value "*" asserts the header is present with any value.
-     * Value "-" asserts the header is not present.
+     * Expected response headers map, header name -> value. Value "*" asserts the header is present
+     * with any value. Value "-" asserts the header is not present.
      *
      * @return the expected response headers for this test case.
      */
@@ -268,8 +267,7 @@ public class IntegrationTest {
         fullTarget("HelloWorld"),
         ImmutableList.of(
             TestCase.builder()
-                .setExpectedResponseHeaders(ImmutableMap.of(
-                    "Content-Length", "*"))
+                .setExpectedResponseHeaders(ImmutableMap.of("Content-Length", "*"))
                 .setExpectedResponseText("hello\n")
                 .build(),
             FAVICON_TEST_CASE,
@@ -315,23 +313,23 @@ public class IntegrationTest {
             TestCase.builder()
                 .setUrl("/target?writes=2")
                 .setExpectedResponseText("write 0\nwrite 1\n")
-                .setExpectedResponseHeaders(ImmutableMap.of(
-                    "x-write-0", "true",
-                    "x-write-1", "true",
-                    "x-written", "true",
-                    "Content-Length", "16"
-                ))
+                .setExpectedResponseHeaders(
+                    ImmutableMap.of(
+                        "x-write-0", "true",
+                        "x-write-1", "true",
+                        "x-written", "true",
+                        "Content-Length", "16"))
                 .build(),
             TestCase.builder()
                 .setUrl("/target?writes=2&flush=true")
                 .setExpectedResponseText("write 0\nwrite 1\n")
-                .setExpectedResponseHeaders(ImmutableMap.of(
-                    "x-write-0", "true",
-                    "x-write-1", "true",
-                    "x-written", "-",
-                    "Transfer-Encoding", "chunked"))
-                .build()
-        ));
+                .setExpectedResponseHeaders(
+                    ImmutableMap.of(
+                        "x-write-0", "true",
+                        "x-write-1", "true",
+                        "x-written", "-",
+                        "Transfer-Encoding", "chunked"))
+                .build()));
   }
 
   @Test
@@ -683,10 +681,12 @@ public class IntegrationTest {
   public void multipart() throws Exception {
     MultiPartRequestContent multiPartRequestContent = new MultiPartRequestContent();
     byte[] bytes = new byte[17];
-    multiPartRequestContent.addPart(new ContentSourcePart("bytes", null,
-        HttpFields.EMPTY, new ByteBufferRequestContent(ByteBuffer.wrap(bytes))));
-    multiPartRequestContent.addPart(new MultiPart.ContentSourcePart("string", null,
-        HttpFields.EMPTY, new StringRequestContent("1234567890")));
+    multiPartRequestContent.addPart(
+        new ContentSourcePart(
+            "bytes", null, HttpFields.EMPTY, new ByteBufferRequestContent(ByteBuffer.wrap(bytes))));
+    multiPartRequestContent.addPart(
+        new MultiPart.ContentSourcePart(
+            "string", null, HttpFields.EMPTY, new StringRequestContent("1234567890")));
     multiPartRequestContent.close();
 
     String expectedResponse =
@@ -842,27 +842,39 @@ public class IntegrationTest {
         String uri = "http://localhost:" + serverPort + testCase.url();
         Request request = httpClient.POST(uri);
 
-        request.headers(headers -> {
-          testCase.httpContentType().ifPresent(contentType -> headers.put(HttpHeader.CONTENT_TYPE, contentType));
-          testCase.httpHeaders().forEach(headers::put);
-        });
+        request.headers(
+            headers -> {
+              testCase
+                  .httpContentType()
+                  .ifPresent(contentType -> headers.put(HttpHeader.CONTENT_TYPE, contentType));
+              testCase.httpHeaders().forEach(headers::put);
+            });
         request.body(testCase.requestContent());
         ContentResponse response = request.send();
         expect
             .withMessage("Response to %s is %s %s", uri, response.getStatus(), response.getReason())
             .that(response.getStatus())
             .isEqualTo(testCase.expectedResponseCode());
-        testCase.expectedResponseHeaders().ifPresent(expectedResponseHeaders -> {
-          for (Map.Entry<String, String> entry : expectedResponseHeaders.entrySet()) {
-            if ("*".equals(entry.getValue())) {
-              expect.that(response.getHeaders().getFieldNamesCollection()).contains(entry.getKey());
-            } else if ("-".equals(entry.getValue())) {
-              expect.that(response.getHeaders().getFieldNamesCollection()).doesNotContain(entry.getKey());
-            } else {
-              expect.that(response.getHeaders().getValuesList(entry.getKey())).contains(entry.getValue());
-            }
-          }
-        });
+        testCase
+            .expectedResponseHeaders()
+            .ifPresent(
+                expectedResponseHeaders -> {
+                  for (Map.Entry<String, String> entry : expectedResponseHeaders.entrySet()) {
+                    if ("*".equals(entry.getValue())) {
+                      expect
+                          .that(response.getHeaders().getFieldNamesCollection())
+                          .contains(entry.getKey());
+                    } else if ("-".equals(entry.getValue())) {
+                      expect
+                          .that(response.getHeaders().getFieldNamesCollection())
+                          .doesNotContain(entry.getKey());
+                    } else {
+                      expect
+                          .that(response.getHeaders().getValuesList(entry.getKey()))
+                          .contains(entry.getValue());
+                    }
+                  }
+                });
         testCase
             .expectedResponseText()
             .ifPresent(text -> expect.that(response.getContentAsString()).isEqualTo(text));
