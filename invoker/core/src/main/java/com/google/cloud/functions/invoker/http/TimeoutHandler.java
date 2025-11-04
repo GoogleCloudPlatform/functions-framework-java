@@ -42,7 +42,10 @@ public class TimeoutHandler extends Handler.Wrapper {
             .getComponents()
             .getScheduler()
             .schedule(
-                () -> wrappedCallback.failed(new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408, "Function execution timed out")),
+                () ->
+                    wrappedCallback.failed(
+                        new BadMessageException(
+                            HttpStatus.REQUEST_TIMEOUT_408, "Function execution timed out")),
                 timeout);
 
     // Cancel the timeout if the request completes the callback first.
