@@ -15,8 +15,9 @@
 package com.google.cloud.functions.invoker.http;
 
 import java.time.Duration;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -41,7 +42,7 @@ public class TimeoutHandler extends Handler.Wrapper {
             .getComponents()
             .getScheduler()
             .schedule(
-                () -> wrappedCallback.failed(new TimeoutException("Function execution timed out")),
+                () -> wrappedCallback.failed(new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408, "Function execution timed out")),
                 timeout);
 
     // Cancel the timeout if the request completes the callback first.
