@@ -96,7 +96,23 @@ public class HttpResponseImpl implements HttpResponse {
               false,
               outputBufferSize / 2,
               outputBufferSize);
-      outputStream = new ContentSinkOutputStream(bufferedContentSink);
+
+      // TODO: remove override of close() when changes from
+      //    https://github.com/jetty/jetty.project/pull/13972 are released.
+      outputStream =
+          new ContentSinkOutputStream(bufferedContentSink) {
+            boolean closed = false;
+
+            @Override
+            public void close(Callback callback) throws IOException {
+              if (closed) {
+                callback.succeeded();
+              }
+
+              closed = true;
+              super.close(callback);
+            }
+          };
     }
     return outputStream;
   }
