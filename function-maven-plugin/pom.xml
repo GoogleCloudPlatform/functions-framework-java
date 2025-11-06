@@ -14,7 +14,7 @@
   <name>Functions Framework Plugin</name>
   <description>A Maven plugin that allows functions to be deployed, and to be run locally
     using the Java Functions Framework.</description>
-  <url>http://maven.apache.org</url>
+  <url>https://github.com/GoogleCloudPlatform/functions-framework-java</url>
 
   <scm>
     <url>http://github.com/GoogleCloudPlatform/functions-framework-java</url>
