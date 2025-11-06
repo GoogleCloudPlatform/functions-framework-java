@@ -16,7 +16,7 @@
     A GCF project used to validate conformance to the Functions Framework contract
     using the Functions Framework Conformance tools.
   </description>
-  <url>https://github.com/GoogleCloudPlatform/functions-framework-conformance</url>
+  <url>https://github.com/GoogleCloudPlatform/functions-framework-java</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
