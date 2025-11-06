@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/functions-framework-api-v1.1.4...functions-framework-api-v2.0.0) (2025-11-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove java11 support and expand java21 test coverage ([#356](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/356))
+
+### Features
+
+* remove java11 support and expand java21 test coverage ([#356](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/356)) ([c1f27d2](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/c1f27d289e3b9da2ec936fb4d2197f42a2eaa983))
+
 ## [1.1.4](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/functions-framework-api-v1.1.3...functions-framework-api-v1.1.4) (2024-11-22)
 
 
