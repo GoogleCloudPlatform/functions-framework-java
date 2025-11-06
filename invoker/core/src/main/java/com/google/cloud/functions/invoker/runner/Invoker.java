@@ -428,6 +428,9 @@ public class Invoker {
         urls.addAll(jarsIn(component.substring(0, component.length() - 2)));
       } else {
         Path path = Paths.get(component);
+        if(!Files.isRegularFile(path)) {
+          logger.log(Level.WARNING, "Classpath entry '" + path + "' does not exist");
+        }
         try {
           urls.add(path.toUri().toURL());
         } catch (MalformedURLException e) {
