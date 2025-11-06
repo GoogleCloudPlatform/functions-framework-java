@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.0.0](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.4.3...java-function-invoker-v2.0.0) (2025-11-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* update functions-framework-api dependency to 2.0.0 ([#365](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/365))
+* **implementation:** use Java 17 or above, as required by Eclipse Jetty-12.
+* remove java11 support and expand java21 test coverage ([#356](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/356))
+
+### Features
+
+* remove java11 support and expand java21 test coverage ([#356](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/356)) ([c1f27d2](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/c1f27d289e3b9da2ec936fb4d2197f42a2eaa983))
+
+
+### Miscellaneous Chores
+
+* **implementation:** use Jetty-12.1 core without servlets ([#333](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/333)) ([e23f98f](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/e23f98f2dc7cbcdbd036a46423c99f82bddd80bc))
+* update functions-framework-api dependency to 2.0.0 ([#365](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/365)) ([f351c1a](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/f351c1ade94a08bc4116b40e2d343e1b5d9a6db6))
+
 ## [1.4.3](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.4.2...java-function-invoker-v1.4.3) (2025-10-20)
 
 
