@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/functions-framework-api-v2.0.0...functions-framework-api-v2.0.1) (2026-04-10)
+
+
+### Bug Fixes
+
+* update CloudEvents dependencyFixes [#378](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/378) ([#379](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/379)) ([de983d9](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/de983d907ebba9fba6809e816f6c70f207d6c252))
+
 ## [2.0.0](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/functions-framework-api-v1.1.4...functions-framework-api-v2.0.0) (2025-11-05)
 
 
