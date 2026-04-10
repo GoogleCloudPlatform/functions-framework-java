@@ -71,7 +71,12 @@ apt-get install -y openjdk-"${JDK_VERSION}"-jdk
 export JAVA_HOME="$(update-java-alternatives -l | grep "1.${JDK_VERSION}" | head -n 1 | tr -s " " | cut -d " " -f 3)"
 echo "JAVA_HOME=$JAVA_HOME"
 
-mvn clean deploy -B -q \
+SUPPRESS_LOGS='-q'
+if [[ -n "${ENABLE_LOGS}" ]]; then
+  SUPPRESS_LOGS=''
+fi
+
+mvn clean deploy -B ${SUPPRESS_LOGS} \
   -P sonatype-oss-release \
   --settings=../settings.xml \
   -Dgpg.executable=gpg \
