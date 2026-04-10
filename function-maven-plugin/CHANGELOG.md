@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/function-maven-plugin-v1.0.0...function-maven-plugin-v1.0.1) (2026-04-10)
+
+
+### Dependencies
+
+* update Functions Framework Invoker dependency to 2.0.1 ([#385](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/385)) ([9e69efe](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/9e69efe14b779ab21a4f85e54c51283d0ec1a2ec))
+
 ## [1.0.0](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/function-maven-plugin-v0.11.2...function-maven-plugin-v1.0.0) (2025-11-06)
 
 
