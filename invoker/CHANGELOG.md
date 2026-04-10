@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v2.0.0...java-function-invoker-v2.0.1) (2026-04-10)
+
+
+### Dependencies
+
+* update Functions Framework API dependency to 2.0.1 ([#382](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/382)) ([a453a31](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/a453a315f1e6abd0720929f451bb6f3aec1aa498))
+
 ## [2.0.0](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/java-function-invoker-v1.4.3...java-function-invoker-v2.0.0) (2025-11-06)
 
 
