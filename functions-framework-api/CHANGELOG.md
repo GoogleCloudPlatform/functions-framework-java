@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.2](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/functions-framework-api-v2.0.1...functions-framework-api-v2.0.2) (2026-07-09)
+
+
+### Bug Fixes
+
+* enforce maven-enforcer-plugin 3.6.3 in release profile and fix POM structure ([#394](https://github.com/GoogleCloudPlatform/functions-framework-java/issues/394)) ([3a7faaf](https://github.com/GoogleCloudPlatform/functions-framework-java/commit/3a7faaf3026ce9762a2fe728c30938b09c112bac))
+
 ## [2.0.1](https://github.com/GoogleCloudPlatform/functions-framework-java/compare/functions-framework-api-v2.0.0...functions-framework-api-v2.0.1) (2026-04-10)
 
 
