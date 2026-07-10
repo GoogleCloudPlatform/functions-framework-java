@@ -6,6 +6,12 @@ REPO_DIR="${KOKORO_ARTIFACTS_DIR}/git/functions-framework-java"
 cd "${REPO_DIR}"
 
 # ==============================================================================
+# 0. Set up Java 17 Environment
+# ==============================================================================
+export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+export PATH="${JAVA_HOME}/bin:${PATH}"
+
+# ==============================================================================
 # 1. Configure Airlock and AR Credentials
 # ==============================================================================
 # Get OAuth token from GCE metadata server inside Kokoro VM
