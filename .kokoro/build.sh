@@ -119,4 +119,11 @@ ARTIFACTS_DIR="${REPO_DIR}/artifacts"
 mkdir -p "${ARTIFACTS_DIR}"
 
 # Copy target jars and poms (excluding test jars) to be captured by build.cfg
-find target/ -maxdepth 1 -name "*.jar" -o -name "*.pom" | grep -v "test" | xargs -I {} cp {} "${ARTIFACTS_DIR}/"
+# Copy target jars and poms from all module target/ folders across the package hierarchy,
+# while explicitly excluding unit test artifacts (test-classes/, *-tests.jar, *-test-sources.jar)
+find . -path "*/target/*" \
+  \( -name "*.jar" -o -name "*.pom" \) \
+  ! -path "*/test-classes/*" \
+  ! -name "*-tests.jar" \
+  ! -name "*-test-sources.jar" \
+  | xargs -r -I {} cp {} "${ARTIFACTS_DIR}/"
