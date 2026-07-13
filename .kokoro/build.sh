@@ -106,6 +106,8 @@ mvn clean deploy -B \
   -P sonatype-oss-release \
   --settings=../settings.xml \
   -DaltDeploymentRepository=exit-gate-ar::https://us-maven.pkg.dev/oss-exit-gate-prod/ff-releases--mavencentral \
+  -DskipPublishing=true \
+  -Dcentral.skipPublishing=true \
   -Dgpg.executable=gpg \
   -Dgpg.passphrase="${GPG_PASSPHRASE}" \
   -Dgpg.homedir="${GNUPGHOME}"
