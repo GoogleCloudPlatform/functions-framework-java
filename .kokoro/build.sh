@@ -115,7 +115,7 @@ mvn clean deploy -B \
 # ==============================================================================
 # 4. Copy artifacts to 'artifacts/' folder for Kokoro Attestation Generation
 # ==============================================================================
-ARTIFACTS_DIR="${REPO_DIR}/artifacts"
+ARTIFACTS_DIR="${KOKORO_ARTIFACTS_DIR}/artifacts"
 mkdir -p "${ARTIFACTS_DIR}"
 
 # Copy target jars and poms (excluding test jars) to be captured by build.cfg
