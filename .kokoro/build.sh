@@ -83,7 +83,7 @@ if [[ -n "${_LOUHI_REF_NAME:-}" ]]; then
     PACKAGE_DIR="invoker"
   else
     echo "Unknown tag format: ${_LOUHI_REF_NAME}. Defaulting to invoker."
-    PACKAGE_DIR="functions-framework-api"
+    PACKAGE_DIR="invoker"
   fi
 else
   # Fallback for manual/non-tag builds (e.g. testing)
@@ -93,7 +93,7 @@ else
   elif [[ $KOKORO_JOB_NAME == *"functions-framework-api"* ]]; then
     PACKAGE_DIR="functions-framework-api"
   else
-    PACKAGE_DIR="functions-framework-api"
+    PACKAGE_DIR="invoker"
   fi
 fi
 
