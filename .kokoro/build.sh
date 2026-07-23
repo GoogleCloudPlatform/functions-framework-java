@@ -100,6 +100,18 @@ fi
 echo "Building package in directory: ${PACKAGE_DIR}"
 cd "${PACKAGE_DIR}"
 
+# Pre-emptively clear any stale un-promoted staging version under builder service account permissions
+VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+echo "Pre-clearing stale staging version ${VERSION} from exit-gate-ar..."
+
+if [[ "${PACKAGE_DIR}" == "invoker" ]]; then
+  gcloud artifacts versions delete "${VERSION}" --project=oss-exit-gate-prod --repository=ff-releases--mavencentral --location=us --package="com.google.cloud.functions.invoker:java-function-invoker-parent" --quiet || true
+  gcloud artifacts versions delete "${VERSION}" --project=oss-exit-gate-prod --repository=ff-releases--mavencentral --location=us --package="com.google.cloud.functions.invoker:java-function-invoker" --quiet || true
+  gcloud artifacts versions delete "${VERSION}" --project=oss-exit-gate-prod --repository=ff-releases--mavencentral --location=us --package="com.google.cloud.functions.invoker:conformance" --quiet || true
+else
+  gcloud artifacts versions delete "${VERSION}" --project=oss-exit-gate-prod --repository=ff-releases--mavencentral --location=us --package="com.google.cloud.functions:${PACKAGE_DIR}" --quiet || true
+fi
+
 # Run maven deploy using the temporary settings.xml
 # We use altDeploymentRepository to override the deploy target without editing pom.xml
 mvn clean deploy -B \
