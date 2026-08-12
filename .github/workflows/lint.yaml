@@ -50,7 +50,7 @@ jobs:
           distribution: temurin
       - name: Run formatter
         id: formatter
-        uses: axel-op/googlejavaformat-action@dbff853fb823671ec5781365233bf86543b13215 # v3
+        uses: axel-op/googlejavaformat-action@c1134ebd196c4cbffb077f9476585b0be8b6afcd # v4.0.0
         with:
           args: "--replace"
           skip-commit: true
