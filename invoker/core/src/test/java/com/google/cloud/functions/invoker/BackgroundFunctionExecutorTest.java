@@ -57,6 +57,29 @@ public class BackgroundFunctionExecutorTest {
     assertThat(backgroundFunctionTypeArgument(GenericChild.class)).hasValue(PubSubMessage.class);
   }
 
+  // The parent handles the event in a common accept method, and subclasses only fill in the
+  // payload-specific part. The subclass itself never declares accept, so the only accept method
+  // it has is the inherited accept(Object, Context).
+  private abstract static class InheritingParent<T> implements BackgroundFunction<T> {
+    @Override
+    public void accept(T payload, Context context) {}
+  }
+
+  private static class InheritingChild extends InheritingParent<PubSubMessage> {}
+
+  @Test
+  public void backgroundFunctionTypeArgument_inheritedAccept() {
+    assertThat(backgroundFunctionTypeArgument(InheritingChild.class)).hasValue(PubSubMessage.class);
+  }
+
+  private static class InheritingGrandChild extends InheritingChild {}
+
+  @Test
+  public void backgroundFunctionTypeArgument_inheritedAcceptFurtherDown() {
+    assertThat(backgroundFunctionTypeArgument(InheritingGrandChild.class))
+        .hasValue(PubSubMessage.class);
+  }
+
   @SuppressWarnings("rawtypes")
   private static class ForgotTypeParameter implements BackgroundFunction {
     @Override
