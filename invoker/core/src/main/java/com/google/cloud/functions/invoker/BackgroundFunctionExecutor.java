@@ -32,12 +32,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -169,10 +173,20 @@ public final class BackgroundFunctionExecutor extends Handler.Abstract {
    */
   static Optional<Type> backgroundFunctionTypeArgument(
       Class<? extends BackgroundFunction<?>> functionClass) {
-    // If this is BackgroundFunction<Foo> then the user must have implemented a method
-    // accept(Foo, Context), so we look for that method and return the type of its first argument.
-    // We must be careful because the compiler will also have added a synthetic method
-    // accept(Object, Context).
+    // The type we want is written down in the class declaration, so read it from there. This is
+    // the only way to get it right when the subclass doesn't declare accept itself: the accept
+    // method it inherits has already been erased to accept(Object, Context).
+    Optional<Type> fromDeclaration =
+        typeArgumentFromDeclaration(
+            functionClass, BackgroundFunction.class, Collections.emptyMap());
+    if (fromDeclaration.isPresent()) {
+      return fromDeclaration;
+    }
+    // BackgroundFunction<T> isn't resolvable from the declaration, for example because it is
+    // implemented with a raw type. Fall back to the accept method: if this is
+    // BackgroundFunction<Foo> then the user must have implemented a method accept(Foo, Context),
+    // so we look for that method and return the type of its first argument. We must be careful
+    // because the compiler will also have added a synthetic method accept(Object, Context).
     return Arrays.stream(functionClass.getMethods())
         .filter(
             m ->
@@ -182,6 +196,85 @@ public final class BackgroundFunctionExecutor extends Handler.Abstract {
                     && m.getParameterTypes()[0] != Object.class)
         .map(m -> m.getGenericParameterTypes()[0])
         .findFirst();
+  }
+
+  /**
+   * Walks up from {@code type} looking for the type argument it supplies for {@code target},
+   * replacing type variables with the arguments its subtypes supplied for them.
+   */
+  private static Optional<Type> typeArgumentFromDeclaration(
+      Type type, Class<?> target, Map<TypeVariable<?>, Type> bindings) {
+    Class<?> rawClass = rawClassOf(type);
+    if (rawClass == null) {
+      return Optional.empty();
+    }
+    Map<TypeVariable<?>, Type> typeArguments = new HashMap<>(bindings);
+    if (type instanceof ParameterizedType) {
+      ParameterizedType parameterizedType = (ParameterizedType) type;
+      TypeVariable<?>[] parameters = rawClass.getTypeParameters();
+      Type[] arguments = parameterizedType.getActualTypeArguments();
+      for (int i = 0; i < parameters.length && i < arguments.length; i++) {
+        Type argument = arguments[i];
+        typeArguments.put(
+            parameters[i],
+            argument instanceof TypeVariable
+                ? bindings.getOrDefault(argument, argument)
+                : argument);
+      }
+    }
+    for (Type supertype : rawClass.getGenericInterfaces()) {
+      Class<?> supertypeClass = rawClassOf(supertype);
+      if (supertypeClass == target) {
+        if (!(supertype instanceof ParameterizedType)) {
+          return Optional.empty();
+        }
+        Type argument = ((ParameterizedType) supertype).getActualTypeArguments()[0];
+        Type resolved =
+            argument instanceof TypeVariable
+                ? typeArguments.getOrDefault(argument, argument)
+                : argument;
+        // If we still have a type variable then this class is generic in the payload type, and we
+        // have no way to know what the caller will use.
+        return hasTypeVariable(resolved) ? Optional.empty() : Optional.of(resolved);
+      }
+      if (supertypeClass != null && target.isAssignableFrom(supertypeClass)) {
+        Optional<Type> result = typeArgumentFromDeclaration(supertype, target, typeArguments);
+        if (result.isPresent()) {
+          return result;
+        }
+      }
+    }
+    Type superclass = rawClass.getGenericSuperclass();
+    Class<?> superclassRaw = rawClassOf(superclass);
+    if (superclassRaw != null && target.isAssignableFrom(superclassRaw)) {
+      return typeArgumentFromDeclaration(superclass, target, typeArguments);
+    }
+    return Optional.empty();
+  }
+
+  private static Class<?> rawClassOf(Type type) {
+    if (type instanceof Class) {
+      return (Class<?>) type;
+    }
+    if (type instanceof ParameterizedType) {
+      Type rawType = ((ParameterizedType) type).getRawType();
+      return rawType instanceof Class ? (Class<?>) rawType : null;
+    }
+    return null;
+  }
+
+  private static boolean hasTypeVariable(Type type) {
+    if (type instanceof TypeVariable) {
+      return true;
+    }
+    if (type instanceof ParameterizedType) {
+      for (Type argument : ((ParameterizedType) type).getActualTypeArguments()) {
+        if (hasTypeVariable(argument)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   private static Event parseLegacyEvent(Request req) throws IOException {
